@@ -490,9 +490,11 @@ function moveTask(kidId, fromStatus, toStatus, taskIndex) {
 
 function resetAllTasks() {
   state.kids.forEach((kid) => {
+    kid.points = 0;
     kid.due = [];
     kid.awaiting = [];
     kid.completed = [];
+    kid.lastCelebratedThreshold = 0;
     kid.missedDaysInARow = 0;
     kid.lastMissedCheckDate = getTodayKey();
   });
@@ -920,7 +922,7 @@ function renderKidPage(kidId, familyMode = currentFamilyMode) {
               <div class="button-row">
                 <button class="action-button secondary" type="button" data-open-assign="task">Assign</button>
                 <button class="action-button primary" type="submit">Add task</button>
-                <button class="action-button danger" type="button" data-reset-tasks="true">Reset tasks</button>
+                <button class="action-button danger" type="button" data-reset-tasks="true">Reset tasks & points</button>
               </div>
             </form>
             ${renderAssignPopup("task")}

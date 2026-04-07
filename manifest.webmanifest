@@ -1,0 +1,19 @@
+{
+  "name": "CHORES",
+  "short_name": "CHORES",
+  "description": "A playful offline-capable family chore tracker for kids.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#fff5e8",
+  "theme_color": "#4fc7b5",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "./icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

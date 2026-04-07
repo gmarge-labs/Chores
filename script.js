@@ -1286,3 +1286,11 @@ document.body.addEventListener("submit", (event) => {
 
 renderHome();
 showPage("page-home");
+
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./sw.js").catch(() => {
+      // Offline support is progressive; the app still works online if registration fails.
+    });
+  });
+}

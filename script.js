@@ -219,6 +219,62 @@ const CREATE_ACCOUNT_FIELDS = [
   { name: "kidPin3", placeholder: "Kid 3 PIN", type: "password" },
 ];
 
+function getCurrentCreateField() {
+  return CREATE_ACCOUNT_FIELDS[Math.max(0, Math.min(createAccountStep - 1, CREATE_ACCOUNT_FIELDS.length - 1))];
+}
+
+function renderCreateAccountActions() {
+  const currentField = getCurrentCreateField();
+  if (!currentField) return "";
+
+  const currentValue = createAccountDraft[currentField.name] || "";
+  const canAdvance = isFilled(currentValue);
+
+  if (createAccountStep < 7) {
+    return `
+      <div class="button-row create-progress-actions">
+        <button class="action-button primary" type="button" data-create-next="true" ${canAdvance ? "" : "disabled"}>Next</button>
+      </div>
+    `;
+  }
+
+  if (createAccountStep === 7) {
+    return `
+      <div class="button-row create-progress-actions">
+        <button class="action-button primary" type="submit" ${canAdvance ? "" : "disabled"}>Create account</button>
+        <button class="action-button secondary" type="button" data-add-child-step="8" ${canAdvance ? "" : "disabled"}>Add another child</button>
+      </div>
+    `;
+  }
+
+  if (createAccountStep === 8 || createAccountStep === 10) {
+    return `
+      <div class="button-row create-progress-actions">
+        <button class="action-button primary" type="button" data-create-next="true" ${canAdvance ? "" : "disabled"}>Next</button>
+      </div>
+    `;
+  }
+
+  if (createAccountStep === 9) {
+    return `
+      <div class="button-row create-progress-actions">
+        <button class="action-button primary" type="submit" ${canAdvance ? "" : "disabled"}>Create account</button>
+        <button class="action-button secondary" type="button" data-add-child-step="10" ${canAdvance ? "" : "disabled"}>Add one more child</button>
+      </div>
+    `;
+  }
+
+  if (createAccountStep === 11) {
+    return `
+      <div class="button-row create-progress-actions">
+        <button class="action-button primary" type="submit" ${canAdvance ? "" : "disabled"}>Create account</button>
+      </div>
+    `;
+  }
+
+  return "";
+}
+
 function renderAboutTopicContent(topic) {
   if (topic === "what") {
     return `
@@ -1111,33 +1167,10 @@ function renderAuthHome() {
           <div class="auth-panel ${authView === "create" ? "active" : ""}">
             <form class="reward-form auth-form" id="create-family-form">
               ${CREATE_ACCOUNT_FIELDS.slice(0, createAccountStep)
-                .filter((field) => !field.name.startsWith("kid") || !field.name.includes("2") || createAccountStep > 7)
-                .filter((field) => !field.name.startsWith("kid") || !field.name.includes("3") || createAccountStep > 9)
                 .map((field) => renderCreateField(field.name, field.placeholder, field.type))
                 .join("")}
-              ${
-                createAccountStep > 5
-                  ? `
-                    <div class="auth-kid-block">
-                      <p class="eyebrow">Add your kids</p>
-                      <div class="auth-kid-grid">
-                        ${CREATE_ACCOUNT_FIELDS.slice(5, createAccountStep)
-                          .map((field) => renderCreateField(field.name, field.placeholder, field.type))
-                          .join("")}
-                      </div>
-                    </div>
-                  `
-                  : ""
-              }
-              ${
-                createAccountStep > 6
-                  ? `
-                    <div class="button-row">
-                      <button class="action-button primary" type="submit">Create account</button>
-                    </div>
-                  `
-                  : ""
-              }
+              ${createAccountStep > 5 ? `<p class="create-progress-copy">Complete one line, then tap Next.</p>` : ""}
+              ${renderCreateAccountActions()}
             </form>
             ${
               authAccountReady
@@ -1722,6 +1755,29 @@ document.body.addEventListener("click", (event) => {
     return;
   }
 
+  const createNextButton = event.target.closest("[data-create-next]");
+  if (createNextButton && !state.session) {
+    const currentField = getCurrentCreateField();
+    if (!currentField) return;
+    if (!isFilled(createAccountDraft[currentField.name])) return;
+    createAccountStep = Math.min(createAccountStep + 1, CREATE_ACCOUNT_FIELDS.length);
+    renderAuthHome();
+    const nextField = document.querySelector(`#create-family-form input[name="${CREATE_ACCOUNT_FIELDS[Math.min(createAccountStep - 1, CREATE_ACCOUNT_FIELDS.length - 1)].name}"]`);
+    nextField?.focus();
+    return;
+  }
+
+  const addChildStepButton = event.target.closest("[data-add-child-step]");
+  if (addChildStepButton && !state.session) {
+    const nextStep = Number(addChildStepButton.dataset.addChildStep);
+    if (!Number.isInteger(nextStep)) return;
+    createAccountStep = nextStep;
+    renderAuthHome();
+    const nextField = document.querySelector(`#create-family-form input[name="${CREATE_ACCOUNT_FIELDS[nextStep - 1].name}"]`);
+    nextField?.focus();
+    return;
+  }
+
   const logoutButton = event.target.closest("[data-logout]");
   if (logoutButton) {
     logout();
@@ -1884,12 +1940,12 @@ document.body.addEventListener("keydown", (event) => {
   if (fieldIndex < 0) return;
   if (!isFilled(createAccountDraft[name])) return;
 
-  if (fieldIndex + 1 >= createAccountStep) {
+  if (fieldIndex + 1 >= createAccountStep && createAccountStep < 7) {
     createAccountStep = Math.min(createAccountStep + 1, CREATE_ACCOUNT_FIELDS.length);
     renderAuthHome();
   }
 
-  const nextField = document.querySelector(`#create-family-form input[name="${CREATE_ACCOUNT_FIELDS[Math.min(fieldIndex + 1, CREATE_ACCOUNT_FIELDS.length - 1)].name}"]`);
+  const nextField = document.querySelector(`#create-family-form input[name="${CREATE_ACCOUNT_FIELDS[Math.min(fieldIndex + 1, createAccountStep - 1, CREATE_ACCOUNT_FIELDS.length - 1)].name}"]`);
   nextField?.focus();
 });
 

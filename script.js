@@ -162,6 +162,7 @@ let authStage = "intro";
 let authView = "";
 let authAccountReady = state.families.length > 0 || cloudModeEnabled;
 let authAccountJustCreated = false;
+let aboutTopic = "";
 let currentKidId = null;
 let currentKidView = "dashboard";
 let currentFamilyMode = false;
@@ -948,8 +949,14 @@ function renderAuthHome() {
             ${
               authStage === "intro"
                 ? `
-                  <button class="view-button ${authView === "about" ? "active" : ""}" type="button" data-auth-view="about">About app</button>
-                  <button class="view-button ${authView === "create" ? "active" : ""}" type="button" data-auth-view="create">Create account</button>
+                  ${
+                    authView === "about"
+                      ? `<button class="action-button secondary auth-back-button" type="button" data-auth-view="back-intro">Back</button>`
+                      : `
+                        <button class="view-button ${authView === "about" ? "active" : ""}" type="button" data-auth-view="about">About app</button>
+                        <button class="view-button ${authView === "create" ? "active" : ""}" type="button" data-auth-view="create">Create account</button>
+                      `
+                  }
                 `
                 : `
                   <button class="view-button ${authView === "parent" ? "active" : ""}" type="button" data-auth-view="parent">Parent login</button>
@@ -971,36 +978,37 @@ function renderAuthHome() {
           <div class="auth-panel ${authView === "about" ? "active" : ""}">
             <p class="eyebrow">About app</p>
             <h2 class="auth-title">Everything your family needs to get started.</h2>
-            <p class="auth-copy">
-              CHORES helps families manage chores, points, rewards, bonuses, penalties, approvals, and reports in one playful space.
-              Parents stay in control, and kids only see the parts made for them.
-            </p>
-            <div class="auth-about-grid">
-              <article class="auth-about-tile">
-                ${renderTileBubbles()}
-                <h3>For parents</h3>
-                <p>Create the family, add kids, assign tasks, set rewards, approve completed chores, and view reports.</p>
-              </article>
-              <article class="auth-about-tile">
-                ${renderTileBubbles()}
-                <h3>For kids</h3>
-                <p>Kids can log in to see their dashboard, mark tasks done, check rewards, and spend points on favors.</p>
-              </article>
-              <article class="auth-about-tile">
-                ${renderTileBubbles()}
-                <h3>How it works</h3>
-                <p>Tasks move from due to awaiting approval to completed, while points, reports, and streaks update along the way.</p>
-              </article>
-              <article class="auth-about-tile">
-                ${renderTileBubbles()}
-                <h3>Getting started</h3>
-                <p>Create your family first, then use parent login anytime you want to manage tasks, rewards, and approvals.</p>
-              </article>
+            <div class="about-pill-row">
+              <button class="sub-view-button ${aboutTopic === "what" ? "active" : ""}" type="button" data-about-topic="what">What it does</button>
+              <button class="sub-view-button ${aboutTopic === "parents" ? "active" : ""}" type="button" data-about-topic="parents">Parents</button>
+              <button class="sub-view-button ${aboutTopic === "kids" ? "active" : ""}" type="button" data-about-topic="kids">Kids</button>
+              <button class="sub-view-button ${aboutTopic === "how" ? "active" : ""}" type="button" data-about-topic="how">How it works</button>
+              <button class="sub-view-button ${aboutTopic === "start" ? "active" : ""}" type="button" data-about-topic="start">Getting started</button>
             </div>
-            <div class="auth-bullets">
-              <p>Start by creating a family account.</p>
-              <p>Parents manage chores, rewards, approvals, and reports.</p>
-              <p>Kids get their own simpler dashboard and rewards view.</p>
+            <div class="auth-about-display ${aboutTopic ? "active" : ""}">
+              ${aboutTopic === "what" ? `
+                <h3>What it does</h3>
+                <p>CHORES gives families one place to manage tasks, points, rewards, approvals, and progress in a fun way.</p>
+              ` : ""}
+              ${aboutTopic === "parents" ? `
+                <h3>Parents</h3>
+                <p>Parents create the account, add kids, assign tasks, set rewards, approve chores, and check reports.</p>
+              ` : ""}
+              ${aboutTopic === "kids" ? `
+                <h3>Kids</h3>
+                <p>Kids log in to their own view, mark tasks done, watch their points grow, and use points for favors.</p>
+              ` : ""}
+              ${aboutTopic === "how" ? `
+                <h3>How it works</h3>
+                <p>Tasks move from due, to awaiting approval, to completed. Points update as chores are approved.</p>
+              ` : ""}
+              ${aboutTopic === "start" ? `
+                <h3>Getting started</h3>
+                <p>Create your account first. After that, tap Next to reach the parent and kid login page.</p>
+              ` : ""}
+              ${!aboutTopic ? `
+                <p class="about-hint">Hover over a pill to preview the details.</p>
+              ` : ""}
             </div>
           </div>
 
@@ -1582,7 +1590,25 @@ function triggerPointsBurst(pointsCard) {
 document.body.addEventListener("click", (event) => {
   const authButton = event.target.closest("[data-auth-view]");
   if (authButton && !state.session) {
-    authView = authButton.dataset.authView || "create";
+    const nextView = authButton.dataset.authView || "create";
+    if (nextView === "back-intro") {
+      authView = "";
+      aboutTopic = "";
+      renderAuthHome();
+      return;
+    }
+
+    authView = nextView;
+    if (authView !== "about") {
+      aboutTopic = "";
+    }
+    renderAuthHome();
+    return;
+  }
+
+  const aboutTopicButton = event.target.closest("[data-about-topic]");
+  if (aboutTopicButton && !state.session) {
+    aboutTopic = aboutTopicButton.dataset.aboutTopic || "";
     renderAuthHome();
     return;
   }
@@ -1716,6 +1742,26 @@ document.body.addEventListener("keydown", (event) => {
     currentAssignedKids = [currentKidId];
     renderKidPage(currentKidId);
   }
+});
+
+document.body.addEventListener("mouseover", (event) => {
+  const aboutTopicButton = event.target.closest?.("[data-about-topic]");
+  if (!aboutTopicButton || state.session) return;
+
+  const nextTopic = aboutTopicButton.dataset.aboutTopic || "";
+  if (aboutTopic === nextTopic) return;
+  aboutTopic = nextTopic;
+  renderAuthHome();
+});
+
+document.body.addEventListener("focusin", (event) => {
+  const aboutTopicButton = event.target.closest?.("[data-about-topic]");
+  if (!aboutTopicButton || state.session) return;
+
+  const nextTopic = aboutTopicButton.dataset.aboutTopic || "";
+  if (aboutTopic === nextTopic) return;
+  aboutTopic = nextTopic;
+  renderAuthHome();
 });
 
 document.body.addEventListener("change", (event) => {

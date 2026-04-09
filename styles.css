@@ -4121,6 +4121,10 @@ button {
   margin-top: 10px;
 }
 
+.auth-back-button {
+  min-width: 180px;
+}
+
 .auth-panel {
   display: none;
   animation: card-pop 420ms ease both;
@@ -4210,6 +4214,50 @@ button {
   font-size: 1.35rem;
   color: var(--text);
   text-align: center;
+}
+
+.about-pill-row {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+
+.auth-about-display {
+  margin-top: 22px;
+  min-height: 260px;
+  display: grid;
+  place-items: center;
+  padding: 26px;
+  border-radius: 30px;
+  border: 3px solid rgba(255, 255, 255, 0.66);
+  background:
+    radial-gradient(circle at top right, rgba(255, 255, 255, 0.52), transparent 28%),
+    linear-gradient(145deg, rgba(109, 175, 255, 0.2), rgba(79, 199, 181, 0.14), rgba(255, 157, 87, 0.2));
+  box-shadow:
+    0 18px 34px rgba(63, 43, 24, 0.12),
+    inset 0 2px 0 rgba(255, 255, 255, 0.58);
+  text-align: center;
+}
+
+.auth-about-display h3 {
+  margin: 0 0 10px;
+  font-family: "Baloo 2", cursive;
+  font-size: 2rem;
+}
+
+.auth-about-display p {
+  margin: 0;
+  max-width: 34ch;
+  font-size: 1.18rem;
+  line-height: 1.7;
+  color: var(--text);
+  font-weight: 700;
+}
+
+.about-hint {
+  color: var(--muted);
 }
 
 .auth-form,

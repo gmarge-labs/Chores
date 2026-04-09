@@ -158,7 +158,7 @@ function updateMissedStreaksForToday() {
 
 updateMissedStreaksForToday();
 
-let authView = "about";
+let authView = "";
 let currentKidId = null;
 let currentKidView = "dashboard";
 let currentFamilyMode = false;
@@ -938,6 +938,10 @@ function renderAuthHome() {
             <button class="view-button ${authView === "create" ? "active" : ""}" type="button" data-auth-view="create">Create family</button>
             <button class="view-button ${authView === "parent" ? "active" : ""}" type="button" data-auth-view="parent">Parent login</button>
             <button class="view-button ${authView === "kid" ? "active" : ""}" type="button" data-auth-view="kid">Kid login</button>
+          </div>
+
+          <div class="auth-placeholder ${authView ? "hidden" : ""}">
+            <p>Choose a pill to continue.</p>
           </div>
 
           <div class="auth-panel ${authView === "about" ? "active" : ""}">

@@ -163,6 +163,7 @@ let authView = "";
 let authAccountReady = state.families.length > 0 || cloudModeEnabled;
 let authAccountJustCreated = false;
 let aboutTopic = "";
+let aboutTransitionTimer = null;
 
 function renderAboutTopicContent(topic) {
   if (topic === "what") {
@@ -208,8 +209,17 @@ function updateAboutTopicDisplay(nextTopic) {
 
   const display = document.querySelector(".auth-about-display");
   if (display) {
-    display.classList.toggle("active", Boolean(aboutTopic));
-    display.innerHTML = renderAboutTopicContent(aboutTopic);
+    display.classList.add("is-fading");
+    if (aboutTransitionTimer) {
+      window.clearTimeout(aboutTransitionTimer);
+    }
+
+    aboutTransitionTimer = window.setTimeout(() => {
+      display.classList.toggle("active", Boolean(aboutTopic));
+      display.innerHTML = renderAboutTopicContent(aboutTopic);
+      display.classList.remove("is-fading");
+      aboutTransitionTimer = null;
+    }, 220);
   }
 
   document.querySelectorAll("[data-about-topic]").forEach((button) => {

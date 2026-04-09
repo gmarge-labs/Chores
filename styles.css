@@ -4286,7 +4286,13 @@ button {
     0 18px 34px rgba(63, 43, 24, 0.12),
     inset 0 2px 0 rgba(255, 255, 255, 0.58);
   text-align: center;
-  transition: transform 180ms ease, box-shadow 180ms ease, opacity 180ms ease;
+  transition: transform 420ms ease, box-shadow 420ms ease, opacity 420ms ease;
+  opacity: 1;
+}
+
+.auth-about-display.is-fading {
+  opacity: 0.18;
+  transform: scale(0.985);
 }
 
 .auth-about-display h3 {

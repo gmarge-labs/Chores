@@ -1053,9 +1053,6 @@ function renderAuthHome() {
           </div>
 
           <div class="auth-panel ${authView === "create" ? "active" : ""}">
-            <p class="eyebrow">Create account</p>
-            <h2 class="auth-title">Create your family account.</h2>
-            <p class="auth-copy">Add your family name, your name, and your kids. When you finish creating the account, a Next button will take you to parent and kid login.</p>
             <form class="reward-form auth-form" id="create-family-form">
               <input type="text" name="familyName" placeholder="Family name" required />
               <input type="text" name="parentName" placeholder="Parent name" required />

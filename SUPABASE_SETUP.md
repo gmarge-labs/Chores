@@ -14,8 +14,9 @@ This repo is now prepared for a future Supabase-backed version of CHORES so mult
 1. Create a new Supabase project.
 2. Open the SQL editor.
 3. Run the schema in [`supabase/schema.sql`](./supabase/schema.sql).
-4. Copy your project URL and anon key from `Project Settings -> API`.
-5. Replace the placeholder values in [`supabase-config.js`](./supabase-config.js) using [`supabase-config.example.js`](./supabase-config.example.js) as the template.
+4. If you already ran the first schema version, also run [`supabase/cloud-auth-patch.sql`](./supabase/cloud-auth-patch.sql).
+5. Copy your project URL and anon key from `Project Settings -> API`.
+6. Replace the placeholder values in [`supabase-config.js`](./supabase-config.js) using [`supabase-config.example.js`](./supabase-config.example.js) as the template.
 
 ## Recommended migration phases
 

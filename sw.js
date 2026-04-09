@@ -1,9 +1,10 @@
-const CACHE_NAME = "chores-offline-v3";
+const CACHE_NAME = "chores-offline-v4";
 
 const APP_SHELL = [
   "./",
   "./index.html",
   "./styles.css",
+  "./supabase-config.example.js",
   "./supabase-config.js",
   "./script.js",
   "./manifest.webmanifest",

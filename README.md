@@ -25,6 +25,7 @@ The repo is now also prepared for a future Supabase migration so multiple famili
 Files added for the next backend phase:
 
 - [`supabase/schema.sql`](./supabase/schema.sql)
+- [`supabase/cloud-auth-patch.sql`](./supabase/cloud-auth-patch.sql)
 - [`SUPABASE_SETUP.md`](./SUPABASE_SETUP.md)
 - [`supabase-config.example.js`](./supabase-config.example.js)
 

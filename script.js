@@ -158,7 +158,10 @@ function updateMissedStreaksForToday() {
 
 updateMissedStreaksForToday();
 
+let authStage = "intro";
 let authView = "";
+let authAccountReady = state.families.length > 0 || cloudModeEnabled;
+let authAccountJustCreated = false;
 let currentKidId = null;
 let currentKidView = "dashboard";
 let currentFamilyMode = false;
@@ -914,6 +917,14 @@ function renderAssignPopup(placement) {
 }
 
 function renderAuthHome() {
+  if (authStage === "intro" && !["about", "create", ""].includes(authView)) {
+    authView = "";
+  }
+
+  if (authStage === "login" && !["parent", "kid"].includes(authView)) {
+    authView = "parent";
+  }
+
   document.getElementById("page-home").innerHTML = `
     <div class="home-shell auth-shell">
       <header class="home-header">
@@ -934,11 +945,28 @@ function renderAuthHome() {
         <article class="section-card primary auth-card">
           ${renderTileBubbles()}
           <div class="auth-tabs">
-            <button class="view-button ${authView === "about" ? "active" : ""}" type="button" data-auth-view="about">About app</button>
-            <button class="view-button ${authView === "create" ? "active" : ""}" type="button" data-auth-view="create">Create family</button>
-            <button class="view-button ${authView === "parent" ? "active" : ""}" type="button" data-auth-view="parent">Parent login</button>
-            <button class="view-button ${authView === "kid" ? "active" : ""}" type="button" data-auth-view="kid">Kid login</button>
+            ${
+              authStage === "intro"
+                ? `
+                  <button class="view-button ${authView === "about" ? "active" : ""}" type="button" data-auth-view="about">About app</button>
+                  <button class="view-button ${authView === "create" ? "active" : ""}" type="button" data-auth-view="create">Create account</button>
+                `
+                : `
+                  <button class="view-button ${authView === "parent" ? "active" : ""}" type="button" data-auth-view="parent">Parent login</button>
+                  <button class="view-button ${authView === "kid" ? "active" : ""}" type="button" data-auth-view="kid">Kid login</button>
+                `
+            }
           </div>
+
+          ${
+            authStage === "login"
+              ? `
+                <div class="button-row auth-stage-actions">
+                  <button class="action-button secondary" type="button" data-auth-stage="intro">Back</button>
+                </div>
+              `
+              : ""
+          }
 
           <div class="auth-panel ${authView === "about" ? "active" : ""}">
             <p class="eyebrow">About app</p>
@@ -971,15 +999,15 @@ function renderAuthHome() {
             </div>
             <div class="auth-bullets">
               <p>Start by creating a family account.</p>
-              <p>Use parent login to manage everything later.</p>
-              <p>Use kid login for a child-friendly view only.</p>
+              <p>Parents manage chores, rewards, approvals, and reports.</p>
+              <p>Kids get their own simpler dashboard and rewards view.</p>
             </div>
           </div>
 
           <div class="auth-panel ${authView === "create" ? "active" : ""}">
-            <p class="eyebrow">Create family</p>
+            <p class="eyebrow">Create account</p>
             <h2 class="auth-title">Create your family account.</h2>
-            <p class="auth-copy">This section only appears when you tap the Create family pill. Add the parent details first, then add your kids.</p>
+            <p class="auth-copy">Add your family name, your name, and your kids. When you finish creating the account, a Next button will take you to parent and kid login.</p>
             <form class="reward-form auth-form" id="create-family-form">
               <input type="text" name="familyName" placeholder="Family name" required />
               <input type="text" name="parentName" placeholder="Parent name" required />
@@ -998,9 +1026,19 @@ function renderAuthHome() {
                 </div>
               </div>
               <div class="button-row">
-                <button class="action-button primary" type="submit">Create family account</button>
+                <button class="action-button primary" type="submit">Create account</button>
               </div>
             </form>
+            ${
+              authAccountReady
+                ? `
+                  <div class="auth-next-card">
+                    <p>${authAccountJustCreated ? "Your account is ready." : "Already created your account?"}</p>
+                    <button class="action-button primary" type="button" data-auth-stage="login">Next</button>
+                  </div>
+                `
+                : ""
+            }
           </div>
 
           <div class="auth-panel ${authView === "parent" ? "active" : ""}">
@@ -1056,7 +1094,7 @@ function renderParentHome() {
           <span class="title-star" aria-hidden="true">✦</span>
         </h1>
         <div class="session-strip">
-          <span class="summary-stat">${escapeHtml(getSyncModeLabel())}</span>
+          <span class="summary-stat">${escapeHtml(kids.length)} kids</span>
           <span class="summary-stat">Parent: ${escapeHtml(family.parentName)}</span>
           <button class="back-button" type="button" data-logout="true">Log out</button>
         </div>
@@ -1549,6 +1587,14 @@ document.body.addEventListener("click", (event) => {
     return;
   }
 
+  const authStageButton = event.target.closest("[data-auth-stage]");
+  if (authStageButton && !state.session) {
+    authStage = authStageButton.dataset.authStage || "intro";
+    authView = authStage === "login" ? "parent" : "";
+    renderAuthHome();
+    return;
+  }
+
   const logoutButton = event.target.closest("[data-logout]");
   if (logoutButton) {
     logout();
@@ -1736,13 +1782,20 @@ document.body.addEventListener("submit", async (event) => {
       try {
         const family = await createCloudFamilyAccount({ familyName, parentName, parentEmail, parentPin, kids });
         upsertFamilyInState(family);
-        state.session = { familyId: family.id, role: "parent" };
+        authAccountReady = true;
+        authAccountJustCreated = true;
+        authStage = "intro";
+        authView = "create";
+        await supabaseClient.auth.signOut().catch(() => {
+          // If sign-out fails, we still continue to the login step.
+        });
+        state.session = null;
         currentKidId = null;
         currentKidView = "dashboard";
         currentFamilyMode = false;
         currentAssignedKids = [];
         saveState({ skipCloud: true });
-        renderApp();
+        renderAuthHome();
       } catch (error) {
         showToast(error.message || "Could not create the family account.");
       }
@@ -1751,13 +1804,17 @@ document.body.addEventListener("submit", async (event) => {
 
     const family = createFamily({ familyName, parentName, parentEmail, parentPin, kids });
     state.families.push(family);
-    state.session = { familyId: family.id, role: "parent" };
+    authAccountReady = true;
+    authAccountJustCreated = true;
+    authStage = "intro";
+    authView = "create";
+    state.session = null;
     currentKidId = null;
     currentKidView = "dashboard";
     currentFamilyMode = false;
     currentAssignedKids = [];
     saveState();
-    renderApp();
+    renderAuthHome();
     return;
   }
 
@@ -1777,6 +1834,8 @@ document.body.addEventListener("submit", async (event) => {
         }
 
         upsertFamilyInState(family);
+        authStage = "login";
+        authAccountJustCreated = false;
         state.session = { familyId: family.id, role: "parent" };
         currentKidId = null;
         currentKidView = "dashboard";
@@ -1797,6 +1856,8 @@ document.body.addEventListener("submit", async (event) => {
     }
 
     state.session = { familyId: family.id, role: "parent" };
+    authStage = "login";
+    authAccountJustCreated = false;
     currentKidId = null;
     currentKidView = "dashboard";
     currentFamilyMode = false;
@@ -1822,6 +1883,8 @@ document.body.addEventListener("submit", async (event) => {
     }
 
     state.session = { familyId: family.id, role: "kid", kidId: kid.id };
+    authStage = "login";
+    authAccountJustCreated = false;
     currentKidId = kid.id;
     currentKidView = "dashboard";
     currentFamilyMode = false;

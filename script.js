@@ -1040,8 +1040,6 @@ function renderAuthHome() {
           }
 
           <div class="auth-panel ${authView === "about" ? "active" : ""}">
-            <p class="eyebrow">About app</p>
-            <h2 class="auth-title">Everything your family needs to get started.</h2>
             <div class="about-pill-row">
               <button class="sub-view-button ${aboutTopic === "what" ? "active" : ""}" type="button" data-about-topic="what">What it does</button>
               <button class="sub-view-button ${aboutTopic === "parents" ? "active" : ""}" type="button" data-about-topic="parents">Parents</button>

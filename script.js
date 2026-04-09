@@ -1146,7 +1146,10 @@ function renderAuthHome() {
                     authView === "about"
                       ? `<button class="action-button secondary auth-back-button" type="button" data-auth-view="back-intro">Back</button>`
                       : authView === "create"
-                        ? `<button class="view-button active auth-create-only" type="button">Create account</button>`
+                        ? `
+                            <button class="action-button secondary auth-back-button" type="button" data-auth-view="back-intro">Back</button>
+                            <button class="view-button active auth-create-only" type="button">Create account</button>
+                          `
                         : authView === "returning"
                           ? `<button class="view-button active auth-create-only" type="button">Login</button>`
                         : `

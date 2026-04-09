@@ -3993,6 +3993,10 @@ button {
     linear-gradient(145deg, rgba(255, 157, 87, 0.18), rgba(109, 175, 255, 0.16) 48%, rgba(79, 199, 181, 0.18));
 }
 
+.auth-card:has(.auth-panel:not(.active)) {
+  min-height: 0;
+}
+
 .auth-title {
   margin: 0 0 10px;
   font-size: clamp(2rem, 4vw, 2.9rem);
@@ -4098,31 +4102,11 @@ button {
 
 .auth-tabs {
   display: flex;
-  gap: 10px;
+  justify-content: center;
+  gap: 18px;
   flex-wrap: wrap;
-  margin-bottom: 22px;
-}
-
-.auth-placeholder {
-  min-height: 380px;
-  display: grid;
-  place-items: center;
-  padding: 26px;
-  border-radius: 28px;
-  border: 3px dashed rgba(255, 255, 255, 0.38);
-  background: rgba(255, 255, 255, 0.1);
-}
-
-.auth-placeholder.hidden {
-  display: none;
-}
-
-.auth-placeholder p {
-  margin: 0;
-  font-family: "Baloo 2", cursive;
-  font-size: clamp(1.6rem, 3vw, 2.4rem);
-  color: rgba(255, 248, 234, 0.92);
-  text-shadow: 0 3px 0 rgba(45, 32, 18, 0.16);
+  margin: 18px auto 0;
+  max-width: 1100px;
 }
 
 .auth-panel {
@@ -4132,6 +4116,63 @@ button {
 
 .auth-panel.active {
   display: block;
+  margin-top: 28px;
+}
+
+.auth-card .view-button {
+  min-width: 220px;
+  min-height: 96px;
+  padding: 22px 34px;
+  border-radius: 999px;
+  font-size: 2rem;
+  font-weight: 800;
+  box-shadow:
+    0 18px 38px rgba(63, 43, 24, 0.16),
+    0 0 0 8px rgba(255, 255, 255, 0.08),
+    inset 0 3px 0 rgba(255, 255, 255, 0.62),
+    inset 0 -8px 18px rgba(20, 70, 130, 0.12);
+}
+
+.auth-card .view-button:nth-child(1) {
+  background:
+    radial-gradient(circle at top right, rgba(255, 255, 255, 0.52), transparent 28%),
+    linear-gradient(145deg, #6dafff, #3f84db);
+  color: #fff8ea;
+  text-shadow: 0 4px 0 rgba(45, 32, 18, 0.18);
+}
+
+.auth-card .view-button:nth-child(2) {
+  background:
+    radial-gradient(circle at top right, rgba(255, 255, 255, 0.52), transparent 28%),
+    linear-gradient(145deg, #ffb267, #ff8c5d);
+  color: #fff8ea;
+  text-shadow: 0 4px 0 rgba(45, 32, 18, 0.18);
+}
+
+.auth-card .view-button:nth-child(3) {
+  background:
+    radial-gradient(circle at top right, rgba(255, 255, 255, 0.52), transparent 28%),
+    linear-gradient(145deg, #4fc7b5, #2f9f8f);
+  color: #fff8ea;
+  text-shadow: 0 4px 0 rgba(45, 32, 18, 0.18);
+}
+
+.auth-card .view-button:nth-child(4) {
+  background:
+    radial-gradient(circle at top right, rgba(255, 255, 255, 0.52), transparent 28%),
+    linear-gradient(145deg, #b99cff, #7e60df);
+  color: #fff8ea;
+  text-shadow: 0 4px 0 rgba(45, 32, 18, 0.18);
+}
+
+.auth-card .view-button.active {
+  transform: translateY(-6px) scale(1.03);
+  box-shadow:
+    0 22px 42px rgba(63, 43, 24, 0.18),
+    0 0 0 10px rgba(255, 255, 255, 0.12),
+    inset 0 3px 0 rgba(255, 255, 255, 0.7),
+    inset 0 -10px 18px rgba(20, 70, 130, 0.14);
+  filter: saturate(1.05);
 }
 
 .auth-form,

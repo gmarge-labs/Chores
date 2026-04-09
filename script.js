@@ -1,4 +1,6 @@
 const STORAGE_KEY = "chores-multi-family-state-v1";
+const cloudConfig = window.CHORES_SUPABASE_CONFIG || {};
+const cloudModeEnabled = Boolean(cloudConfig.enabled && cloudConfig.url && cloudConfig.anonKey);
 
 const emptyState = {
   families: [],
@@ -50,6 +52,16 @@ function createFamily({ familyName, parentName, parentEmail, parentPin, kids }) 
 
 function cloneEmptyState() {
   return JSON.parse(JSON.stringify(emptyState));
+}
+
+function getSyncModeLabel() {
+  return cloudModeEnabled ? "Cloud sync ready" : "Local mode";
+}
+
+function getSyncModeCopy() {
+  return cloudModeEnabled
+    ? "Supabase credentials detected. The next step is wiring live auth and database sync."
+    : "This family data is currently stored on this device only.";
 }
 
 function normalizeKid(kid) {
@@ -459,7 +471,10 @@ function renderAuthHome() {
           <div class="auth-bullets">
             <p>Parent accounts can access everything.</p>
             <p>Kids can only access their own dashboard and rewards.</p>
-            <p>Each family’s data stays separate on this device.</p>
+            <p>${escapeHtml(getSyncModeCopy())}</p>
+          </div>
+          <div class="button-row">
+            <span class="summary-stat">${escapeHtml(getSyncModeLabel())}</span>
           </div>
         </article>
 
@@ -544,6 +559,7 @@ function renderParentHome() {
           <span class="title-star" aria-hidden="true">✦</span>
         </h1>
         <div class="session-strip">
+          <span class="summary-stat">${escapeHtml(getSyncModeLabel())}</span>
           <span class="summary-stat">Parent: ${escapeHtml(family.parentName)}</span>
           <button class="back-button" type="button" data-logout="true">Log out</button>
         </div>

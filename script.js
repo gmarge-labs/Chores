@@ -276,6 +276,24 @@ function renderCreateAccountActions() {
   return "";
 }
 
+function renderCurrentCreateStep() {
+  const currentField = getCurrentCreateField();
+  if (!currentField) return "";
+
+  if (createAccountStep <= 5) {
+    return renderCreateField(currentField.name, currentField.placeholder, currentField.type);
+  }
+
+  return `
+    <div class="auth-kid-block single-step-kid-block">
+      <p class="eyebrow">Add your kids</p>
+      <div class="auth-kid-grid">
+        ${renderCreateField(currentField.name, currentField.placeholder, currentField.type)}
+      </div>
+    </div>
+  `;
+}
+
 function renderAboutTopicContent(topic) {
   if (topic === "what") {
     return `
@@ -1170,9 +1188,7 @@ function renderAuthHome() {
 
           <div class="auth-panel ${authView === "create" ? "active" : ""}">
             <form class="reward-form auth-form" id="create-family-form">
-              ${CREATE_ACCOUNT_FIELDS.slice(0, createAccountStep)
-                .map((field) => renderCreateField(field.name, field.placeholder, field.type))
-                .join("")}
+              ${renderCurrentCreateStep()}
               ${createAccountStep > 5 ? `<p class="create-progress-copy">Complete one line, then tap Next.</p>` : ""}
               ${renderCreateAccountActions()}
             </form>

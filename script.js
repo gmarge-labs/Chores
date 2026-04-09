@@ -168,7 +168,7 @@ function updateMissedStreaksForToday() {
 
 updateMissedStreaksForToday();
 
-let authView = "create";
+let authView = "about";
 let currentKidId = null;
 let currentKidView = "dashboard";
 let currentFamilyMode = false;
@@ -941,33 +941,54 @@ function renderAuthHome() {
       </header>
 
       <section class="auth-layout">
-        <article class="section-card primary auth-intro">
-          ${renderTileBubbles()}
-          <p class="eyebrow">Welcome</p>
-          <h2>Set up your family space.</h2>
-          <p class="auth-copy">
-            CHORES now starts with a clean slate. Parents create a family account, add their kids,
-            and then manage tasks, rewards, bonuses, penalties, reports, and approvals from the parent interface.
-          </p>
-          <div class="auth-bullets">
-            <p>Parent accounts can access everything.</p>
-            <p>Kids can only access their own dashboard and rewards.</p>
-            <p>${escapeHtml(getSyncModeCopy())}</p>
-          </div>
-          <div class="button-row">
-            <span class="summary-stat">${escapeHtml(getSyncModeLabel())}</span>
-          </div>
-        </article>
-
         <article class="section-card primary auth-card">
+          ${renderTileBubbles()}
           <div class="auth-tabs">
+            <button class="view-button ${authView === "about" ? "active" : ""}" type="button" data-auth-view="about">About app</button>
             <button class="view-button ${authView === "create" ? "active" : ""}" type="button" data-auth-view="create">Create family</button>
             <button class="view-button ${authView === "parent" ? "active" : ""}" type="button" data-auth-view="parent">Parent login</button>
             <button class="view-button ${authView === "kid" ? "active" : ""}" type="button" data-auth-view="kid">Kid login</button>
           </div>
 
+          <div class="auth-panel ${authView === "about" ? "active" : ""}">
+            <p class="eyebrow">About app</p>
+            <h2 class="auth-title">Everything your family needs to get started.</h2>
+            <p class="auth-copy">
+              CHORES helps families manage chores, points, rewards, bonuses, penalties, approvals, and reports in one playful space.
+              Parents stay in control, and kids only see the parts made for them.
+            </p>
+            <div class="auth-about-grid">
+              <article class="auth-about-tile">
+                <h3>For parents</h3>
+                <p>Create the family, add kids, assign tasks, set rewards, approve completed chores, and view reports.</p>
+              </article>
+              <article class="auth-about-tile">
+                <h3>For kids</h3>
+                <p>Kids can log in to see their dashboard, mark tasks done, check rewards, and spend points on favors.</p>
+              </article>
+              <article class="auth-about-tile">
+                <h3>How it works</h3>
+                <p>Tasks move from due to awaiting approval to completed, while points, reports, and streaks update along the way.</p>
+              </article>
+              <article class="auth-about-tile">
+                <h3>Sync mode</h3>
+                <p>${escapeHtml(getSyncModeCopy())}</p>
+              </article>
+            </div>
+            <div class="auth-bullets">
+              <p>Start by creating a family account.</p>
+              <p>Use parent login to manage everything later.</p>
+              <p>Use kid login for a child-friendly view only.</p>
+            </div>
+            <div class="button-row">
+              <span class="summary-stat">${escapeHtml(getSyncModeLabel())}</span>
+            </div>
+          </div>
+
           <div class="auth-panel ${authView === "create" ? "active" : ""}">
-            <p class="eyebrow">Create account</p>
+            <p class="eyebrow">Create family</p>
+            <h2 class="auth-title">Create your family account.</h2>
+            <p class="auth-copy">This section only appears when you tap the Create family pill. Add the parent details first, then add your kids.</p>
             <form class="reward-form auth-form" id="create-family-form">
               <input type="text" name="familyName" placeholder="Family name" required />
               <input type="text" name="parentName" placeholder="Parent name" required />
@@ -993,6 +1014,8 @@ function renderAuthHome() {
 
           <div class="auth-panel ${authView === "parent" ? "active" : ""}">
             <p class="eyebrow">Parent login</p>
+            <h2 class="auth-title">Welcome back, parent.</h2>
+            <p class="auth-copy">Use your parent email and PIN to open the full parent interface.</p>
             <form class="reward-form auth-form" id="parent-login-form">
               <input type="email" name="parentEmail" placeholder="Parent email" required />
               <input type="password" name="parentPin" placeholder="Parent PIN" required />
@@ -1004,6 +1027,8 @@ function renderAuthHome() {
 
           <div class="auth-panel ${authView === "kid" ? "active" : ""}">
             <p class="eyebrow">Kid login</p>
+            <h2 class="auth-title">Kid sign-in.</h2>
+            <p class="auth-copy">Kids use the family email, their name, and their kid PIN to reach their own dashboard and rewards.</p>
             <form class="reward-form auth-form" id="kid-login-form">
               <input type="email" name="familyEmail" placeholder="Family email" required />
               <input type="text" name="kidName" placeholder="Kid name" required />

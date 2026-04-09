@@ -229,11 +229,12 @@ function renderCreateAccountActions() {
 
   const currentValue = createAccountDraft[currentField.name] || "";
   const canAdvance = isFilled(currentValue);
+  const disabledAttr = canAdvance ? "" : "disabled";
 
   if (createAccountStep < 7) {
     return `
       <div class="button-row create-progress-actions">
-        <button class="action-button primary" type="button" data-create-next="true" ${canAdvance ? "" : "disabled"}>Next</button>
+        <button class="action-button primary" type="button" data-create-next="true" ${disabledAttr}>Next</button>
       </div>
     `;
   }
@@ -241,8 +242,8 @@ function renderCreateAccountActions() {
   if (createAccountStep === 7) {
     return `
       <div class="button-row create-progress-actions">
-        <button class="action-button primary" type="submit" ${canAdvance ? "" : "disabled"}>Create account</button>
-        <button class="action-button secondary" type="button" data-add-child-step="8" ${canAdvance ? "" : "disabled"}>Add another child</button>
+        <button class="action-button primary" type="submit" ${disabledAttr}>Create account</button>
+        <button class="action-button secondary" type="button" data-add-child-step="8" ${disabledAttr}>Add another child</button>
       </div>
     `;
   }
@@ -250,7 +251,7 @@ function renderCreateAccountActions() {
   if (createAccountStep === 8 || createAccountStep === 10) {
     return `
       <div class="button-row create-progress-actions">
-        <button class="action-button primary" type="button" data-create-next="true" ${canAdvance ? "" : "disabled"}>Next</button>
+        <button class="action-button primary" type="button" data-create-next="true" ${disabledAttr}>Next</button>
       </div>
     `;
   }
@@ -258,8 +259,8 @@ function renderCreateAccountActions() {
   if (createAccountStep === 9) {
     return `
       <div class="button-row create-progress-actions">
-        <button class="action-button primary" type="submit" ${canAdvance ? "" : "disabled"}>Create account</button>
-        <button class="action-button secondary" type="button" data-add-child-step="10" ${canAdvance ? "" : "disabled"}>Add one more child</button>
+        <button class="action-button primary" type="submit" ${disabledAttr}>Create account</button>
+        <button class="action-button secondary" type="button" data-add-child-step="10" ${disabledAttr}>Add one more child</button>
       </div>
     `;
   }
@@ -267,7 +268,7 @@ function renderCreateAccountActions() {
   if (createAccountStep === 11) {
     return `
       <div class="button-row create-progress-actions">
-        <button class="action-button primary" type="submit" ${canAdvance ? "" : "disabled"}>Create account</button>
+        <button class="action-button primary" type="submit" ${disabledAttr}>Create account</button>
       </div>
     `;
   }
@@ -1092,11 +1093,11 @@ function renderAssignPopup(placement) {
 }
 
 function renderAuthHome() {
-  if (authStage === "intro" && !["about", "create", ""].includes(authView)) {
+  if (authStage === "intro" && !["about", "create", "returning", ""].includes(authView)) {
     authView = "";
   }
 
-  if (authStage === "login" && !["parent", "kid"].includes(authView)) {
+  if (authStage === "login" && !["parent", "kid", "returning"].includes(authView)) {
     authView = "parent";
   }
 
@@ -1128,9 +1129,12 @@ function renderAuthHome() {
                       ? `<button class="action-button secondary auth-back-button" type="button" data-auth-view="back-intro">Back</button>`
                       : authView === "create"
                         ? `<button class="view-button active auth-create-only" type="button">Create account</button>`
+                        : authView === "returning"
+                          ? `<button class="view-button active auth-create-only" type="button">Login</button>`
                         : `
                         <button class="view-button ${authView === "about" ? "active" : ""}" type="button" data-auth-view="about">About app</button>
                         <button class="view-button ${authView === "create" ? "active" : ""}" type="button" data-auth-view="create">Create account</button>
+                        <button class="view-button ${authView === "returning" ? "active" : ""}" type="button" data-auth-view="returning">Login</button>
                       `
                   }
                 `
@@ -1182,6 +1186,16 @@ function renderAuthHome() {
                 `
                 : ""
             }
+          </div>
+
+          <div class="auth-panel ${authView === "returning" ? "active" : ""}">
+            <form class="reward-form auth-form" id="returning-login-form">
+              <input type="email" name="username" placeholder="Username" required />
+              <input type="password" name="password" placeholder="Password" required />
+              <div class="button-row create-progress-actions">
+                <button class="action-button primary" type="submit">Log in</button>
+              </div>
+            </form>
           </div>
 
           <div class="auth-panel ${authView === "parent" ? "active" : ""}">
@@ -1729,6 +1743,7 @@ document.body.addEventListener("click", (event) => {
     if (nextView === "back-intro") {
       authView = "";
       aboutTopic = "";
+      createAccountStep = 1;
       renderAuthHome();
       return;
     }
@@ -1927,6 +1942,12 @@ document.body.addEventListener("input", (event) => {
   if (!Object.prototype.hasOwnProperty.call(createAccountDraft, name)) return;
 
   createAccountDraft[name] = value;
+
+  const currentField = getCurrentCreateField();
+  const canAdvance = currentField ? isFilled(createAccountDraft[currentField.name]) : false;
+  document.querySelectorAll("[data-create-next], [data-add-child-step], #create-family-form button[type='submit']").forEach((button) => {
+    button.disabled = !canAdvance;
+  });
 });
 
 document.body.addEventListener("keydown", (event) => {
@@ -2091,6 +2112,57 @@ document.body.addEventListener("submit", async (event) => {
     state.session = { familyId: family.id, role: "parent" };
     authStage = "login";
     authAccountJustCreated = false;
+    currentKidId = null;
+    currentKidView = "dashboard";
+    currentFamilyMode = false;
+    currentAssignedKids = [];
+    saveState();
+    renderApp();
+    return;
+  }
+
+  const returningLoginForm = event.target.closest("#returning-login-form");
+  if (returningLoginForm) {
+    event.preventDefault();
+    const formData = new FormData(returningLoginForm);
+    const email = String(formData.get("username") || "").trim().toLowerCase();
+    const pin = String(formData.get("password") || "").trim();
+
+    if (cloudModeEnabled) {
+      try {
+        const family = await loginCloudParent(email, pin);
+        if (!family) {
+          showToast("No family was found for this account.");
+          return;
+        }
+
+        upsertFamilyInState(family);
+        authStage = "login";
+        authView = "parent";
+        authAccountJustCreated = false;
+        state.session = { familyId: family.id, role: "parent" };
+        currentKidId = null;
+        currentKidView = "dashboard";
+        currentFamilyMode = false;
+        currentAssignedKids = [];
+        saveState({ skipCloud: true });
+        renderApp();
+      } catch (error) {
+        showToast(error.message || "Incorrect login.");
+      }
+      return;
+    }
+
+    const family = state.families.find((entry) => entry.parentEmailLower === email && entry.parentPin === pin);
+    if (!family) {
+      showToast("Incorrect login.");
+      return;
+    }
+
+    authStage = "login";
+    authView = "parent";
+    authAccountJustCreated = false;
+    state.session = { familyId: family.id, role: "parent" };
     currentKidId = null;
     currentKidView = "dashboard";
     currentFamilyMode = false;

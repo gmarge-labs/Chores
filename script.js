@@ -164,6 +164,7 @@ let authAccountReady = state.families.length > 0 || cloudModeEnabled;
 let authAccountJustCreated = false;
 let aboutTopic = "";
 let aboutTransitionTimer = null;
+let createAccountStep = 1;
 let createAccountDraft = {
   familyName: "",
   parentName: "",
@@ -179,6 +180,7 @@ let createAccountDraft = {
 };
 
 function resetCreateAccountDraft() {
+  createAccountStep = 1;
   createAccountDraft = {
     familyName: "",
     parentName: "",
@@ -202,6 +204,20 @@ function renderCreateField(name, placeholder, type = "text") {
   const value = createAccountDraft[name] || "";
   return `<input type="${type}" name="${name}" placeholder="${placeholder}" value="${escapeHtml(value)}" required />`;
 }
+
+const CREATE_ACCOUNT_FIELDS = [
+  { name: "familyName", placeholder: "Family name", type: "text" },
+  { name: "parentName", placeholder: "Parent name", type: "text" },
+  { name: "parentEmail", placeholder: "Parent email", type: "email" },
+  { name: "parentPin", placeholder: "Parent PIN", type: "password" },
+  { name: "confirmParentPin", placeholder: "Confirm parent PIN", type: "password" },
+  { name: "kidName1", placeholder: "Kid 1 name", type: "text" },
+  { name: "kidPin1", placeholder: "Kid 1 PIN", type: "password" },
+  { name: "kidName2", placeholder: "Kid 2 name (optional)", type: "text" },
+  { name: "kidPin2", placeholder: "Kid 2 PIN", type: "password" },
+  { name: "kidName3", placeholder: "Kid 3 name (optional)", type: "text" },
+  { name: "kidPin3", placeholder: "Kid 3 PIN", type: "password" },
+];
 
 function renderAboutTopicContent(topic) {
   if (topic === "what") {
@@ -1094,30 +1110,27 @@ function renderAuthHome() {
 
           <div class="auth-panel ${authView === "create" ? "active" : ""}">
             <form class="reward-form auth-form" id="create-family-form">
-              ${renderCreateField("familyName", "Family name")}
-              ${isFilled(createAccountDraft.familyName) ? renderCreateField("parentName", "Parent name") : ""}
-              ${isFilled(createAccountDraft.parentName) ? renderCreateField("parentEmail", "Parent email", "email") : ""}
-              ${isFilled(createAccountDraft.parentEmail) ? renderCreateField("parentPin", "Parent PIN", "password") : ""}
-              ${isFilled(createAccountDraft.parentPin) ? renderCreateField("confirmParentPin", "Confirm parent PIN", "password") : ""}
+              ${CREATE_ACCOUNT_FIELDS.slice(0, createAccountStep)
+                .filter((field) => !field.name.startsWith("kid") || !field.name.includes("2") || createAccountStep > 7)
+                .filter((field) => !field.name.startsWith("kid") || !field.name.includes("3") || createAccountStep > 9)
+                .map((field) => renderCreateField(field.name, field.placeholder, field.type))
+                .join("")}
               ${
-                isFilled(createAccountDraft.confirmParentPin)
+                createAccountStep > 5
                   ? `
                     <div class="auth-kid-block">
                       <p class="eyebrow">Add your kids</p>
                       <div class="auth-kid-grid">
-                        ${renderCreateField("kidName1", "Kid 1 name")}
-                        ${isFilled(createAccountDraft.kidName1) ? renderCreateField("kidPin1", "Kid 1 PIN", "password") : ""}
-                        ${isFilled(createAccountDraft.kidPin1) ? renderCreateField("kidName2", "Kid 2 name (optional)") : ""}
-                        ${isFilled(createAccountDraft.kidName2) ? renderCreateField("kidPin2", "Kid 2 PIN", "password") : ""}
-                        ${isFilled(createAccountDraft.kidPin2) ? renderCreateField("kidName3", "Kid 3 name (optional)") : ""}
-                        ${isFilled(createAccountDraft.kidName3) ? renderCreateField("kidPin3", "Kid 3 PIN", "password") : ""}
+                        ${CREATE_ACCOUNT_FIELDS.slice(5, createAccountStep)
+                          .map((field) => renderCreateField(field.name, field.placeholder, field.type))
+                          .join("")}
                       </div>
                     </div>
                   `
                   : ""
               }
               ${
-                isFilled(createAccountDraft.kidPin1)
+                createAccountStep > 6
                   ? `
                     <div class="button-row">
                       <button class="action-button primary" type="submit">Create account</button>
@@ -1857,33 +1870,27 @@ document.body.addEventListener("input", (event) => {
   const { name, value } = createFormField;
   if (!Object.prototype.hasOwnProperty.call(createAccountDraft, name)) return;
 
-  const wasFilled = isFilled(createAccountDraft[name]);
   createAccountDraft[name] = value;
-  const isNowFilled = isFilled(value);
-  if (wasFilled === isNowFilled) return;
+});
 
-  renderAuthHome();
+document.body.addEventListener("keydown", (event) => {
+  const createFormField = event.target.closest?.("#create-family-form input");
+  if (!createFormField || state.session || event.key !== "Enter") return;
 
-  const replacementField = document.querySelector(`#create-family-form input[name="${name}"]`);
-  const fieldOrder = [
-    "familyName",
-    "parentName",
-    "parentEmail",
-    "parentPin",
-    "confirmParentPin",
-    "kidName1",
-    "kidPin1",
-    "kidName2",
-    "kidPin2",
-    "kidName3",
-    "kidPin3",
-  ];
-  const currentIndex = fieldOrder.indexOf(name);
-  const focusName = isNowFilled && currentIndex >= 0 ? fieldOrder[currentIndex + 1] : name;
-  const focusField = document.querySelector(`#create-family-form input[name="${focusName}"]`) || replacementField;
-  focusField?.focus();
-  const fieldLength = focusField?.value?.length || 0;
-  focusField?.setSelectionRange?.(fieldLength, fieldLength);
+  event.preventDefault();
+
+  const { name } = createFormField;
+  const fieldIndex = CREATE_ACCOUNT_FIELDS.findIndex((field) => field.name === name);
+  if (fieldIndex < 0) return;
+  if (!isFilled(createAccountDraft[name])) return;
+
+  if (fieldIndex + 1 >= createAccountStep) {
+    createAccountStep = Math.min(createAccountStep + 1, CREATE_ACCOUNT_FIELDS.length);
+    renderAuthHome();
+  }
+
+  const nextField = document.querySelector(`#create-family-form input[name="${CREATE_ACCOUNT_FIELDS[Math.min(fieldIndex + 1, CREATE_ACCOUNT_FIELDS.length - 1)].name}"]`);
+  nextField?.focus();
 });
 
 document.body.addEventListener("change", (event) => {

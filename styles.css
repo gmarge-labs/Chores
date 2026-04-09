@@ -4290,6 +4290,36 @@ button {
   opacity: 1;
 }
 
+.auth-about-display[data-about-tone="what"] {
+  background:
+    radial-gradient(circle at top right, rgba(255, 255, 255, 0.52), transparent 28%),
+    linear-gradient(145deg, rgba(109, 175, 255, 0.34), rgba(63, 132, 219, 0.26));
+}
+
+.auth-about-display[data-about-tone="parents"] {
+  background:
+    radial-gradient(circle at top right, rgba(255, 255, 255, 0.52), transparent 28%),
+    linear-gradient(145deg, rgba(255, 178, 103, 0.34), rgba(255, 140, 93, 0.26));
+}
+
+.auth-about-display[data-about-tone="kids"] {
+  background:
+    radial-gradient(circle at top right, rgba(255, 255, 255, 0.52), transparent 28%),
+    linear-gradient(145deg, rgba(79, 199, 181, 0.34), rgba(47, 159, 143, 0.26));
+}
+
+.auth-about-display[data-about-tone="how"] {
+  background:
+    radial-gradient(circle at top right, rgba(255, 255, 255, 0.52), transparent 28%),
+    linear-gradient(145deg, rgba(185, 156, 255, 0.34), rgba(126, 96, 223, 0.26));
+}
+
+.auth-about-display[data-about-tone="start"] {
+  background:
+    radial-gradient(circle at top right, rgba(255, 255, 255, 0.52), transparent 28%),
+    linear-gradient(145deg, rgba(255, 141, 183, 0.34), rgba(194, 47, 126, 0.24));
+}
+
 .auth-about-display.is-fading {
   opacity: 0.18;
   transform: scale(0.985);

@@ -216,6 +216,7 @@ function updateAboutTopicDisplay(nextTopic) {
 
     aboutTransitionTimer = window.setTimeout(() => {
       display.classList.toggle("active", Boolean(aboutTopic));
+      display.dataset.aboutTone = aboutTopic || "";
       display.innerHTML = renderAboutTopicContent(aboutTopic);
       display.classList.remove("is-fading");
       aboutTransitionTimer = null;
@@ -1048,7 +1049,7 @@ function renderAuthHome() {
               <button class="sub-view-button ${aboutTopic === "how" ? "active" : ""}" type="button" data-about-topic="how">How it works</button>
               <button class="sub-view-button ${aboutTopic === "start" ? "active" : ""}" type="button" data-about-topic="start">Getting started</button>
             </div>
-            <div class="auth-about-display ${aboutTopic ? "active" : ""}">
+            <div class="auth-about-display ${aboutTopic ? "active" : ""}" data-about-tone="${escapeHtml(aboutTopic)}">
               ${renderAboutTopicContent(aboutTopic)}
             </div>
           </div>

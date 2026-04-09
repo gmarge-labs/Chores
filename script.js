@@ -1,278 +1,122 @@
-const STORAGE_KEY = "brightpoints-state";
-const PARENT_PIN_KEY = "brightpoints-parent-pin";
+const STORAGE_KEY = "chores-multi-family-state-v1";
 
-const initialState = {
-  kids: [
-    {
-      id: "ava",
-      name: "Simra",
-      age: 8,
-      avatar: "🌈",
-      points: 164,
-      pointsPerDollarReward: 100,
-      dollarRewardValue: 20,
-      celebrationThreshold: 200,
-      lastCelebratedThreshold: 0,
-      streak: 5,
-      due: [
-        { title: "Make the bed", detail: "Due before 8:00 AM", points: 10 },
-        { title: "Tidy bedroom", detail: "Due by 6:00 PM", points: 18 },
-      ],
-      awaiting: [
-        { title: "Pack school bag", detail: "Submitted today", points: 12 },
-      ],
-      completed: [
-        { title: "Brush teeth", detail: "Approved this morning", points: 8 },
-        { title: "Put laundry away", detail: "Approved yesterday", points: 14 },
-      ],
-      rewards: [
-        { id: "ava-r1", title: "$20", cost: 100 },
-        { id: "ava-r2", title: "Stay up late", cost: 40 },
-        { id: "ava-r3", title: "Choose dinner", cost: 50 },
-      ],
-      bonusPenalty: [
-        { type: "bonus", title: "+15 points", value: "+15" },
-        { type: "penalty", title: "-10 points", value: "-10" },
-      ],
-      bonusReasons: ["Helping sibling"],
-      penaltyReasons: ["Skipped cleanup"],
-      missedDaysInARow: 0,
-      lastMissedCheckDate: null,
-    },
-    {
-      id: "leo",
-      name: "Jinan",
-      age: 10,
-      avatar: "🚀",
-      points: 212,
-      pointsPerDollarReward: 100,
-      dollarRewardValue: 20,
-      celebrationThreshold: 250,
-      lastCelebratedThreshold: 0,
-      streak: 7,
-      due: [
-        { title: "Feed the dog", detail: "Due before 8:30 AM", points: 12 },
-        { title: "Homework block", detail: "Due at 4:30 PM", points: 20 },
-      ],
-      awaiting: [
-        { title: "Set the table", detail: "Submitted at 6:05 PM", points: 14 },
-      ],
-      completed: [
-        { title: "Morning routine", detail: "Approved today", points: 16 },
-        { title: "Reading time", detail: "Approved yesterday", points: 10 },
-      ],
-      rewards: [
-        { id: "leo-r1", title: "$20", cost: 100 },
-        { id: "leo-r2", title: "Stay up late", cost: 40 },
-        { id: "leo-r3", title: "Choose dinner", cost: 50 },
-      ],
-      bonusPenalty: [
-        { type: "bonus", title: "+20 points", value: "+20" },
-        { type: "penalty", title: "-8 points", value: "-8" },
-      ],
-      bonusReasons: ["Finished homework early"],
-      penaltyReasons: ["Late bedtime"],
-      missedDaysInARow: 0,
-      lastMissedCheckDate: null,
-    },
-    {
-      id: "mila",
-      name: "Rayyan",
-      age: 6,
-      avatar: "🦄",
-      points: 98,
-      pointsPerDollarReward: 100,
-      dollarRewardValue: 20,
-      celebrationThreshold: 100,
-      lastCelebratedThreshold: 0,
-      streak: 3,
-      due: [
-        { title: "Put toys away", detail: "Due before lunch", points: 10 },
-        { title: "Get dressed", detail: "Due before school", points: 8 },
-      ],
-      awaiting: [
-        { title: "Snack helper", detail: "Submitted today", points: 6 },
-      ],
-      completed: [
-        { title: "Brush teeth", detail: "Approved this morning", points: 8 },
-      ],
-      rewards: [
-        { id: "mila-r1", title: "$20", cost: 100 },
-        { id: "mila-r2", title: "Stay up late", cost: 40 },
-        { id: "mila-r3", title: "Choose dinner", cost: 50 },
-      ],
-      bonusPenalty: [
-        { type: "bonus", title: "+10 points", value: "+10" },
-        { type: "penalty", title: "-5 points", value: "-5" },
-      ],
-      bonusReasons: ["Great sharing"],
-      penaltyReasons: ["Ignored timer"],
-      missedDaysInARow: 0,
-      lastMissedCheckDate: null,
-    },
-  ],
+const emptyState = {
+  families: [],
+  session: null,
 };
 
-function cloneInitialState() {
-  return JSON.parse(JSON.stringify(initialState));
+function createId(prefix) {
+  return `${prefix}-${Math.random().toString(36).slice(2, 10)}-${Date.now().toString(36)}`;
+}
+
+function createKid(name, kidPin) {
+  return {
+    id: createId("kid"),
+    name,
+    kidPin,
+    avatar: name.trim().charAt(0).toUpperCase() || "K",
+    points: 0,
+    pointsPerDollarReward: 100,
+    dollarRewardValue: 20,
+    celebrationThreshold: 100,
+    lastCelebratedThreshold: 0,
+    due: [],
+    awaiting: [],
+    completed: [],
+    rewards: [],
+    bonusPenalty: [
+      { type: "bonus", title: "+0 points", value: "+0 points" },
+      { type: "penalty", title: "-0 points", value: "-0 points" },
+    ],
+    bonusReasons: [],
+    penaltyReasons: [],
+    missedDaysInARow: 0,
+    lastMissedCheckDate: null,
+  };
+}
+
+function createFamily({ familyName, parentName, parentEmail, parentPin, kids }) {
+  return {
+    id: createId("family"),
+    familyName,
+    parentName,
+    parentEmail,
+    parentEmailLower: parentEmail.trim().toLowerCase(),
+    parentPin,
+    kids,
+    createdAt: new Date().toISOString(),
+  };
+}
+
+function cloneEmptyState() {
+  return JSON.parse(JSON.stringify(emptyState));
+}
+
+function normalizeKid(kid) {
+  return {
+    id: kid.id || createId("kid"),
+    name: kid.name || "Kid",
+    kidPin: kid.kidPin || "",
+    avatar: kid.avatar || (kid.name || "K").charAt(0).toUpperCase(),
+    points: Number.isFinite(Number(kid.points)) ? Number(kid.points) : 0,
+    pointsPerDollarReward: Number.isFinite(Number(kid.pointsPerDollarReward)) ? Number(kid.pointsPerDollarReward) : 100,
+    dollarRewardValue: Number.isFinite(Number(kid.dollarRewardValue)) ? Number(kid.dollarRewardValue) : 20,
+    celebrationThreshold: Number.isFinite(Number(kid.celebrationThreshold)) ? Number(kid.celebrationThreshold) : 100,
+    lastCelebratedThreshold: Number.isFinite(Number(kid.lastCelebratedThreshold)) ? Number(kid.lastCelebratedThreshold) : 0,
+    due: Array.isArray(kid.due) ? kid.due : [],
+    awaiting: Array.isArray(kid.awaiting) ? kid.awaiting : [],
+    completed: Array.isArray(kid.completed) ? kid.completed : [],
+    rewards: Array.isArray(kid.rewards) ? kid.rewards : [],
+    bonusPenalty: Array.isArray(kid.bonusPenalty) && kid.bonusPenalty.length
+      ? kid.bonusPenalty.map((entry) => ({
+          type: entry.type || "bonus",
+          title: entry.title || "",
+          value: entry.value || "",
+        }))
+      : [
+          { type: "bonus", title: "+0 points", value: "+0 points" },
+          { type: "penalty", title: "-0 points", value: "-0 points" },
+        ],
+    bonusReasons: Array.isArray(kid.bonusReasons) ? kid.bonusReasons : [],
+    penaltyReasons: Array.isArray(kid.penaltyReasons) ? kid.penaltyReasons : [],
+    missedDaysInARow: Number.isFinite(Number(kid.missedDaysInARow)) ? Number(kid.missedDaysInARow) : 0,
+    lastMissedCheckDate: kid.lastMissedCheckDate || null,
+  };
+}
+
+function normalizeFamily(family) {
+  return {
+    id: family.id || createId("family"),
+    familyName: family.familyName || "My Family",
+    parentName: family.parentName || "Parent",
+    parentEmail: family.parentEmail || "",
+    parentEmailLower: (family.parentEmailLower || family.parentEmail || "").trim().toLowerCase(),
+    parentPin: family.parentPin || "",
+    createdAt: family.createdAt || new Date().toISOString(),
+    kids: Array.isArray(family.kids) ? family.kids.map(normalizeKid) : [],
+  };
 }
 
 function loadState() {
   try {
     const saved = window.localStorage.getItem(STORAGE_KEY);
-    return saved ? JSON.parse(saved) : cloneInitialState();
+    if (!saved) return cloneEmptyState();
+
+    const parsed = JSON.parse(saved);
+    return {
+      families: Array.isArray(parsed.families) ? parsed.families.map(normalizeFamily) : [],
+      session: parsed.session || null,
+    };
   } catch {
-    return cloneInitialState();
+    return cloneEmptyState();
   }
 }
 
-function normalizeState(inputState) {
-  const fallback = cloneInitialState();
-  const nextState = inputState && Array.isArray(inputState.kids) ? inputState : fallback;
-
-  nextState.kids = nextState.kids.map((kid, index) => {
-    const fallbackKid = fallback.kids[index];
-    const bonusReasons = Array.isArray(kid.bonusReasons) ? kid.bonusReasons : [];
-    const penaltyReasons = Array.isArray(kid.penaltyReasons) ? kid.penaltyReasons : [];
-    const derivedReasons = Array.isArray(kid.bonusPenalty)
-      ? kid.bonusPenalty
-          .filter((entry) => entry.detail)
-          .map((entry) => ({
-            type: (entry.type || "").toLowerCase(),
-            reason: String(entry.detail).replace(/^Reason:\s*/i, ""),
-          }))
-      : [];
-
-    return {
-      ...fallbackKid,
-      ...kid,
-      pointsPerDollarReward: kid.pointsPerDollarReward || fallbackKid.pointsPerDollarReward || 100,
-      dollarRewardValue: kid.dollarRewardValue || fallbackKid.dollarRewardValue || 20,
-      celebrationThreshold: Number.isFinite(Number(kid.celebrationThreshold)) ? Number(kid.celebrationThreshold) : fallbackKid.celebrationThreshold || 100,
-      lastCelebratedThreshold: Number.isFinite(Number(kid.lastCelebratedThreshold)) ? Number(kid.lastCelebratedThreshold) : fallbackKid.lastCelebratedThreshold || 0,
-      missedDaysInARow: Number.isFinite(Number(kid.missedDaysInARow)) ? Number(kid.missedDaysInARow) : fallbackKid.missedDaysInARow || 0,
-      lastMissedCheckDate: kid.lastMissedCheckDate || fallbackKid.lastMissedCheckDate || null,
-      bonusPenalty: (kid.bonusPenalty || fallbackKid.bonusPenalty).map((entry) => ({
-        type: entry.type,
-        title: entry.title,
-        value: entry.value,
-      })),
-      bonusReasons: bonusReasons.length
-        ? bonusReasons
-        : derivedReasons.filter((entry) => entry.type === "bonus").map((entry) => entry.reason).concat(fallbackKid.bonusReasons || []).slice(0, 10),
-      penaltyReasons: penaltyReasons.length
-        ? penaltyReasons
-        : derivedReasons.filter((entry) => entry.type === "penalty").map((entry) => entry.reason).concat(fallbackKid.penaltyReasons || []).slice(0, 10),
-    };
-  });
-
-  return nextState;
-}
+const state = loadState();
 
 function saveState() {
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 }
-
-function showPinDialog({ title, message, confirmLabel = "Continue", placeholder = "Enter PIN" }) {
-  return new Promise((resolve) => {
-    const modal = document.createElement("div");
-    modal.className = "pin-modal";
-    modal.innerHTML = `
-      <form class="pin-card">
-        ${renderTileBubbles()}
-        <div class="pin-sparkles" aria-hidden="true">
-          <span></span><span></span><span></span><span></span><span></span><span></span>
-        </div>
-        <p class="eyebrow">Parent only</p>
-        <h2>${escapeHtml(title)}</h2>
-        <p class="pin-message">${escapeHtml(message)}</p>
-        <input class="pin-input" type="password" inputmode="numeric" autocomplete="off" placeholder="${escapeHtml(placeholder)}" required />
-        <div class="button-row pin-actions">
-          <button class="action-button secondary" type="button" data-pin-cancel="true">Cancel</button>
-          <button class="action-button primary" type="submit">${escapeHtml(confirmLabel)}</button>
-        </div>
-      </form>
-    `;
-
-    const close = (value) => {
-      modal.classList.add("is-closing");
-      window.setTimeout(() => {
-        modal.remove();
-        resolve(value);
-      }, 180);
-    };
-
-    modal.addEventListener("click", (event) => {
-      if (event.target === modal || event.target.closest("[data-pin-cancel]")) {
-        close(null);
-      }
-    });
-
-    modal.querySelector("form").addEventListener("submit", (event) => {
-      event.preventDefault();
-      close(modal.querySelector(".pin-input").value.trim());
-    });
-
-    document.body.appendChild(modal);
-    window.setTimeout(() => modal.querySelector(".pin-input")?.focus(), 80);
-  });
-}
-
-function showParentNotice(message) {
-  const notice = document.createElement("div");
-  notice.className = "pin-toast";
-  notice.textContent = message;
-  document.body.appendChild(notice);
-  window.setTimeout(() => notice.remove(), 2200);
-}
-
-async function requireParentAccess(actionLabel = "continue") {
-  let parentPin = window.localStorage.getItem(PARENT_PIN_KEY);
-
-  if (!parentPin) {
-    const newPin = await showPinDialog({
-      title: "Create parent PIN",
-      message: "This keeps Settings and approvals parent-only.",
-      confirmLabel: "Save PIN",
-      placeholder: "Create PIN",
-    });
-    if (!newPin || !newPin.trim()) return false;
-
-    const confirmPin = await showPinDialog({
-      title: "Confirm parent PIN",
-      message: "Enter the same PIN one more time.",
-      confirmLabel: "Confirm",
-      placeholder: "Confirm PIN",
-    });
-    if (newPin.trim() !== (confirmPin || "").trim()) {
-      showParentNotice("The PINs did not match. Please try again.");
-      return false;
-    }
-
-    parentPin = newPin.trim();
-    window.localStorage.setItem(PARENT_PIN_KEY, parentPin);
-    showParentNotice("Parent PIN saved.");
-  }
-
-  const enteredPin = await showPinDialog({
-    title: "Parent PIN",
-    message: `Enter your parent PIN to ${actionLabel}.`,
-    confirmLabel: "Unlock",
-    placeholder: "Parent PIN",
-  });
-  if ((enteredPin || "").trim() !== parentPin) {
-    showParentNotice("Incorrect PIN. This action was not completed.");
-    return false;
-  }
-
-  return true;
-}
-
-function requireParentApproval() {
-  return requireParentAccess("approve this task");
-}
-
-const state = normalizeState(loadState());
 
 function getTodayKey() {
   return new Date().toISOString().slice(0, 10);
@@ -282,12 +126,13 @@ function updateMissedStreaksForToday() {
   const todayKey = getTodayKey();
   let didUpdate = false;
 
-  state.kids.forEach((kid) => {
-    if (kid.lastMissedCheckDate === todayKey) return;
-
-    kid.missedDaysInARow = kid.due.length ? (Number(kid.missedDaysInARow) || 0) + 1 : 0;
-    kid.lastMissedCheckDate = todayKey;
-    didUpdate = true;
+  state.families.forEach((family) => {
+    family.kids.forEach((kid) => {
+      if (kid.lastMissedCheckDate === todayKey) return;
+      kid.missedDaysInARow = kid.due.length ? (Number(kid.missedDaysInARow) || 0) + 1 : 0;
+      kid.lastMissedCheckDate = todayKey;
+      didUpdate = true;
+    });
   });
 
   if (didUpdate) saveState();
@@ -295,14 +140,22 @@ function updateMissedStreaksForToday() {
 
 updateMissedStreaksForToday();
 
+let authView = "create";
 let currentKidId = null;
 let currentKidView = "dashboard";
-let currentSettingsView = "task";
+let currentFamilyMode = false;
 let currentAssignedKids = [];
 let isAssignPopupOpen = false;
 let assignPopupPlacement = "task";
-let currentReasonList = null;
-let currentFamilyMode = false;
+
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
 
 function showPage(pageId) {
   document.querySelectorAll(".page").forEach((page) => {
@@ -310,8 +163,25 @@ function showPage(pageId) {
   });
 }
 
-function getKid(id) {
-  return state.kids.find((kid) => kid.id === id);
+function getCurrentFamily() {
+  if (!state.session) return null;
+  return state.families.find((family) => family.id === state.session.familyId) || null;
+}
+
+function getFamilyKids() {
+  return getCurrentFamily()?.kids || [];
+}
+
+function getKid(kidId) {
+  return getFamilyKids().find((kid) => kid.id === kidId) || null;
+}
+
+function isParentSession() {
+  return state.session?.role === "parent";
+}
+
+function isKidSession() {
+  return state.session?.role === "kid";
 }
 
 function getAssignedKidNames() {
@@ -324,15 +194,6 @@ function getDollarEquivalent(kid) {
   return Math.floor((Number(kid.points) / pointUnit) * dollarUnit);
 }
 
-function escapeHtml(value) {
-  return String(value)
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
-}
-
 function renderAvatar(kid) {
   if (typeof kid.avatar === "string" && kid.avatar.startsWith("data:image")) {
     return `<img src="${kid.avatar}" alt="${escapeHtml(kid.name)} avatar" class="avatar-image" />`;
@@ -341,12 +202,39 @@ function renderAvatar(kid) {
   return escapeHtml(kid.avatar);
 }
 
-function claimReward(kidId, rewardId) {
-  const kid = getKid(kidId);
-  if (!kid) return;
-  const reward = kid.rewards.find((entry) => entry.id === rewardId);
-  if (!reward) return;
-  kid.points = Math.max(0, kid.points - reward.cost);
+function renderTileBubbles() {
+  return `
+    <span class="tile-bubbles" aria-hidden="true">
+      <span></span>
+      <span></span>
+      <span></span>
+      <span></span>
+      <span></span>
+    </span>
+  `;
+}
+
+function renderCardList(items, renderer, emptyText) {
+  if (!items.length) {
+    return `<p class="empty">${emptyText}</p>`;
+  }
+
+  return items.map(renderer).join("");
+}
+
+function getShellClass(name, familyMode) {
+  if (familyMode) return "family";
+  const lower = String(name || "").trim().toLowerCase();
+  if (["simra", "jinan", "rayyan"].includes(lower)) return lower;
+  return "family";
+}
+
+function showToast(message) {
+  const notice = document.createElement("div");
+  notice.className = "pin-toast";
+  notice.textContent = message;
+  document.body.appendChild(notice);
+  window.setTimeout(() => notice.remove(), 2200);
 }
 
 function showThresholdCelebration(kid, threshold) {
@@ -376,41 +264,63 @@ function maybeCelebrateThreshold(kid, previousPoints) {
   showThresholdCelebration(kid, threshold);
 }
 
-function addReward(kidId, title, cost) {
-  const kid = getKid(kidId);
-  if (!kid) return;
+function buildTaskDetail(recurring, time) {
+  const labels = {
+    daily: "Daily",
+    "every-other-day": "Every other day",
+    weekly: "Weekly",
+    monthly: "Monthly",
+  };
 
-            kid.rewards.push({
-    id: `${kidId}-${Date.now()}`,
-    title,
-    cost,
+  return `${labels[recurring] || "Daily"} • ${time}`;
+}
+
+function addReward(kidIds, title, cost) {
+  kidIds.forEach((kidId) => {
+    const kid = getKid(kidId);
+    if (!kid) return;
+
+    kid.rewards.push({
+      id: `${kidId}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      title,
+      cost,
+    });
   });
 }
 
-function addAdjustment(kidId, label, value, reason) {
-  const kid = getKid(kidId);
-  if (!kid) return;
+function addAdjustment(kidIds, label, value) {
+  kidIds.forEach((kidId) => {
+    const kid = getKid(kidId);
+    if (!kid) return;
 
-  const type = label.toLowerCase();
-  const previousPoints = kid.points;
-  kid.bonusPenalty = kid.bonusPenalty.filter((entry) => (entry.type || "").toLowerCase() !== type);
+    const type = label.toLowerCase();
+    const previousPoints = kid.points;
+    kid.bonusPenalty = kid.bonusPenalty.filter((entry) => (entry.type || "").toLowerCase() !== type);
+    kid.bonusPenalty.push({
+      type,
+      title: `${value > 0 ? "+" : ""}${value} points`,
+      value: `${value > 0 ? "+" : ""}${value} points`,
+    });
 
-  kid.bonusPenalty.push({
-    type,
-    title: `${value > 0 ? "+" : ""}${value} points`,
-    value: `${value > 0 ? "+" : ""}${value} points`,
+    kid.points = Math.max(0, kid.points + value);
+    maybeCelebrateThreshold(kid, previousPoints);
   });
-
-  kid.points = Math.max(0, kid.points + value);
-  maybeCelebrateThreshold(kid, previousPoints);
 }
 
-function addReason(kidId, type, reason) {
-  const kid = getKid(kidId);
-  if (!kid) return;
+function addReason(kidIds, type, reason) {
+  kidIds.forEach((kidId) => {
+    const kid = getKid(kidId);
+    if (!kid) return;
 
-  const key = type === "penalty" ? "penaltyReasons" : "bonusReasons";
-  kid[key] = [...(kid[key] || []), reason];
+    const key = type === "penalty" ? "penaltyReasons" : "bonusReasons";
+    kid[key] = [...(kid[key] || []), reason];
+  });
+}
+
+function addChild(name, kidPin) {
+  const family = getCurrentFamily();
+  if (!family) return;
+  family.kids.push(createKid(name, kidPin));
 }
 
 function updateDollarConversion(kidId, points, dollars) {
@@ -427,44 +337,19 @@ function updateCelebrationThreshold(kidId, threshold) {
   kid.lastCelebratedThreshold = 0;
 }
 
-function buildTaskDetail(recurring, time) {
-  const labels = {
-    daily: "Daily",
-    "every-other-day": "Every other day",
-    weekly: "Weekly",
-    monthly: "Monthly",
-  };
-
-  return `${labels[recurring] || "Daily"} • ${time}`;
-}
-
-function addTask(kidIds, title, points, recurring, time, status = "due") {
+function addTask(kidIds, title, points, recurring, time) {
   kidIds.forEach((kidId) => {
     const kid = getKid(kidId);
     if (!kid) return;
 
-    const nextTask = {
+    kid.due.push({
+      id: createId("task"),
       title,
       detail: buildTaskDetail(recurring, time),
       points,
       recurring,
       time,
-    };
-
-    if (status === "awaiting") {
-      kid.awaiting.push(nextTask);
-      return;
-    }
-
-    if (status === "completed") {
-      kid.completed.push(nextTask);
-      const previousPoints = kid.points;
-      kid.points += points;
-      maybeCelebrateThreshold(kid, previousPoints);
-      return;
-    }
-
-    kid.due.push(nextTask);
+    });
   });
 }
 
@@ -488,8 +373,17 @@ function moveTask(kidId, fromStatus, toStatus, taskIndex) {
   }
 }
 
-function resetAllTasks() {
-  state.kids.forEach((kid) => {
+function claimReward(kidId, rewardId) {
+  const kid = getKid(kidId);
+  if (!kid) return;
+
+  const reward = kid.rewards.find((entry) => entry.id === rewardId);
+  if (!reward) return;
+  kid.points = Math.max(0, kid.points - reward.cost);
+}
+
+function resetAllTasksAndPoints() {
+  getFamilyKids().forEach((kid) => {
     kid.points = 0;
     kid.due = [];
     kid.awaiting = [];
@@ -500,16 +394,16 @@ function resetAllTasks() {
   });
 }
 
-function renderTileBubbles() {
-  return `
-    <span class="tile-bubbles" aria-hidden="true">
-      <span></span>
-      <span></span>
-      <span></span>
-      <span></span>
-      <span></span>
-    </span>
-  `;
+function logout() {
+  state.session = null;
+  currentKidId = null;
+  currentKidView = "dashboard";
+  currentFamilyMode = false;
+  currentAssignedKids = [];
+  isAssignPopupOpen = false;
+  assignPopupPlacement = "task";
+  saveState();
+  renderApp();
 }
 
 function renderAssignPopup(placement) {
@@ -518,7 +412,7 @@ function renderAssignPopup(placement) {
   return `
     <div class="assign-popup">
       <div class="assign-grid">
-        ${state.kids
+        ${getFamilyKids()
           .map(
             (child) => `
               <label class="assign-option">
@@ -536,71 +430,202 @@ function renderAssignPopup(placement) {
   `;
 }
 
-function renderHome() {
-  document.getElementById("home-kids").innerHTML = state.kids
-    .map(
-      (kid) => `
-        <article class="kid-card ${escapeHtml(kid.name.toLowerCase())}" data-kid-id="${escapeHtml(kid.id)}" role="button" tabindex="0">
+function renderAuthHome() {
+  document.getElementById("page-home").innerHTML = `
+    <div class="home-shell auth-shell">
+      <header class="home-header">
+        <p class="eyebrow">Family task tracker</p>
+        <h1 class="rainbow-title" aria-label="CHORES">
+          <span class="title-star" aria-hidden="true">✦</span>
+          <span aria-hidden="true">C</span>
+          <span aria-hidden="true">H</span>
+          <span aria-hidden="true">O</span>
+          <span aria-hidden="true">R</span>
+          <span aria-hidden="true">E</span>
+          <span aria-hidden="true">S</span>
+          <span class="title-star" aria-hidden="true">✦</span>
+        </h1>
+      </header>
+
+      <section class="auth-layout">
+        <article class="section-card primary auth-intro">
           ${renderTileBubbles()}
-          <div class="kid-card-top">
-            <div class="avatar">${renderAvatar(kid)}</div>
-            <div>
-              <h2>${escapeHtml(kid.name)}</h2>
-            </div>
-          </div>
-          <div class="pill-row">
-            <span class="pill score-pill">
-              <span class="score-sparkles" aria-hidden="true"></span>
-              <span class="score-value">${escapeHtml(kid.points)} points</span>
-            </span>
-            <span class="pill dollar-pill">$${escapeHtml(getDollarEquivalent(kid))}</span>
+          <p class="eyebrow">Welcome</p>
+          <h2>Set up your family space.</h2>
+          <p class="auth-copy">
+            CHORES now starts with a clean slate. Parents create a family account, add their kids,
+            and then manage tasks, rewards, bonuses, penalties, reports, and approvals from the parent interface.
+          </p>
+          <div class="auth-bullets">
+            <p>Parent accounts can access everything.</p>
+            <p>Kids can only access their own dashboard and rewards.</p>
+            <p>Each family’s data stays separate on this device.</p>
           </div>
         </article>
-      `
-    )
-    .join("");
+
+        <article class="section-card primary auth-card">
+          <div class="auth-tabs">
+            <button class="view-button ${authView === "create" ? "active" : ""}" type="button" data-auth-view="create">Create family</button>
+            <button class="view-button ${authView === "parent" ? "active" : ""}" type="button" data-auth-view="parent">Parent login</button>
+            <button class="view-button ${authView === "kid" ? "active" : ""}" type="button" data-auth-view="kid">Kid login</button>
+          </div>
+
+          <div class="auth-panel ${authView === "create" ? "active" : ""}">
+            <p class="eyebrow">Create account</p>
+            <form class="reward-form auth-form" id="create-family-form">
+              <input type="text" name="familyName" placeholder="Family name" required />
+              <input type="text" name="parentName" placeholder="Parent name" required />
+              <input type="email" name="parentEmail" placeholder="Parent email" required />
+              <input type="password" name="parentPin" placeholder="Parent PIN" required />
+              <input type="password" name="confirmParentPin" placeholder="Confirm parent PIN" required />
+              <div class="auth-kid-block">
+                <p class="eyebrow">Add your kids</p>
+                <div class="auth-kid-grid">
+                  <input type="text" name="kidName1" placeholder="Kid 1 name" required />
+                  <input type="password" name="kidPin1" placeholder="Kid 1 PIN" required />
+                  <input type="text" name="kidName2" placeholder="Kid 2 name (optional)" />
+                  <input type="password" name="kidPin2" placeholder="Kid 2 PIN" />
+                  <input type="text" name="kidName3" placeholder="Kid 3 name (optional)" />
+                  <input type="password" name="kidPin3" placeholder="Kid 3 PIN" />
+                </div>
+              </div>
+              <div class="button-row">
+                <button class="action-button primary" type="submit">Create family account</button>
+              </div>
+            </form>
+          </div>
+
+          <div class="auth-panel ${authView === "parent" ? "active" : ""}">
+            <p class="eyebrow">Parent login</p>
+            <form class="reward-form auth-form" id="parent-login-form">
+              <input type="email" name="parentEmail" placeholder="Parent email" required />
+              <input type="password" name="parentPin" placeholder="Parent PIN" required />
+              <div class="button-row">
+                <button class="action-button primary" type="submit">Log in as parent</button>
+              </div>
+            </form>
+          </div>
+
+          <div class="auth-panel ${authView === "kid" ? "active" : ""}">
+            <p class="eyebrow">Kid login</p>
+            <form class="reward-form auth-form" id="kid-login-form">
+              <input type="email" name="familyEmail" placeholder="Family email" required />
+              <input type="text" name="kidName" placeholder="Kid name" required />
+              <input type="password" name="kidPin" placeholder="Kid PIN" required />
+              <div class="button-row">
+                <button class="action-button primary" type="submit">Log in as kid</button>
+              </div>
+            </form>
+          </div>
+        </article>
+      </section>
+    </div>
+  `;
+
+  showPage("page-home");
 }
 
-function renderCardList(items, renderer, emptyText) {
-  if (!items.length) {
-    return `<p class="empty">${emptyText}</p>`;
-  }
+function renderParentHome() {
+  const family = getCurrentFamily();
+  const kids = getFamilyKids();
 
-  return items.map(renderer).join("");
+  document.getElementById("page-home").innerHTML = `
+    <div class="home-shell">
+      <header class="home-header home-header--session">
+        <p class="eyebrow">${escapeHtml(family.familyName)} family</p>
+        <h1 class="rainbow-title" aria-label="CHORES">
+          <span class="title-star" aria-hidden="true">✦</span>
+          <span aria-hidden="true">C</span>
+          <span aria-hidden="true">H</span>
+          <span aria-hidden="true">O</span>
+          <span aria-hidden="true">R</span>
+          <span aria-hidden="true">E</span>
+          <span aria-hidden="true">S</span>
+          <span class="title-star" aria-hidden="true">✦</span>
+        </h1>
+        <div class="session-strip">
+          <span class="summary-stat">Parent: ${escapeHtml(family.parentName)}</span>
+          <button class="back-button" type="button" data-logout="true">Log out</button>
+        </div>
+      </header>
+
+      <section class="kid-grid" id="home-kids">
+        ${kids
+          .map(
+            (kid) => `
+              <article class="kid-card ${escapeHtml(getShellClass(kid.name, false))}" data-kid-id="${escapeHtml(kid.id)}" role="button" tabindex="0">
+                ${renderTileBubbles()}
+                <div class="kid-card-top">
+                  <div class="avatar">${renderAvatar(kid)}</div>
+                  <div>
+                    <h2>${escapeHtml(kid.name)}</h2>
+                  </div>
+                </div>
+                <div class="pill-row">
+                  <span class="pill score-pill">
+                    <span class="score-sparkles" aria-hidden="true"></span>
+                    <span class="score-value">${escapeHtml(kid.points)} points</span>
+                  </span>
+                  <span class="pill dollar-pill">$${escapeHtml(getDollarEquivalent(kid))}</span>
+                </div>
+              </article>
+            `
+          )
+          .join("")}
+      </section>
+
+      <section class="home-actions" aria-label="Family shortcuts">
+        <button class="family-tile report-shortcut" type="button" data-family-view="report">
+          ${renderTileBubbles()}
+          <span>Reports</span>
+        </button>
+        <button class="family-tile settings-shortcut" type="button" data-family-view="settings">
+          ${renderTileBubbles()}
+          <span>Settings</span>
+        </button>
+      </section>
+    </div>
+  `;
+
+  showPage("page-home");
 }
 
-function renderKidPage(kidId, familyMode = currentFamilyMode) {
+function renderKidPage(kidId) {
+  const family = getCurrentFamily();
   const kid = getKid(kidId);
-  if (!kid) return;
+  if (!family || !kid) return;
 
   currentKidId = kidId;
-  currentFamilyMode = familyMode;
-  if (!currentAssignedKids.length) {
-    currentAssignedKids = familyMode ? state.kids.map((child) => child.id) : [kidId];
+  if (!currentAssignedKids.length || currentAssignedKids.some((assignedKidId) => !getKid(assignedKidId))) {
+    currentAssignedKids = [kidId];
   }
 
-  const shellClass = familyMode ? "family" : kid.name.toLowerCase();
-  const pageTitle = familyMode ? "Family" : kid.name;
+  const familyMode = currentFamilyMode && isParentSession();
+  const role = isParentSession() ? "parent" : "kid";
+  const shellClass = getShellClass(kid.name, familyMode);
+  const pageTitle = familyMode ? family.familyName : kid.name;
+  const canSeeReports = role === "parent";
+  const canSeeSettings = role === "parent";
 
   document.getElementById("page-kid").innerHTML = `
     <div class="kid-shell ${escapeHtml(shellClass)}">
       <header class="kid-header">
         <h1>${escapeHtml(pageTitle)}</h1>
         <div class="view-switcher">
+          <button class="view-button ${currentKidView === "dashboard" ? "active" : ""}" type="button" data-view="dashboard">Dashboard</button>
+          <button class="view-button ${["rewards", "favors"].includes(currentKidView) ? "active" : ""}" type="button" data-view="rewards">Rewards</button>
           ${
-            familyMode
-              ? `
-                <button class="view-button ${currentKidView === "report" ? "active" : ""}" type="button" data-view="report">Reports</button>
-                <button class="view-button ${currentKidView === "settings" ? "active" : ""}" type="button" data-view="settings">Settings</button>
-              `
-              : `
-                <button class="view-button ${currentKidView === "dashboard" ? "active" : ""}" type="button" data-view="dashboard">Dashboard</button>
-                <button class="view-button ${["rewards", "favors"].includes(currentKidView) ? "active" : ""}" type="button" data-view="rewards">Rewards</button>
-              `
+            canSeeReports
+              ? `<button class="view-button ${currentKidView === "report" ? "active" : ""}" type="button" data-view="report">Reports</button>`
+              : ""
           }
-          ${currentKidView === "reasons" ? `<button class="view-button active" type="button" data-view="reasons">Reasons</button>` : ""}
+          ${
+            canSeeSettings
+              ? `<button class="view-button ${currentKidView === "settings" ? "active" : ""}" type="button" data-view="settings">Settings</button>`
+              : ""
+          }
         </div>
-        <button class="back-button" type="button" id="back-home">← Back to home</button>
+        <button class="back-button" type="button" id="back-home">${isParentSession() ? "← Back to family" : "Log out"}</button>
       </header>
 
       <section class="kid-layout">
@@ -626,7 +651,7 @@ function renderKidPage(kidId, familyMode = currentFamilyMode) {
                       <p class="meta">${escapeHtml(task.detail)}</p>
                       <p class="meta">${escapeHtml(task.points)} points</p>
                       <div class="task-actions">
-                        <button class="task-action-pill" type="button" data-task-move="true" data-from-status="due" data-to-status="awaiting" data-task-index="${escapeHtml(taskIndex)}">Done</button>
+                        <button class="task-action-pill" type="button" data-task-move="true" data-from-status="due" data-to-status="awaiting" data-task-index="${taskIndex}">Done</button>
                       </div>
                     </article>
                   `,
@@ -647,8 +672,8 @@ function renderKidPage(kidId, familyMode = currentFamilyMode) {
                       <p class="meta">${escapeHtml(task.detail)}</p>
                       <p class="meta">${escapeHtml(task.points)} points</p>
                       <div class="task-actions">
-                        <button class="task-action-pill" type="button" data-task-move="true" data-from-status="awaiting" data-to-status="completed" data-task-index="${escapeHtml(taskIndex)}">Approve</button>
-                        <button class="task-action-pill" type="button" data-task-move="true" data-from-status="awaiting" data-to-status="due" data-task-index="${escapeHtml(taskIndex)}">Undo</button>
+                        ${role === "parent" ? `<button class="task-action-pill" type="button" data-task-move="true" data-from-status="awaiting" data-to-status="completed" data-task-index="${taskIndex}">Approve</button>` : ""}
+                        <button class="task-action-pill" type="button" data-task-move="true" data-from-status="awaiting" data-to-status="due" data-task-index="${taskIndex}">Undo</button>
                       </div>
                     </article>
                   `,
@@ -668,9 +693,7 @@ function renderKidPage(kidId, familyMode = currentFamilyMode) {
                       <h4>${escapeHtml(task.title)}</h4>
                       <p class="meta">${escapeHtml(task.detail)}</p>
                       <p class="meta">${escapeHtml(task.points)} points</p>
-                      <div class="task-actions">
-                        <button class="task-action-pill" type="button" data-task-move="true" data-from-status="completed" data-to-status="due" data-task-index="${escapeHtml(taskIndex)}">Undo</button>
-                      </div>
+                      ${role === "parent" ? `<div class="task-actions"><button class="task-action-pill" type="button" data-task-move="true" data-from-status="completed" data-to-status="due" data-task-index="${taskIndex}">Undo</button></div>` : ""}
                     </article>
                   `,
                   "Nothing completed yet."
@@ -740,25 +763,25 @@ function renderKidPage(kidId, familyMode = currentFamilyMode) {
                   </div>
                 </article>
               `,
-              "No favors yet. Add some from Settings."
+              "No favors yet. Ask a parent to add some in Settings."
             )}
           </section>
         </article>
 
-        <article class="section-card primary kid-view ${currentKidView === "report" ? "active" : ""}" data-panel="report">
+        <article class="section-card primary kid-view ${currentKidView === "report" && canSeeReports ? "active" : ""}" data-panel="report">
           <span class="panel-bubbles" aria-hidden="true"><span></span><span></span><span></span></span>
           <div class="section-head">
             <div>
               <h2>Report</h2>
             </div>
-            <span class="summary-stat">${escapeHtml(state.kids.reduce((total, child) => total + child.due.length, 0))} due tasks</span>
+            <span class="summary-stat">${escapeHtml(getFamilyKids().reduce((total, child) => total + child.due.length, 0))} due tasks</span>
           </div>
 
           <div class="report-grid">
-            ${state.kids
+            ${getFamilyKids()
               .map(
                 (child) => `
-                  <section class="report-tile ${escapeHtml(child.name.toLowerCase())}">
+                  <section class="report-tile ${escapeHtml(getShellClass(child.name, false))}">
                     ${renderTileBubbles()}
                     <div class="report-head">
                       <h3>${escapeHtml(child.name)}</h3>
@@ -786,12 +809,12 @@ function renderKidPage(kidId, familyMode = currentFamilyMode) {
           <div class="report-watch">
             <p class="eyebrow">3-day missed-task tracker</p>
             <div class="watch-grid">
-              ${state.kids
+              ${getFamilyKids()
                 .map((child) => {
                   const missedDays = Number(child.missedDaysInARow) || 0;
                   const cappedDays = Math.min(missedDays, 3);
                   return `
-                    <article class="watch-pill ${escapeHtml(child.name.toLowerCase())} ${missedDays >= 3 ? "alert" : ""}">
+                    <article class="watch-pill ${escapeHtml(getShellClass(child.name, false))} ${missedDays >= 3 ? "alert" : ""}">
                       <strong>${escapeHtml(child.name)}</strong>
                       <span>${escapeHtml(cappedDays)}/3 days</span>
                       <em>${missedDays >= 3 ? "Check in today" : child.due.length ? "Still has due tasks" : "On track"}</em>
@@ -803,27 +826,7 @@ function renderKidPage(kidId, familyMode = currentFamilyMode) {
           </div>
         </article>
 
-        <article class="section-card primary kid-view ${currentKidView === "reasons" ? "active" : ""}" data-panel="reasons">
-          <span class="panel-bubbles" aria-hidden="true"><span></span><span></span><span></span></span>
-          <div class="section-head">
-            <div>
-              <p class="eyebrow">${escapeHtml(kid.name)}'s ${currentReasonList === "penalty" ? "Penalty" : "Bonus"} reasons</p>
-              <h2>Reasons</h2>
-            </div>
-            <div class="button-row">
-              <button class="action-button secondary" type="button" data-view="rewards">Back to rewards</button>
-            </div>
-          </div>
-          <div class="reason-list">
-            ${renderCardList(
-              currentReasonList === "penalty" ? kid.penaltyReasons || [] : kid.bonusReasons || [],
-              (reason) => `<p class="reason-item">${escapeHtml(reason)}</p>`,
-              `No ${currentReasonList === "penalty" ? "penalty" : "bonus"} reasons yet.`
-            )}
-          </div>
-        </article>
-
-        <article class="section-card primary kid-view ${currentKidView === "settings" ? "active" : ""}" data-panel="settings">
+        <article class="section-card primary kid-view ${currentKidView === "settings" && canSeeSettings ? "active" : ""}" data-panel="settings">
           <span class="panel-bubbles" aria-hidden="true"><span></span><span></span><span></span></span>
           <div class="section-head">
             <div>
@@ -832,162 +835,189 @@ function renderKidPage(kidId, familyMode = currentFamilyMode) {
           </div>
 
           <div class="settings-tiles">
-          <article class="reward-card settings-tile family-controls-tile">
-            ${renderTileBubbles()}
-            <p class="eyebrow">Family controls</p>
-            <div class="family-controls-body">
-              <section class="settings-mini-section add-rewards-section">
-                <p class="eyebrow">Add Rewards</p>
-                <form class="reward-form" id="reward-form">
-                  <input type="text" name="title" placeholder="Example: Choose dinner" required />
-                  <input type="number" name="cost" placeholder="Points needed" min="1" required />
-                  <div class="button-row">
-                    <button class="action-button primary" type="submit">Add reward</button>
-                  </div>
-                </form>
-              </section>
+            <article class="reward-card settings-tile family-controls-tile">
+              ${renderTileBubbles()}
+              <p class="eyebrow">Family controls</p>
+              <div class="family-controls-body">
+                <section class="settings-mini-section add-rewards-section">
+                  <p class="eyebrow">Add rewards</p>
+                  <form class="reward-form" id="reward-form">
+                    <input type="text" name="title" placeholder="Example: Choose dinner" required />
+                    <input type="number" name="cost" placeholder="Points needed" min="1" required />
+                    <div class="button-row">
+                      <button class="action-button primary" type="submit">Add reward to selected kids</button>
+                    </div>
+                  </form>
+                </section>
 
-              <section class="settings-mini-section dollar-section">
-                <p class="eyebrow">Dollar rate</p>
-                <form class="reward-form dollar-rate-form" id="dollar-form">
-                  <div class="dollar-rate-grid">
-                    <label class="field-label">
-                      <span>Points</span>
-                      <input type="number" name="points" placeholder="100" min="1" value="${escapeHtml(kid.pointsPerDollarReward)}" required />
-                    </label>
-                    <label class="field-label">
-                      <span>Dollars</span>
-                      <span class="money-input">
-                        <span aria-hidden="true">$</span>
-                        <input type="number" name="dollars" placeholder="20" min="1" value="${escapeHtml(kid.dollarRewardValue)}" required />
-                      </span>
-                    </label>
-                  </div>
-                  <div class="button-row">
-                    <button class="action-button primary" type="submit">Save dollar rate</button>
-                  </div>
-                </form>
-              </section>
+                <section class="settings-mini-section dollar-section">
+                  <p class="eyebrow">Dollar rate</p>
+                  <form class="reward-form dollar-rate-form" id="dollar-form">
+                    <select name="kidId" required>
+                      ${getFamilyKids().map((child) => `<option value="${escapeHtml(child.id)}">${escapeHtml(child.name)}</option>`).join("")}
+                    </select>
+                    <div class="dollar-rate-grid">
+                      <label class="field-label">
+                        <span>Points</span>
+                        <input type="number" name="points" placeholder="100" min="1" value="${escapeHtml(kid.pointsPerDollarReward)}" required />
+                      </label>
+                      <label class="field-label">
+                        <span>Dollars</span>
+                        <span class="money-input">
+                          <span aria-hidden="true">$</span>
+                          <input type="number" name="dollars" placeholder="20" min="1" value="${escapeHtml(kid.dollarRewardValue)}" required />
+                        </span>
+                      </label>
+                    </div>
+                    <div class="button-row">
+                      <button class="action-button primary" type="submit">Save dollar rate</button>
+                    </div>
+                  </form>
+                </section>
 
-              <section class="settings-mini-section avatar-section">
-                <p class="eyebrow">Change avatar</p>
-                <form class="reward-form" id="avatar-form">
-                  ${
-                    familyMode
-                      ? `
-                        <select name="avatarKid" required>
-                          ${state.kids.map((child) => `<option value="${escapeHtml(child.id)}">${escapeHtml(child.name)}</option>`).join("")}
-                        </select>
-                      `
-                      : ""
-                  }
-                  <input type="file" name="avatar" accept="image/*" required />
-                  <div class="button-row">
-                    <button class="action-button primary" type="submit">Upload avatar</button>
-                  </div>
-                </form>
-              </section>
+                <section class="settings-mini-section avatar-section">
+                  <p class="eyebrow">Add child</p>
+                  <form class="reward-form" id="add-child-form">
+                    <input type="text" name="childName" placeholder="Child name" required />
+                    <input type="password" name="childPin" placeholder="Child PIN" required />
+                    <div class="button-row">
+                      <button class="action-button primary" type="submit">Add child</button>
+                    </div>
+                  </form>
+                </section>
 
-              <section class="settings-mini-section threshold-section">
-                <p class="eyebrow">Celebration threshold</p>
-                <form class="reward-form threshold-form" id="threshold-form">
-                  <select name="thresholdKid" required>
-                    ${state.kids.map((child) => `<option value="${escapeHtml(child.id)}">${escapeHtml(child.name)}</option>`).join("")}
-                  </select>
-                  <input type="number" name="threshold" placeholder="Points target" min="1" value="${escapeHtml(kid.celebrationThreshold)}" required />
-                  <div class="button-row">
-                    <button class="action-button primary" type="submit">Save threshold</button>
-                  </div>
-                </form>
-              </section>
-            </div>
-          </article>
+                <section class="settings-mini-section threshold-section">
+                  <p class="eyebrow">Celebration threshold</p>
+                  <form class="reward-form threshold-form" id="threshold-form">
+                    <select name="thresholdKid" required>
+                      ${getFamilyKids().map((child) => `<option value="${escapeHtml(child.id)}">${escapeHtml(child.name)}</option>`).join("")}
+                    </select>
+                    <input type="number" name="threshold" placeholder="Points target" min="1" value="${escapeHtml(kid.celebrationThreshold)}" required />
+                    <div class="button-row">
+                      <button class="action-button primary" type="submit">Save threshold</button>
+                    </div>
+                  </form>
+                </section>
+              </div>
+            </article>
 
-          <article class="reward-card settings-tile add-task-tile">
-            ${renderTileBubbles()}
-            <p class="eyebrow">Add task</p>
-            <form class="reward-form" id="task-form">
-              <input type="text" name="title" placeholder="Task title" required />
+            <article class="reward-card settings-tile add-task-tile">
+              ${renderTileBubbles()}
+              <p class="eyebrow">Add task</p>
+              <form class="reward-form" id="task-form">
+                <input type="text" name="title" placeholder="Task title" required />
+                <p class="assign-summary">Assigned to: ${escapeHtml(getAssignedKidNames().join(", ") || "No kids selected yet")}</p>
+                <select name="recurring" required>
+                  <option value="daily">Daily</option>
+                  <option value="every-other-day">Every other day</option>
+                  <option value="weekly">Weekly</option>
+                  <option value="monthly">Monthly</option>
+                </select>
+                <label class="time-field" aria-label="Task time">
+                  <input type="time" name="time" required />
+                </label>
+                <input type="number" name="points" placeholder="Points" min="1" required />
+                <div class="button-row">
+                  <button class="action-button secondary" type="button" data-open-assign="task">Assign</button>
+                  <button class="action-button primary" type="submit">Add task</button>
+                  <button class="action-button danger" type="button" data-reset-tasks="true">Reset tasks & points</button>
+                </div>
+              </form>
+              ${renderAssignPopup("task")}
+            </article>
+
+            <article class="reward-card settings-tile bonus-penalty-tile">
+              ${renderTileBubbles()}
+              <div class="bonus-penalty-header">
+                <p class="eyebrow">Bonus & Penalty</p>
+                <button class="action-button secondary" type="button" data-open-assign="adjustments">Assign</button>
+              </div>
               <p class="assign-summary">Assigned to: ${escapeHtml(getAssignedKidNames().join(", ") || "No kids selected yet")}</p>
-              <select name="recurring" required>
-                <option value="daily">Daily</option>
-                <option value="every-other-day">Every other day</option>
-                <option value="weekly">Weekly</option>
-                <option value="monthly">Monthly</option>
-              </select>
-              <label class="time-field" aria-label="Task time">
-                <input type="time" name="time" required />
-              </label>
-              <input type="number" name="points" placeholder="Points" min="1" required />
-              <div class="button-row">
-                <button class="action-button secondary" type="button" data-open-assign="task">Assign</button>
-                <button class="action-button primary" type="submit">Add task</button>
-                <button class="action-button danger" type="button" data-reset-tasks="true">Reset tasks & points</button>
+              <div class="assign-popup-slot">${renderAssignPopup("adjustments")}</div>
+              <div class="bonus-penalty-body">
+                <div class="bonus-penalty-section bonus-section">
+                  <p class="eyebrow">Bonus</p>
+                  <form class="reward-form adjustment-form" data-adjustment-type="bonus">
+                    <input type="number" name="value" placeholder="Points" min="1" required />
+                    <div class="button-row">
+                      <button class="action-button primary" type="submit">Save points</button>
+                    </div>
+                  </form>
+                  <form class="reward-form reason-form" data-reason-type="bonus">
+                    <input type="text" name="reason" placeholder="Reason" required />
+                    <div class="button-row">
+                      <button class="action-button primary" type="submit">Add reason</button>
+                    </div>
+                  </form>
+                </div>
+                <div class="bonus-penalty-section penalty-section">
+                  <p class="eyebrow">Penalty</p>
+                  <form class="reward-form adjustment-form" data-adjustment-type="penalty">
+                    <input type="number" name="value" placeholder="Points" min="1" required />
+                    <div class="button-row">
+                      <button class="action-button primary" type="submit">Save points</button>
+                    </div>
+                  </form>
+                  <form class="reward-form reason-form" data-reason-type="penalty">
+                    <input type="text" name="reason" placeholder="Reason" required />
+                    <div class="button-row">
+                      <button class="action-button primary" type="submit">Add reason</button>
+                    </div>
+                  </form>
+                </div>
               </div>
-            </form>
-            ${renderAssignPopup("task")}
-          </article>
-
-          <article class="reward-card settings-tile bonus-penalty-tile">
-            ${renderTileBubbles()}
-            <div class="bonus-penalty-header">
-              <p class="eyebrow">Bonus & Penalty</p>
-              <button class="action-button secondary" type="button" data-open-assign="adjustments">Assign</button>
-            </div>
-            <p class="assign-summary">Assigned to: ${escapeHtml(getAssignedKidNames().join(", ") || "No kids selected yet")}</p>
-            <div class="assign-popup-slot">${renderAssignPopup("adjustments")}</div>
-            <div class="bonus-penalty-body">
-              <div class="bonus-penalty-section bonus-section">
-                <p class="eyebrow">Bonus</p>
-                <form class="reward-form adjustment-form" data-adjustment-type="bonus">
-                  <input type="number" name="value" placeholder="Points" min="1" required />
-                  <div class="button-row">
-                    <button class="action-button primary" type="submit">Save points</button>
-                  </div>
-                </form>
-                <form class="reward-form reason-form" data-reason-type="bonus">
-                  <input type="text" name="reason" placeholder="Reason" required />
-                  <div class="button-row">
-                    <button class="action-button primary" type="submit">Add reason</button>
-                  </div>
-                </form>
-              </div>
-              <div class="bonus-penalty-section penalty-section">
-                <p class="eyebrow">Penalty</p>
-                <form class="reward-form adjustment-form" data-adjustment-type="penalty">
-                  <input type="number" name="value" placeholder="Points" min="1" required />
-                  <div class="button-row">
-                    <button class="action-button primary" type="submit">Save points</button>
-                  </div>
-                </form>
-                <form class="reward-form reason-form" data-reason-type="penalty">
-                  <input type="text" name="reason" placeholder="Reason" required />
-                  <div class="button-row">
-                    <button class="action-button primary" type="submit">Add reason</button>
-                  </div>
-                </form>
-              </div>
-            </div>
-          </article>
-
+            </article>
           </div>
         </article>
       </section>
     </div>
   `;
 
-  document.getElementById("back-home").addEventListener("click", () => {
+  const backHome = document.getElementById("back-home");
+  backHome?.addEventListener("click", () => {
+    if (isKidSession()) {
+      logout();
+      return;
+    }
+
     currentKidId = null;
     currentFamilyMode = false;
-    renderHome();
-    showPage("page-home");
+    currentKidView = "dashboard";
+    isAssignPopupOpen = false;
+    assignPopupPlacement = "task";
+    renderApp();
   });
+
+  showPage("page-kid");
 }
 
-function rerenderCurrentPage() {
-  renderHome();
-  if (currentKidId) {
-    renderKidPage(currentKidId, currentFamilyMode);
+function renderApp() {
+  const family = getCurrentFamily();
+
+  if (!state.session || !family) {
+    state.session = null;
+    renderAuthHome();
+    return;
+  }
+
+  if (isParentSession()) {
+    if (!currentKidId && !currentFamilyMode) {
+      renderParentHome();
+      return;
+    }
+
+    if (!currentKidId && getFamilyKids()[0]) {
+      currentKidId = getFamilyKids()[0].id;
+    }
+
+    renderKidPage(currentKidId || getFamilyKids()[0]?.id);
+    return;
+  }
+
+  if (isKidSession()) {
+    currentFamilyMode = false;
+    currentKidView = ["dashboard", "rewards", "favors"].includes(currentKidView) ? currentKidView : "dashboard";
+    renderKidPage(state.session.kidId);
   }
 }
 
@@ -998,78 +1028,67 @@ function triggerPointsBurst(pointsCard) {
   window.setTimeout(() => pointsCard.classList.remove("is-bursting"), 900);
 }
 
-document.body.addEventListener("click", async (event) => {
+document.body.addEventListener("click", (event) => {
+  const authButton = event.target.closest("[data-auth-view]");
+  if (authButton && !state.session) {
+    authView = authButton.dataset.authView || "create";
+    renderAuthHome();
+    return;
+  }
+
+  const logoutButton = event.target.closest("[data-logout]");
+  if (logoutButton) {
+    logout();
+    return;
+  }
+
   const pointsCard = event.target.closest("[data-points-card]");
   if (pointsCard) {
     triggerPointsBurst(pointsCard);
     return;
   }
 
-  const reasonButton = event.target.closest("[data-open-reasons]");
-  if (reasonButton && currentKidId) {
-    currentReasonList = reasonButton.dataset.openReasons;
-    currentKidView = "reasons";
+  const openAssignButton = event.target.closest("[data-open-assign]");
+  if (openAssignButton && isParentSession()) {
+    isAssignPopupOpen = true;
+    assignPopupPlacement = openAssignButton.dataset.openAssign || "task";
     renderKidPage(currentKidId);
     return;
   }
 
-  const openAssignButton = event.target.closest("[data-open-assign]");
-  if (openAssignButton && currentKidId) {
-    isAssignPopupOpen = true;
-    assignPopupPlacement = openAssignButton.dataset.openAssign || "task";
-    renderKidPage(currentKidId, currentFamilyMode);
-    return;
-  }
-
   const saveAssignButton = event.target.closest("[data-save-assign]");
-  if (saveAssignButton && currentKidId) {
+  if (saveAssignButton && isParentSession()) {
     const checked = Array.from(document.querySelectorAll('input[name="assignedKids"]:checked')).map((input) => input.value);
-    if (checked.length) {
-      currentAssignedKids = checked;
-    }
+    if (checked.length) currentAssignedKids = checked;
     isAssignPopupOpen = false;
     assignPopupPlacement = "task";
-    renderKidPage(currentKidId, currentFamilyMode);
+    renderKidPage(currentKidId);
     return;
   }
 
   const resetTasksButton = event.target.closest("[data-reset-tasks]");
-  if (resetTasksButton) {
-    resetAllTasks();
+  if (resetTasksButton && isParentSession()) {
+    resetAllTasksAndPoints();
     saveState();
-    rerenderCurrentPage();
+    renderKidPage(currentKidId);
+    showToast("Tasks and points reset.");
     return;
   }
 
   const taskMoveButton = event.target.closest("[data-task-move]");
   if (taskMoveButton && currentKidId) {
-    if (taskMoveButton.dataset.toStatus === "completed" && !(await requireParentApproval())) {
-      return;
-    }
+    const toStatus = taskMoveButton.dataset.toStatus;
+    if (toStatus === "completed" && !isParentSession()) return;
+    if (taskMoveButton.dataset.fromStatus === "completed" && !isParentSession()) return;
 
     moveTask(
       currentKidId,
       taskMoveButton.dataset.fromStatus,
-      taskMoveButton.dataset.toStatus,
+      toStatus,
       Number(taskMoveButton.dataset.taskIndex)
     );
     saveState();
-    rerenderCurrentPage();
-    return;
-  }
-
-  const settingsButton = event.target.closest("[data-settings-view]");
-  if (settingsButton) {
-    if (!(await requireParentAccess("open Settings"))) {
-      return;
-    }
-
-    currentSettingsView = settingsButton.dataset.settingsView;
-    isAssignPopupOpen = false;
-    assignPopupPlacement = "task";
-    if (currentKidId) {
-      renderKidPage(currentKidId, currentFamilyMode);
-    }
+    renderKidPage(currentKidId);
     return;
   }
 
@@ -1077,143 +1096,256 @@ document.body.addEventListener("click", async (event) => {
   if (claimRewardButton && currentKidId) {
     claimReward(currentKidId, claimRewardButton.dataset.claimReward);
     saveState();
-    rerenderCurrentPage();
+    renderKidPage(currentKidId);
     return;
   }
 
   const viewButton = event.target.closest("[data-view]");
-  if (viewButton) {
-    if (viewButton.dataset.view === "settings" && !(await requireParentAccess("open Settings"))) {
-      return;
-    }
+  if (viewButton && currentKidId) {
+    const view = viewButton.dataset.view;
+    if (!view) return;
+    if (isKidSession() && (view === "report" || view === "settings")) return;
 
-    currentKidView = viewButton.dataset.view;
-    if (currentKidId) {
-      renderKidPage(currentKidId, currentFamilyMode);
-    }
+    currentKidView = view;
+    currentFamilyMode = view === "report" || view === "settings";
+    isAssignPopupOpen = false;
+    assignPopupPlacement = "task";
+    renderKidPage(currentKidId);
     return;
   }
 
   const familyButton = event.target.closest("[data-family-view]");
-  if (familyButton) {
-    const firstKid = state.kids[0];
+  if (familyButton && isParentSession()) {
+    const firstKid = getFamilyKids()[0];
     if (!firstKid) return;
-    if (familyButton.dataset.familyView === "settings" && !(await requireParentAccess("open Settings"))) {
-      return;
-    }
-
-    currentFamilyMode = true;
     currentKidId = firstKid.id;
+    currentFamilyMode = true;
     currentKidView = familyButton.dataset.familyView;
-    currentSettingsView = "task";
-    currentAssignedKids = state.kids.map((child) => child.id);
+    currentAssignedKids = [firstKid.id];
     isAssignPopupOpen = false;
     assignPopupPlacement = "task";
-    currentReasonList = null;
-    renderKidPage(firstKid.id, true);
-    showPage("page-kid");
+    renderKidPage(firstKid.id);
     return;
   }
 
-  const button = event.target.closest("[data-kid-id]");
-  if (!button) return;
-
-  currentKidView = "dashboard";
-  currentSettingsView = "task";
-  currentAssignedKids = [button.dataset.kidId];
-  isAssignPopupOpen = false;
-  assignPopupPlacement = "task";
-  currentReasonList = null;
-  currentFamilyMode = false;
-  renderKidPage(button.dataset.kidId, false);
-  showPage("page-kid");
+  const kidCard = event.target.closest("[data-kid-id]");
+  if (kidCard && isParentSession()) {
+    currentKidId = kidCard.dataset.kidId;
+    currentKidView = "dashboard";
+    currentFamilyMode = false;
+    currentAssignedKids = [currentKidId];
+    isAssignPopupOpen = false;
+    assignPopupPlacement = "task";
+    renderKidPage(currentKidId);
+  }
 });
 
 document.body.addEventListener("keydown", (event) => {
   const pointsCard = event.target.closest?.("[data-points-card]");
-  if (!pointsCard || (event.key !== "Enter" && event.key !== " ")) return;
+  if (pointsCard && (event.key === "Enter" || event.key === " ")) {
+    event.preventDefault();
+    triggerPointsBurst(pointsCard);
+    return;
+  }
 
-  event.preventDefault();
-  triggerPointsBurst(pointsCard);
+  const kidCard = event.target.closest?.("[data-kid-id]");
+  if (kidCard && isParentSession() && (event.key === "Enter" || event.key === " ")) {
+    event.preventDefault();
+    currentKidId = kidCard.dataset.kidId;
+    currentKidView = "dashboard";
+    currentFamilyMode = false;
+    currentAssignedKids = [currentKidId];
+    renderKidPage(currentKidId);
+  }
 });
 
 document.body.addEventListener("change", (event) => {
   const thresholdSelect = event.target.closest?.('select[name="thresholdKid"]');
-  if (!thresholdSelect) return;
+  if (thresholdSelect) {
+    const thresholdForm = thresholdSelect.closest("#threshold-form");
+    const thresholdInput = thresholdForm?.querySelector('input[name="threshold"]');
+    const thresholdKid = getKid(thresholdSelect.value);
+    if (thresholdInput && thresholdKid) {
+      thresholdInput.value = thresholdKid.celebrationThreshold;
+    }
+  }
 
-  const thresholdForm = thresholdSelect.closest("#threshold-form");
-  const thresholdInput = thresholdForm?.querySelector('input[name="threshold"]');
-  const kid = getKid(thresholdSelect.value);
-  if (!thresholdInput || !kid) return;
-
-  thresholdInput.value = kid.celebrationThreshold;
+  const dollarSelect = event.target.closest?.('#dollar-form select[name="kidId"]');
+  if (dollarSelect) {
+    const dollarForm = dollarSelect.closest("#dollar-form");
+    const pointsInput = dollarForm?.querySelector('input[name="points"]');
+    const dollarsInput = dollarForm?.querySelector('input[name="dollars"]');
+    const selectedKid = getKid(dollarSelect.value);
+    if (selectedKid && pointsInput && dollarsInput) {
+      pointsInput.value = selectedKid.pointsPerDollarReward;
+      dollarsInput.value = selectedKid.dollarRewardValue;
+    }
+  }
 });
 
 document.body.addEventListener("submit", (event) => {
-  if (!currentKidId) return;
-  const targetKidIds = currentFamilyMode ? state.kids.map((kid) => kid.id) : [currentKidId];
+  const createFamilyForm = event.target.closest("#create-family-form");
+  if (createFamilyForm) {
+    event.preventDefault();
+    const formData = new FormData(createFamilyForm);
+    const familyName = String(formData.get("familyName") || "").trim();
+    const parentName = String(formData.get("parentName") || "").trim();
+    const parentEmail = String(formData.get("parentEmail") || "").trim();
+    const parentPin = String(formData.get("parentPin") || "").trim();
+    const confirmParentPin = String(formData.get("confirmParentPin") || "").trim();
+
+    if (!familyName || !parentName || !parentEmail || !parentPin) return;
+    if (parentPin !== confirmParentPin) {
+      showToast("Parent PINs do not match.");
+      return;
+    }
+
+    if (state.families.some((family) => family.parentEmailLower === parentEmail.toLowerCase())) {
+      showToast("That parent email already has an account.");
+      return;
+    }
+
+    const kids = [];
+    [1, 2, 3].forEach((index) => {
+      const name = String(formData.get(`kidName${index}`) || "").trim();
+      const pin = String(formData.get(`kidPin${index}`) || "").trim();
+      if (!name) return;
+      if (!pin) return;
+      kids.push(createKid(name, pin));
+    });
+
+    if (!kids.length) {
+      showToast("Add at least one child with a PIN.");
+      return;
+    }
+
+    const family = createFamily({ familyName, parentName, parentEmail, parentPin, kids });
+    state.families.push(family);
+    state.session = { familyId: family.id, role: "parent" };
+    currentKidId = null;
+    currentKidView = "dashboard";
+    currentFamilyMode = false;
+    currentAssignedKids = [];
+    saveState();
+    renderApp();
+    return;
+  }
+
+  const parentLoginForm = event.target.closest("#parent-login-form");
+  if (parentLoginForm) {
+    event.preventDefault();
+    const formData = new FormData(parentLoginForm);
+    const email = String(formData.get("parentEmail") || "").trim().toLowerCase();
+    const pin = String(formData.get("parentPin") || "").trim();
+    const family = state.families.find((entry) => entry.parentEmailLower === email && entry.parentPin === pin);
+    if (!family) {
+      showToast("Incorrect parent login.");
+      return;
+    }
+
+    state.session = { familyId: family.id, role: "parent" };
+    currentKidId = null;
+    currentKidView = "dashboard";
+    currentFamilyMode = false;
+    currentAssignedKids = [];
+    saveState();
+    renderApp();
+    return;
+  }
+
+  const kidLoginForm = event.target.closest("#kid-login-form");
+  if (kidLoginForm) {
+    event.preventDefault();
+    const formData = new FormData(kidLoginForm);
+    const email = String(formData.get("familyEmail") || "").trim().toLowerCase();
+    const kidName = String(formData.get("kidName") || "").trim().toLowerCase();
+    const kidPin = String(formData.get("kidPin") || "").trim();
+    const family = state.families.find((entry) => entry.parentEmailLower === email);
+    const kid = family?.kids.find((entry) => entry.name.trim().toLowerCase() === kidName && entry.kidPin === kidPin);
+
+    if (!family || !kid) {
+      showToast("Incorrect kid login.");
+      return;
+    }
+
+    state.session = { familyId: family.id, role: "kid", kidId: kid.id };
+    currentKidId = kid.id;
+    currentKidView = "dashboard";
+    currentFamilyMode = false;
+    currentAssignedKids = [kid.id];
+    saveState();
+    renderApp();
+    return;
+  }
+
+  if (!isParentSession()) return;
 
   const rewardForm = event.target.closest("#reward-form");
   if (rewardForm) {
     event.preventDefault();
-
     const formData = new FormData(rewardForm);
     const title = String(formData.get("title") || "").trim();
     const cost = Number(formData.get("cost"));
+    const targetKids = currentAssignedKids.length ? currentAssignedKids : getFamilyKids().map((kid) => kid.id);
 
-    if (!title || !Number.isFinite(cost) || cost < 1) return;
-
-    targetKidIds.forEach((kidId) => addReward(kidId, title, cost));
+    if (!title || !Number.isFinite(cost) || cost < 1 || !targetKids.length) return;
+    addReward(targetKids, title, cost);
     saveState();
-    rerenderCurrentPage();
+    renderKidPage(currentKidId || getFamilyKids()[0]?.id);
     return;
   }
 
-  const adjustmentForm = event.target.closest(".adjustment-form");
-  if (adjustmentForm) {
+  const dollarForm = event.target.closest("#dollar-form");
+  if (dollarForm) {
     event.preventDefault();
+    const formData = new FormData(dollarForm);
+    const kidId = String(formData.get("kidId") || "").trim();
+    const points = Number(formData.get("points"));
+    const dollars = Number(formData.get("dollars"));
 
-    const formData = new FormData(adjustmentForm);
-    const label = adjustmentForm.dataset.adjustmentType || "bonus";
-    const value = Number(formData.get("value"));
-
-    if (!label || !Number.isFinite(value)) return;
-
-    const adjustmentKidIds = currentAssignedKids.length ? currentAssignedKids : targetKidIds;
-    adjustmentKidIds.forEach((kidId) => addAdjustment(kidId, label, label === "penalty" ? -Math.abs(value) : Math.abs(value)));
+    if (!kidId || !Number.isFinite(points) || points < 1 || !Number.isFinite(dollars) || dollars < 1) return;
+    updateDollarConversion(kidId, points, dollars);
     saveState();
-    rerenderCurrentPage();
+    renderKidPage(currentKidId || getFamilyKids()[0]?.id);
     return;
   }
 
-  const reasonForm = event.target.closest(".reason-form");
-  if (reasonForm) {
+  const addChildForm = event.target.closest("#add-child-form");
+  if (addChildForm) {
     event.preventDefault();
-
-    const formData = new FormData(reasonForm);
-    const type = String(reasonForm.dataset.reasonType || "bonus").trim().toLowerCase();
-    const reason = String(formData.get("reason") || "").trim();
-
-    if (!reason) return;
-
-    const reasonKidIds = currentAssignedKids.length ? currentAssignedKids : targetKidIds;
-    reasonKidIds.forEach((kidId) => addReason(kidId, type, reason));
-    currentReasonList = type;
+    const formData = new FormData(addChildForm);
+    const childName = String(formData.get("childName") || "").trim();
+    const childPin = String(formData.get("childPin") || "").trim();
+    if (!childName || !childPin) return;
+    addChild(childName, childPin);
     saveState();
-    rerenderCurrentPage();
+    renderKidPage(currentKidId || getFamilyKids()[0]?.id);
+    showToast("Child added.");
+    return;
+  }
+
+  const thresholdForm = event.target.closest("#threshold-form");
+  if (thresholdForm) {
+    event.preventDefault();
+    const formData = new FormData(thresholdForm);
+    const thresholdKidId = String(formData.get("thresholdKid") || "").trim();
+    const threshold = Number(formData.get("threshold"));
+    if (!thresholdKidId || !Number.isFinite(threshold) || threshold < 1) return;
+    updateCelebrationThreshold(thresholdKidId, threshold);
+    saveState();
+    renderKidPage(currentKidId || getFamilyKids()[0]?.id);
     return;
   }
 
   const taskForm = event.target.closest("#task-form");
   if (taskForm) {
     event.preventDefault();
-
     const formData = new FormData(taskForm);
     const title = String(formData.get("title") || "").trim();
     const points = Number(formData.get("points"));
     const recurring = String(formData.get("recurring") || "daily").trim().toLowerCase();
     const timeValue = String(formData.get("time") || "").trim();
-    const assignedKids = currentAssignedKids;
+    const assignedKids = currentAssignedKids.length ? currentAssignedKids : [currentKidId];
 
     if (!title || !Number.isFinite(points) || points < 1 || !timeValue || !assignedKids.length) return;
 
@@ -1226,71 +1358,46 @@ document.body.addEventListener("submit", (event) => {
 
     addTask(assignedKids, title, points, recurring, displayTime);
     saveState();
-    rerenderCurrentPage();
+    renderKidPage(currentKidId || getFamilyKids()[0]?.id);
     return;
   }
 
-  const avatarForm = event.target.closest("#avatar-form");
-  if (avatarForm) {
+  const adjustmentForm = event.target.closest(".adjustment-form");
+  if (adjustmentForm) {
     event.preventDefault();
+    const formData = new FormData(adjustmentForm);
+    const label = adjustmentForm.dataset.adjustmentType || "bonus";
+    const value = Number(formData.get("value"));
+    const adjustmentKidIds = currentAssignedKids.length ? currentAssignedKids : [currentKidId];
 
-    const fileInput = avatarForm.querySelector('input[name="avatar"]');
-    const file = fileInput?.files?.[0];
-    if (!file || !currentKidId) return;
-    const formData = new FormData(avatarForm);
-    const avatarKidId = currentFamilyMode ? String(formData.get("avatarKid") || currentKidId) : currentKidId;
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      const kid = getKid(avatarKidId);
-      if (!kid) return;
-      kid.avatar = String(reader.result);
-      saveState();
-      rerenderCurrentPage();
-    };
-    reader.readAsDataURL(file);
-    return;
-  }
-
-  const dollarForm = event.target.closest("#dollar-form");
-  if (dollarForm) {
-    event.preventDefault();
-
-    const formData = new FormData(dollarForm);
-    const points = Number(formData.get("points"));
-    const dollars = Number(formData.get("dollars"));
-
-    if (!Number.isFinite(points) || points < 1 || !Number.isFinite(dollars) || dollars < 1) return;
-
-    targetKidIds.forEach((kidId) => updateDollarConversion(kidId, points, dollars));
+    if (!Number.isFinite(value) || !adjustmentKidIds.length) return;
+    addAdjustment(adjustmentKidIds, label, label === "penalty" ? -Math.abs(value) : Math.abs(value));
     saveState();
-    rerenderCurrentPage();
+    renderKidPage(currentKidId || getFamilyKids()[0]?.id);
     return;
   }
 
-  const thresholdForm = event.target.closest("#threshold-form");
-  if (thresholdForm) {
+  const reasonForm = event.target.closest(".reason-form");
+  if (reasonForm) {
     event.preventDefault();
+    const formData = new FormData(reasonForm);
+    const reason = String(formData.get("reason") || "").trim();
+    const type = String(reasonForm.dataset.reasonType || "bonus").trim().toLowerCase();
+    const reasonKidIds = currentAssignedKids.length ? currentAssignedKids : [currentKidId];
 
-    const formData = new FormData(thresholdForm);
-    const thresholdKidId = String(formData.get("thresholdKid") || currentKidId);
-    const threshold = Number(formData.get("threshold"));
-
-    if (!thresholdKidId || !Number.isFinite(threshold) || threshold < 1) return;
-
-    updateCelebrationThreshold(thresholdKidId, threshold);
+    if (!reason || !reasonKidIds.length) return;
+    addReason(reasonKidIds, type, reason);
     saveState();
-    rerenderCurrentPage();
+    renderKidPage(currentKidId || getFamilyKids()[0]?.id);
   }
 });
-
-renderHome();
-showPage("page-home");
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("./sw.js").catch(() => {
-      // Offline support is progressive; the app still works online if registration fails.
+      // Offline support is progressive.
     });
   });
 }
+
+renderApp();

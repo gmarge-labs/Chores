@@ -1,4 +1,4 @@
-const CACHE_NAME = "chores-offline-v1";
+const CACHE_NAME = "chores-offline-v2";
 
 const APP_SHELL = [
   "./",

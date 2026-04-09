@@ -3966,7 +3966,84 @@ button {
   }
 }
 
+.auth-shell {
+  padding-top: 10px;
+}
+
+.auth-layout {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.9fr) minmax(320px, 1.1fr);
+  gap: 22px;
+}
+
+.auth-intro,
+.auth-card {
+  min-height: 100%;
+}
+
+.auth-copy {
+  margin-bottom: 18px;
+  color: var(--muted);
+}
+
+.auth-bullets {
+  display: grid;
+  gap: 10px;
+}
+
+.auth-bullets p {
+  margin: 0;
+  padding: 14px 16px;
+  border-radius: 18px;
+  border: 2px solid rgba(255, 255, 255, 0.56);
+  background: rgba(255, 255, 255, 0.34);
+  color: var(--text);
+  font-weight: 700;
+}
+
+.auth-tabs {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+
+.auth-panel {
+  display: none;
+}
+
+.auth-panel.active {
+  display: block;
+}
+
+.auth-form,
+.auth-kid-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.auth-kid-block {
+  padding: 12px;
+  border-radius: 22px;
+  border: 2px solid rgba(255, 255, 255, 0.56);
+  background: rgba(255, 255, 255, 0.34);
+}
+
+.home-header--session {
+  padding-bottom: 12px;
+}
+
+.session-strip {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  margin-top: 18px;
+  flex-wrap: wrap;
+}
+
 @media (max-width: 980px) {
+  .auth-layout,
   .kid-grid,
   .home-actions,
   .task-columns,

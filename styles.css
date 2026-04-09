@@ -4224,6 +4224,53 @@ button {
   margin-top: 12px;
 }
 
+.about-pill-row .sub-view-button {
+  min-width: 180px;
+  min-height: 68px;
+  padding: 14px 22px;
+  border-radius: 999px;
+  border: 3px solid rgba(255, 255, 255, 0.72);
+  font-family: "Baloo 2", cursive;
+  font-size: 1.22rem;
+  font-weight: 800;
+  color: #fff8ea;
+  text-shadow: 0 3px 0 rgba(45, 32, 18, 0.16);
+  box-shadow:
+    0 14px 28px rgba(63, 43, 24, 0.14),
+    inset 0 2px 0 rgba(255, 255, 255, 0.62);
+  transition: transform 140ms ease, box-shadow 140ms ease, filter 140ms ease;
+}
+
+.about-pill-row .sub-view-button:nth-child(1) {
+  background: linear-gradient(145deg, #6dafff, #3f84db);
+}
+
+.about-pill-row .sub-view-button:nth-child(2) {
+  background: linear-gradient(145deg, #ffb267, #ff8c5d);
+}
+
+.about-pill-row .sub-view-button:nth-child(3) {
+  background: linear-gradient(145deg, #4fc7b5, #2f9f8f);
+}
+
+.about-pill-row .sub-view-button:nth-child(4) {
+  background: linear-gradient(145deg, #b99cff, #7e60df);
+}
+
+.about-pill-row .sub-view-button:nth-child(5) {
+  background: linear-gradient(145deg, #ff8db7, #c22f7e);
+}
+
+.about-pill-row .sub-view-button:hover,
+.about-pill-row .sub-view-button.active {
+  transform: translateY(-4px) scale(1.02);
+  box-shadow:
+    0 18px 34px rgba(63, 43, 24, 0.16),
+    0 0 0 8px rgba(255, 255, 255, 0.08),
+    inset 0 2px 0 rgba(255, 255, 255, 0.7);
+  filter: saturate(1.06);
+}
+
 .auth-about-display {
   margin-top: 22px;
   min-height: 260px;
@@ -4239,6 +4286,7 @@ button {
     0 18px 34px rgba(63, 43, 24, 0.12),
     inset 0 2px 0 rgba(255, 255, 255, 0.58);
   text-align: center;
+  transition: transform 180ms ease, box-shadow 180ms ease, opacity 180ms ease;
 }
 
 .auth-about-display h3 {

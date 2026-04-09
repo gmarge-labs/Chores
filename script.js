@@ -163,6 +163,59 @@ let authView = "";
 let authAccountReady = state.families.length > 0 || cloudModeEnabled;
 let authAccountJustCreated = false;
 let aboutTopic = "";
+
+function renderAboutTopicContent(topic) {
+  if (topic === "what") {
+    return `
+      <h3>What it does</h3>
+      <p>CHORES gives families one place to manage tasks, points, rewards, approvals, and progress in a fun way.</p>
+    `;
+  }
+
+  if (topic === "parents") {
+    return `
+      <h3>Parents</h3>
+      <p>Parents create the account, add kids, assign tasks, set rewards, approve chores, and check reports.</p>
+    `;
+  }
+
+  if (topic === "kids") {
+    return `
+      <h3>Kids</h3>
+      <p>Kids log in to their own view, mark tasks done, watch their points grow, and use points for favors.</p>
+    `;
+  }
+
+  if (topic === "how") {
+    return `
+      <h3>How it works</h3>
+      <p>Tasks move from due, to awaiting approval, to completed. Points update as chores are approved.</p>
+    `;
+  }
+
+  if (topic === "start") {
+    return `
+      <h3>Getting started</h3>
+      <p>Create your account first. After that, tap Next to reach the parent and kid login page.</p>
+    `;
+  }
+
+  return `<p class="about-hint">Hover over a pill to preview the details.</p>`;
+}
+
+function updateAboutTopicDisplay(nextTopic) {
+  aboutTopic = nextTopic || "";
+
+  const display = document.querySelector(".auth-about-display");
+  if (display) {
+    display.classList.toggle("active", Boolean(aboutTopic));
+    display.innerHTML = renderAboutTopicContent(aboutTopic);
+  }
+
+  document.querySelectorAll("[data-about-topic]").forEach((button) => {
+    button.classList.toggle("active", button.dataset.aboutTopic === aboutTopic);
+  });
+}
 let currentKidId = null;
 let currentKidView = "dashboard";
 let currentFamilyMode = false;
@@ -986,29 +1039,7 @@ function renderAuthHome() {
               <button class="sub-view-button ${aboutTopic === "start" ? "active" : ""}" type="button" data-about-topic="start">Getting started</button>
             </div>
             <div class="auth-about-display ${aboutTopic ? "active" : ""}">
-              ${aboutTopic === "what" ? `
-                <h3>What it does</h3>
-                <p>CHORES gives families one place to manage tasks, points, rewards, approvals, and progress in a fun way.</p>
-              ` : ""}
-              ${aboutTopic === "parents" ? `
-                <h3>Parents</h3>
-                <p>Parents create the account, add kids, assign tasks, set rewards, approve chores, and check reports.</p>
-              ` : ""}
-              ${aboutTopic === "kids" ? `
-                <h3>Kids</h3>
-                <p>Kids log in to their own view, mark tasks done, watch their points grow, and use points for favors.</p>
-              ` : ""}
-              ${aboutTopic === "how" ? `
-                <h3>How it works</h3>
-                <p>Tasks move from due, to awaiting approval, to completed. Points update as chores are approved.</p>
-              ` : ""}
-              ${aboutTopic === "start" ? `
-                <h3>Getting started</h3>
-                <p>Create your account first. After that, tap Next to reach the parent and kid login page.</p>
-              ` : ""}
-              ${!aboutTopic ? `
-                <p class="about-hint">Hover over a pill to preview the details.</p>
-              ` : ""}
+              ${renderAboutTopicContent(aboutTopic)}
             </div>
           </div>
 
@@ -1608,8 +1639,7 @@ document.body.addEventListener("click", (event) => {
 
   const aboutTopicButton = event.target.closest("[data-about-topic]");
   if (aboutTopicButton && !state.session) {
-    aboutTopic = aboutTopicButton.dataset.aboutTopic || "";
-    renderAuthHome();
+    updateAboutTopicDisplay(aboutTopicButton.dataset.aboutTopic || "");
     return;
   }
 
@@ -1750,8 +1780,7 @@ document.body.addEventListener("mouseover", (event) => {
 
   const nextTopic = aboutTopicButton.dataset.aboutTopic || "";
   if (aboutTopic === nextTopic) return;
-  aboutTopic = nextTopic;
-  renderAuthHome();
+  updateAboutTopicDisplay(nextTopic);
 });
 
 document.body.addEventListener("focusin", (event) => {
@@ -1760,8 +1789,7 @@ document.body.addEventListener("focusin", (event) => {
 
   const nextTopic = aboutTopicButton.dataset.aboutTopic || "";
   if (aboutTopic === nextTopic) return;
-  aboutTopic = nextTopic;
-  renderAuthHome();
+  updateAboutTopicDisplay(nextTopic);
 });
 
 document.body.addEventListener("change", (event) => {

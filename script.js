@@ -164,6 +164,44 @@ let authAccountReady = state.families.length > 0 || cloudModeEnabled;
 let authAccountJustCreated = false;
 let aboutTopic = "";
 let aboutTransitionTimer = null;
+let createAccountDraft = {
+  familyName: "",
+  parentName: "",
+  parentEmail: "",
+  parentPin: "",
+  confirmParentPin: "",
+  kidName1: "",
+  kidPin1: "",
+  kidName2: "",
+  kidPin2: "",
+  kidName3: "",
+  kidPin3: "",
+};
+
+function resetCreateAccountDraft() {
+  createAccountDraft = {
+    familyName: "",
+    parentName: "",
+    parentEmail: "",
+    parentPin: "",
+    confirmParentPin: "",
+    kidName1: "",
+    kidPin1: "",
+    kidName2: "",
+    kidPin2: "",
+    kidName3: "",
+    kidPin3: "",
+  };
+}
+
+function isFilled(value) {
+  return String(value || "").trim().length > 0;
+}
+
+function renderCreateField(name, placeholder, type = "text") {
+  const value = createAccountDraft[name] || "";
+  return `<input type="${type}" name="${name}" placeholder="${placeholder}" value="${escapeHtml(value)}" required />`;
+}
 
 function renderAboutTopicContent(topic) {
   if (topic === "what") {
@@ -1016,7 +1054,9 @@ function renderAuthHome() {
                   ${
                     authView === "about"
                       ? `<button class="action-button secondary auth-back-button" type="button" data-auth-view="back-intro">Back</button>`
-                      : `
+                      : authView === "create"
+                        ? `<button class="view-button active auth-create-only" type="button">Create account</button>`
+                        : `
                         <button class="view-button ${authView === "about" ? "active" : ""}" type="button" data-auth-view="about">About app</button>
                         <button class="view-button ${authView === "create" ? "active" : ""}" type="button" data-auth-view="create">Create account</button>
                       `
@@ -1054,25 +1094,37 @@ function renderAuthHome() {
 
           <div class="auth-panel ${authView === "create" ? "active" : ""}">
             <form class="reward-form auth-form" id="create-family-form">
-              <input type="text" name="familyName" placeholder="Family name" required />
-              <input type="text" name="parentName" placeholder="Parent name" required />
-              <input type="email" name="parentEmail" placeholder="Parent email" required />
-              <input type="password" name="parentPin" placeholder="Parent PIN" required />
-              <input type="password" name="confirmParentPin" placeholder="Confirm parent PIN" required />
-              <div class="auth-kid-block">
-                <p class="eyebrow">Add your kids</p>
-                <div class="auth-kid-grid">
-                  <input type="text" name="kidName1" placeholder="Kid 1 name" required />
-                  <input type="password" name="kidPin1" placeholder="Kid 1 PIN" required />
-                  <input type="text" name="kidName2" placeholder="Kid 2 name (optional)" />
-                  <input type="password" name="kidPin2" placeholder="Kid 2 PIN" />
-                  <input type="text" name="kidName3" placeholder="Kid 3 name (optional)" />
-                  <input type="password" name="kidPin3" placeholder="Kid 3 PIN" />
-                </div>
-              </div>
-              <div class="button-row">
-                <button class="action-button primary" type="submit">Create account</button>
-              </div>
+              ${renderCreateField("familyName", "Family name")}
+              ${isFilled(createAccountDraft.familyName) ? renderCreateField("parentName", "Parent name") : ""}
+              ${isFilled(createAccountDraft.parentName) ? renderCreateField("parentEmail", "Parent email", "email") : ""}
+              ${isFilled(createAccountDraft.parentEmail) ? renderCreateField("parentPin", "Parent PIN", "password") : ""}
+              ${isFilled(createAccountDraft.parentPin) ? renderCreateField("confirmParentPin", "Confirm parent PIN", "password") : ""}
+              ${
+                isFilled(createAccountDraft.confirmParentPin)
+                  ? `
+                    <div class="auth-kid-block">
+                      <p class="eyebrow">Add your kids</p>
+                      <div class="auth-kid-grid">
+                        ${renderCreateField("kidName1", "Kid 1 name")}
+                        ${isFilled(createAccountDraft.kidName1) ? renderCreateField("kidPin1", "Kid 1 PIN", "password") : ""}
+                        ${isFilled(createAccountDraft.kidPin1) ? renderCreateField("kidName2", "Kid 2 name (optional)") : ""}
+                        ${isFilled(createAccountDraft.kidName2) ? renderCreateField("kidPin2", "Kid 2 PIN", "password") : ""}
+                        ${isFilled(createAccountDraft.kidPin2) ? renderCreateField("kidName3", "Kid 3 name (optional)") : ""}
+                        ${isFilled(createAccountDraft.kidName3) ? renderCreateField("kidPin3", "Kid 3 PIN", "password") : ""}
+                      </div>
+                    </div>
+                  `
+                  : ""
+              }
+              ${
+                isFilled(createAccountDraft.kidPin1)
+                  ? `
+                    <div class="button-row">
+                      <button class="action-button primary" type="submit">Create account</button>
+                    </div>
+                  `
+                  : ""
+              }
             </form>
             ${
               authAccountReady
@@ -1798,6 +1850,42 @@ document.body.addEventListener("focusin", (event) => {
   updateAboutTopicDisplay(nextTopic);
 });
 
+document.body.addEventListener("input", (event) => {
+  const createFormField = event.target.closest?.("#create-family-form input");
+  if (!createFormField || state.session) return;
+
+  const { name, value } = createFormField;
+  if (!Object.prototype.hasOwnProperty.call(createAccountDraft, name)) return;
+
+  const wasFilled = isFilled(createAccountDraft[name]);
+  createAccountDraft[name] = value;
+  const isNowFilled = isFilled(value);
+  if (wasFilled === isNowFilled) return;
+
+  renderAuthHome();
+
+  const replacementField = document.querySelector(`#create-family-form input[name="${name}"]`);
+  const fieldOrder = [
+    "familyName",
+    "parentName",
+    "parentEmail",
+    "parentPin",
+    "confirmParentPin",
+    "kidName1",
+    "kidPin1",
+    "kidName2",
+    "kidPin2",
+    "kidName3",
+    "kidPin3",
+  ];
+  const currentIndex = fieldOrder.indexOf(name);
+  const focusName = isNowFilled && currentIndex >= 0 ? fieldOrder[currentIndex + 1] : name;
+  const focusField = document.querySelector(`#create-family-form input[name="${focusName}"]`) || replacementField;
+  focusField?.focus();
+  const fieldLength = focusField?.value?.length || 0;
+  focusField?.setSelectionRange?.(fieldLength, fieldLength);
+});
+
 document.body.addEventListener("change", (event) => {
   const thresholdSelect = event.target.closest?.('select[name="thresholdKid"]');
   if (thresholdSelect) {
@@ -1866,6 +1954,7 @@ document.body.addEventListener("submit", async (event) => {
         authAccountJustCreated = true;
         authStage = "intro";
         authView = "create";
+        resetCreateAccountDraft();
         await supabaseClient.auth.signOut().catch(() => {
           // If sign-out fails, we still continue to the login step.
         });
@@ -1888,6 +1977,7 @@ document.body.addEventListener("submit", async (event) => {
     authAccountJustCreated = true;
     authStage = "intro";
     authView = "create";
+    resetCreateAccountDraft();
     state.session = null;
     currentKidId = null;
     currentKidView = "dashboard";

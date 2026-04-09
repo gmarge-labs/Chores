@@ -66,16 +66,6 @@ function cloneEmptyState() {
   return JSON.parse(JSON.stringify(emptyState));
 }
 
-function getSyncModeLabel() {
-  return cloudModeEnabled ? "Cloud sync ready" : "Local mode";
-}
-
-function getSyncModeCopy() {
-  return cloudModeEnabled
-    ? "Supabase is connected. Parent accounts can sync family data across devices while keeping a local cache for offline use."
-    : "This family data is currently stored on this device only.";
-}
-
 function normalizeKid(kid) {
   return {
     id: kid.id || createId("kid"),
@@ -959,29 +949,30 @@ function renderAuthHome() {
             </p>
             <div class="auth-about-grid">
               <article class="auth-about-tile">
+                ${renderTileBubbles()}
                 <h3>For parents</h3>
                 <p>Create the family, add kids, assign tasks, set rewards, approve completed chores, and view reports.</p>
               </article>
               <article class="auth-about-tile">
+                ${renderTileBubbles()}
                 <h3>For kids</h3>
                 <p>Kids can log in to see their dashboard, mark tasks done, check rewards, and spend points on favors.</p>
               </article>
               <article class="auth-about-tile">
+                ${renderTileBubbles()}
                 <h3>How it works</h3>
                 <p>Tasks move from due to awaiting approval to completed, while points, reports, and streaks update along the way.</p>
               </article>
               <article class="auth-about-tile">
-                <h3>Sync mode</h3>
-                <p>${escapeHtml(getSyncModeCopy())}</p>
+                ${renderTileBubbles()}
+                <h3>Getting started</h3>
+                <p>Create your family first, then use parent login anytime you want to manage tasks, rewards, and approvals.</p>
               </article>
             </div>
             <div class="auth-bullets">
               <p>Start by creating a family account.</p>
               <p>Use parent login to manage everything later.</p>
               <p>Use kid login for a child-friendly view only.</p>
-            </div>
-            <div class="button-row">
-              <span class="summary-stat">${escapeHtml(getSyncModeLabel())}</span>
             </div>
           </div>
 

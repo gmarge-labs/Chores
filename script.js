@@ -2017,12 +2017,11 @@ document.body.addEventListener("submit", async (event) => {
   const createFamilyForm = event.target.closest("#create-family-form");
   if (createFamilyForm) {
     event.preventDefault();
-    const formData = new FormData(createFamilyForm);
-    const familyName = String(formData.get("familyName") || "").trim();
-    const parentName = String(formData.get("parentName") || "").trim();
-    const parentEmail = String(formData.get("parentEmail") || "").trim();
-    const parentPin = String(formData.get("parentPin") || "").trim();
-    const confirmParentPin = String(formData.get("confirmParentPin") || "").trim();
+    const familyName = String(createAccountDraft.familyName || "").trim();
+    const parentName = String(createAccountDraft.parentName || "").trim();
+    const parentEmail = String(createAccountDraft.parentEmail || "").trim();
+    const parentPin = String(createAccountDraft.parentPin || "").trim();
+    const confirmParentPin = String(createAccountDraft.confirmParentPin || "").trim();
 
     if (!familyName || !parentName || !parentEmail || !parentPin) return;
     if (parentPin !== confirmParentPin) {
@@ -2037,8 +2036,8 @@ document.body.addEventListener("submit", async (event) => {
 
     const kids = [];
     [1, 2, 3].forEach((index) => {
-      const name = String(formData.get(`kidName${index}`) || "").trim();
-      const pin = String(formData.get(`kidPin${index}`) || "").trim();
+      const name = String(createAccountDraft[`kidName${index}`] || "").trim();
+      const pin = String(createAccountDraft[`kidPin${index}`] || "").trim();
       if (!name) return;
       if (!pin) return;
       kids.push(createKid(name, pin));

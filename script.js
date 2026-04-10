@@ -200,9 +200,15 @@ function isFilled(value) {
   return String(value || "").trim().length > 0;
 }
 
+function isValidKidPin(value) {
+  return /^\d{4}$/.test(String(value || "").trim());
+}
+
 function renderCreateField(name, placeholder, type = "text") {
   const value = createAccountDraft[name] || "";
-  return `<input type="${type}" name="${name}" placeholder="${placeholder}" value="${escapeHtml(value)}" required />`;
+  const isKidPinField = /^kidPin\d+$/.test(name);
+  const extraAttrs = isKidPinField ? ` inputmode="numeric" pattern="\\d{4}" maxlength="4"` : "";
+  return `<input type="${type}" name="${name}" placeholder="${placeholder}" value="${escapeHtml(value)}" ${extraAttrs} required />`;
 }
 
 const CREATE_ACCOUNT_FIELDS = [
@@ -1237,7 +1243,7 @@ function renderAuthHome() {
             <form class="reward-form auth-form" id="kid-login-form">
               <input type="email" name="familyEmail" placeholder="Family email" required />
               <input type="text" name="kidName" placeholder="Kid name" required />
-              <input type="password" name="kidPin" placeholder="Kid PIN" required />
+              <input type="password" name="kidPin" placeholder="4-digit kid PIN" inputmode="numeric" pattern="\\d{4}" maxlength="4" required />
               <div class="button-row">
                 <button class="action-button primary" type="submit">Log in as kid</button>
               </div>
@@ -1606,7 +1612,7 @@ function renderKidPage(kidId) {
                   <p class="eyebrow">Add child</p>
                   <form class="reward-form" id="add-child-form">
                     <input type="text" name="childName" placeholder="Child name" required />
-                    <input type="password" name="childPin" placeholder="Child PIN" required />
+                    <input type="password" name="childPin" placeholder="4-digit child PIN" inputmode="numeric" pattern="\\d{4}" maxlength="4" required />
                     <div class="button-row">
                       <button class="action-button primary" type="submit">Add child</button>
                     </div>
@@ -2035,16 +2041,25 @@ document.body.addEventListener("submit", async (event) => {
     }
 
     const kids = [];
+    let invalidKidPin = false;
     [1, 2, 3].forEach((index) => {
       const name = String(createAccountDraft[`kidName${index}`] || "").trim();
       const pin = String(createAccountDraft[`kidPin${index}`] || "").trim();
       if (!name) return;
-      if (!pin) return;
+      if (!pin || !isValidKidPin(pin)) {
+        invalidKidPin = true;
+        return;
+      }
       kids.push(createKid(name, pin));
     });
 
+    if (invalidKidPin) {
+      showToast("Each kid PIN must be exactly 4 digits.");
+      return;
+    }
+
     if (!kids.length) {
-      showToast("Add at least one child with a PIN.");
+      showToast("Add at least one child with a 4-digit PIN.");
       return;
     }
 
@@ -2197,6 +2212,10 @@ document.body.addEventListener("submit", async (event) => {
     const email = String(formData.get("familyEmail") || "").trim().toLowerCase();
     const kidName = String(formData.get("kidName") || "").trim().toLowerCase();
     const kidPin = String(formData.get("kidPin") || "").trim();
+    if (!isValidKidPin(kidPin)) {
+      showToast("Kid PIN must be exactly 4 digits.");
+      return;
+    }
     const family = state.families.find((entry) => entry.parentEmailLower === email);
     const kid = family?.kids.find((entry) => entry.name.trim().toLowerCase() === kidName && entry.kidPin === kidPin);
 
@@ -2256,6 +2275,10 @@ document.body.addEventListener("submit", async (event) => {
     const childName = String(formData.get("childName") || "").trim();
     const childPin = String(formData.get("childPin") || "").trim();
     if (!childName || !childPin) return;
+    if (!isValidKidPin(childPin)) {
+      showToast("Child PIN must be exactly 4 digits.");
+      return;
+    }
     addChild(childName, childPin);
     saveState();
     renderKidPage(currentKidId || getFamilyKids()[0]?.id);

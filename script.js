@@ -18,9 +18,38 @@ const emptyState = {
 
 let cloudSyncQueue = Promise.resolve();
 let cloudBootstrapStarted = false;
+const MAX_CREATE_KIDS = 10;
+const BASE_CREATE_FIELDS = [
+  { name: "familyName", placeholder: "Family name", type: "text" },
+  { name: "parentName", placeholder: "Parent name", type: "text" },
+  { name: "parentEmail", placeholder: "Parent email", type: "email" },
+  { name: "parentPin", placeholder: "Parent PIN", type: "password" },
+  { name: "confirmParentPin", placeholder: "Confirm parent PIN", type: "password" },
+];
 
 function createId(prefix) {
   return `${prefix}-${Math.random().toString(36).slice(2, 10)}-${Date.now().toString(36)}`;
+}
+
+function buildCloudAuthPassword(parentEmail, parentPin) {
+  return `chores::${String(parentEmail || "").trim().toLowerCase()}::${String(parentPin || "").trim()}::family-auth`;
+}
+
+function createEmptyCreateAccountDraft() {
+  const draft = {
+    familyName: "",
+    parentName: "",
+    parentEmail: "",
+    parentPin: "",
+    confirmParentPin: "",
+  };
+
+  for (let index = 1; index <= MAX_CREATE_KIDS; index += 1) {
+    draft[`kidName${index}`] = "";
+    draft[`kidPin${index}`] = "";
+  }
+
+  return draft;
 }
 
 function createKid(name, kidPin) {
@@ -165,35 +194,11 @@ let authAccountJustCreated = false;
 let aboutTopic = "";
 let aboutTransitionTimer = null;
 let createAccountStep = 1;
-let createAccountDraft = {
-  familyName: "",
-  parentName: "",
-  parentEmail: "",
-  parentPin: "",
-  confirmParentPin: "",
-  kidName1: "",
-  kidPin1: "",
-  kidName2: "",
-  kidPin2: "",
-  kidName3: "",
-  kidPin3: "",
-};
+let createAccountDraft = createEmptyCreateAccountDraft();
 
 function resetCreateAccountDraft() {
   createAccountStep = 1;
-  createAccountDraft = {
-    familyName: "",
-    parentName: "",
-    parentEmail: "",
-    parentPin: "",
-    confirmParentPin: "",
-    kidName1: "",
-    kidPin1: "",
-    kidName2: "",
-    kidPin2: "",
-    kidName3: "",
-    kidPin3: "",
-  };
+  createAccountDraft = createEmptyCreateAccountDraft();
 }
 
 function isFilled(value) {
@@ -237,21 +242,23 @@ function renderCreateField(name, placeholder, type = "text") {
 }
 
 const CREATE_ACCOUNT_FIELDS = [
-  { name: "familyName", placeholder: "Family name", type: "text" },
-  { name: "parentName", placeholder: "Parent name", type: "text" },
-  { name: "parentEmail", placeholder: "Parent email", type: "email" },
-  { name: "parentPin", placeholder: "Parent PIN", type: "password" },
-  { name: "confirmParentPin", placeholder: "Confirm parent PIN", type: "password" },
-  { name: "kidName1", placeholder: "Kid 1 name", type: "text" },
-  { name: "kidPin1", placeholder: "Kid 1 PIN", type: "password" },
-  { name: "kidName2", placeholder: "Kid 2 name (optional)", type: "text" },
-  { name: "kidPin2", placeholder: "Kid 2 PIN", type: "password" },
-  { name: "kidName3", placeholder: "Kid 3 name (optional)", type: "text" },
-  { name: "kidPin3", placeholder: "Kid 3 PIN", type: "password" },
+  ...BASE_CREATE_FIELDS,
+  ...Array.from({ length: MAX_CREATE_KIDS }, (_, index) => {
+    const kidNumber = index + 1;
+    return [
+      { name: `kidName${kidNumber}`, placeholder: kidNumber === 1 ? "Kid 1 name" : `Kid ${kidNumber} name (optional)`, type: "text" },
+      { name: `kidPin${kidNumber}`, placeholder: `Kid ${kidNumber} PIN`, type: "password" },
+    ];
+  }).flat(),
 ];
 
 function getCurrentCreateField() {
   return CREATE_ACCOUNT_FIELDS[Math.max(0, Math.min(createAccountStep - 1, CREATE_ACCOUNT_FIELDS.length - 1))];
+}
+
+function getKidNumberFromFieldName(name) {
+  const match = /^kid(?:Name|Pin)(\d+)$/.exec(name || "");
+  return match ? Number(match[1]) : null;
 }
 
 function renderCreateAccountActions() {
@@ -262,7 +269,7 @@ function renderCreateAccountActions() {
   const canAdvance = isValidCreateFieldValue(currentField, currentValue);
   const disabledAttr = canAdvance ? "" : "disabled";
 
-  if (createAccountStep < 7) {
+  if (!/^kid/.test(currentField.name)) {
     return `
       <div class="button-row create-progress-actions">
         <button class="action-button primary" type="button" data-create-next="true" ${disabledAttr}>Next</button>
@@ -270,16 +277,7 @@ function renderCreateAccountActions() {
     `;
   }
 
-  if (createAccountStep === 7) {
-    return `
-      <div class="button-row create-progress-actions">
-        <button class="action-button primary" type="submit" ${disabledAttr}>Create account</button>
-        <button class="action-button secondary" type="button" data-add-child-step="8" ${disabledAttr}>Add another child</button>
-      </div>
-    `;
-  }
-
-  if (createAccountStep === 8 || createAccountStep === 10) {
+  if (/^kidName/.test(currentField.name)) {
     return `
       <div class="button-row create-progress-actions">
         <button class="action-button primary" type="button" data-create-next="true" ${disabledAttr}>Next</button>
@@ -287,24 +285,23 @@ function renderCreateAccountActions() {
     `;
   }
 
-  if (createAccountStep === 9) {
+  const kidNumber = getKidNumberFromFieldName(currentField.name);
+  if (!kidNumber) return "";
+
+  if (kidNumber < MAX_CREATE_KIDS) {
     return `
       <div class="button-row create-progress-actions">
         <button class="action-button primary" type="submit" ${disabledAttr}>Create account</button>
-        <button class="action-button secondary" type="button" data-add-child-step="10" ${disabledAttr}>Add one more child</button>
+        <button class="action-button secondary" type="button" data-add-child="true" ${disabledAttr}>Add another child</button>
       </div>
     `;
   }
 
-  if (createAccountStep === 11) {
-    return `
-      <div class="button-row create-progress-actions">
-        <button class="action-button primary" type="submit" ${disabledAttr}>Create account</button>
-      </div>
-    `;
-  }
-
-  return "";
+  return `
+    <div class="button-row create-progress-actions">
+      <button class="action-button primary" type="submit" ${disabledAttr}>Create account</button>
+    </div>
+  `;
 }
 
 function renderCurrentCreateStep() {
@@ -313,7 +310,7 @@ function renderCurrentCreateStep() {
   const currentValue = createAccountDraft[currentField.name] || "";
   const guidance = getCreateFieldGuidance(currentField, currentValue);
 
-  if (createAccountStep <= 5) {
+  if (createAccountStep <= BASE_CREATE_FIELDS.length) {
     return `
       ${renderCreateField(currentField.name, currentField.placeholder, currentField.type)}
       ${guidance}
@@ -827,10 +824,11 @@ async function fetchCloudFamilyForUser(user) {
 
 async function createCloudFamilyAccount({ familyName, parentName, parentEmail, parentPin, kids }) {
   if (!supabaseClient) throw new Error("Cloud sync is not configured yet.");
+  const authPassword = buildCloudAuthPassword(parentEmail, parentPin);
 
   const { data: signUpData, error: signUpError } = await supabaseClient.auth.signUp({
     email: parentEmail,
-    password: parentPin,
+    password: authPassword,
     options: {
       data: {
         parent_name: parentName,
@@ -845,7 +843,7 @@ async function createCloudFamilyAccount({ familyName, parentName, parentEmail, p
   if (!session) {
     const { data: signInData, error: signInError } = await supabaseClient.auth.signInWithPassword({
       email: parentEmail,
-      password: parentPin,
+      password: authPassword,
     });
 
     if (signInError || !signInData.session) {
@@ -906,10 +904,11 @@ async function createCloudFamilyAccount({ familyName, parentName, parentEmail, p
 
 async function loginCloudParent(parentEmail, parentPin) {
   if (!supabaseClient) throw new Error("Cloud sync is not configured yet.");
+  const authPassword = buildCloudAuthPassword(parentEmail, parentPin);
 
   const { data, error } = await supabaseClient.auth.signInWithPassword({
     email: parentEmail,
-    password: parentPin,
+    password: authPassword,
   });
 
   if (error) throw error;
@@ -1229,7 +1228,7 @@ function renderAuthHome() {
           <div class="auth-panel ${authView === "create" ? "active" : ""}">
             <form class="reward-form auth-form" id="create-family-form">
               ${renderCurrentCreateStep()}
-              ${createAccountStep > 5 ? `<p class="create-progress-copy">Complete one line, then tap Next.</p>` : ""}
+              ${createAccountStep > BASE_CREATE_FIELDS.length ? `<p class="create-progress-copy">Complete one line, then tap Next or add another child.</p>` : ""}
               ${renderCreateAccountActions()}
             </form>
             ${
@@ -1844,10 +1843,12 @@ document.body.addEventListener("click", (event) => {
     return;
   }
 
-  const addChildStepButton = event.target.closest("[data-add-child-step]");
+  const addChildStepButton = event.target.closest("[data-add-child]");
   if (addChildStepButton && !state.session) {
-    const nextStep = Number(addChildStepButton.dataset.addChildStep);
-    if (!Number.isInteger(nextStep)) return;
+    const currentField = getCurrentCreateField();
+    const currentKidNumber = getKidNumberFromFieldName(currentField?.name || "");
+    if (!currentKidNumber || currentKidNumber >= MAX_CREATE_KIDS) return;
+    const nextStep = BASE_CREATE_FIELDS.length + (currentKidNumber * 2) + 1;
     createAccountStep = nextStep;
     renderAuthHome();
     const nextField = document.querySelector(`#create-family-form input[name="${CREATE_ACCOUNT_FIELDS[nextStep - 1].name}"]`);
@@ -2007,7 +2008,7 @@ document.body.addEventListener("input", (event) => {
 
   const currentField = getCurrentCreateField();
   const canAdvance = currentField ? isValidCreateFieldValue(currentField, createAccountDraft[currentField.name]) : false;
-  document.querySelectorAll("[data-create-next], [data-add-child-step], #create-family-form button[type='submit']").forEach((button) => {
+  document.querySelectorAll("[data-create-next], [data-add-child], #create-family-form button[type='submit']").forEach((button) => {
     button.disabled = !canAdvance;
   });
 
@@ -2031,7 +2032,7 @@ document.body.addEventListener("keydown", (event) => {
   const field = CREATE_ACCOUNT_FIELDS[fieldIndex];
   if (!isValidCreateFieldValue(field, createAccountDraft[name])) return;
 
-  if (fieldIndex + 1 >= createAccountStep && createAccountStep < 7) {
+  if (fieldIndex + 1 >= createAccountStep && createAccountStep < CREATE_ACCOUNT_FIELDS.length) {
     createAccountStep = Math.min(createAccountStep + 1, CREATE_ACCOUNT_FIELDS.length);
     renderAuthHome();
   }
@@ -2087,16 +2088,16 @@ document.body.addEventListener("submit", async (event) => {
 
     const kids = [];
     let invalidKidPin = false;
-    [1, 2, 3].forEach((index) => {
+    for (let index = 1; index <= MAX_CREATE_KIDS; index += 1) {
       const name = String(createAccountDraft[`kidName${index}`] || "").trim();
       const pin = String(createAccountDraft[`kidPin${index}`] || "").trim();
-      if (!name) return;
+      if (!name) continue;
       if (!pin || !isValidKidPin(pin)) {
         invalidKidPin = true;
-        return;
+        continue;
       }
       kids.push(createKid(name, pin));
-    });
+    }
 
     if (invalidKidPin) {
       showToast("Each kid PIN must be exactly 4 digits.");

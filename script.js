@@ -204,6 +204,31 @@ function isValidKidPin(value) {
   return /^\d{4}$/.test(String(value || "").trim());
 }
 
+function isValidCreateFieldValue(field, value) {
+  if (!field) return false;
+  const trimmedValue = String(value || "").trim();
+  if (!trimmedValue) return false;
+  if (/^kidPin\d+$/.test(field.name)) {
+    return isValidKidPin(trimmedValue);
+  }
+  return true;
+}
+
+function getCreateFieldGuidance(field, value) {
+  if (!field) return "";
+  const trimmedValue = String(value || "").trim();
+  if (/^kidPin\d+$/.test(field.name)) {
+    if (!trimmedValue) {
+      return `<p class="create-guidance-pill">Choose a 4-digit password for this child.</p>`;
+    }
+    if (!isValidKidPin(trimmedValue)) {
+      return `<p class="create-guidance-pill create-guidance-pill--warning">This kid password must be exactly 4 digits before you can continue.</p>`;
+    }
+    return `<p class="create-guidance-pill create-guidance-pill--success">Perfect. This 4-digit kid password is ready.</p>`;
+  }
+  return "";
+}
+
 function renderCreateField(name, placeholder, type = "text") {
   const value = createAccountDraft[name] || "";
   const isKidPinField = /^kidPin\d+$/.test(name);
@@ -234,7 +259,7 @@ function renderCreateAccountActions() {
   if (!currentField) return "";
 
   const currentValue = createAccountDraft[currentField.name] || "";
-  const canAdvance = isFilled(currentValue);
+  const canAdvance = isValidCreateFieldValue(currentField, currentValue);
   const disabledAttr = canAdvance ? "" : "disabled";
 
   if (createAccountStep < 7) {
@@ -285,9 +310,14 @@ function renderCreateAccountActions() {
 function renderCurrentCreateStep() {
   const currentField = getCurrentCreateField();
   if (!currentField) return "";
+  const currentValue = createAccountDraft[currentField.name] || "";
+  const guidance = getCreateFieldGuidance(currentField, currentValue);
 
   if (createAccountStep <= 5) {
-    return renderCreateField(currentField.name, currentField.placeholder, currentField.type);
+    return `
+      ${renderCreateField(currentField.name, currentField.placeholder, currentField.type)}
+      ${guidance}
+    `;
   }
 
   return `
@@ -296,6 +326,7 @@ function renderCurrentCreateStep() {
       <div class="auth-kid-grid">
         ${renderCreateField(currentField.name, currentField.placeholder, currentField.type)}
       </div>
+      ${guidance}
     </div>
   `;
 }
@@ -1799,7 +1830,13 @@ document.body.addEventListener("click", (event) => {
   if (createNextButton && !state.session) {
     const currentField = getCurrentCreateField();
     if (!currentField) return;
-    if (!isFilled(createAccountDraft[currentField.name])) return;
+    const currentValue = createAccountDraft[currentField.name] || "";
+    if (!isValidCreateFieldValue(currentField, currentValue)) {
+      if (/^kidPin\d+$/.test(currentField.name)) {
+        showToast("Kid password must be exactly 4 digits before you can continue.");
+      }
+      return;
+    }
     createAccountStep = Math.min(createAccountStep + 1, CREATE_ACCOUNT_FIELDS.length);
     renderAuthHome();
     const nextField = document.querySelector(`#create-family-form input[name="${CREATE_ACCOUNT_FIELDS[Math.min(createAccountStep - 1, CREATE_ACCOUNT_FIELDS.length - 1)].name}"]`);
@@ -1969,10 +2006,17 @@ document.body.addEventListener("input", (event) => {
   createAccountDraft[name] = value;
 
   const currentField = getCurrentCreateField();
-  const canAdvance = currentField ? isFilled(createAccountDraft[currentField.name]) : false;
+  const canAdvance = currentField ? isValidCreateFieldValue(currentField, createAccountDraft[currentField.name]) : false;
   document.querySelectorAll("[data-create-next], [data-add-child-step], #create-family-form button[type='submit']").forEach((button) => {
     button.disabled = !canAdvance;
   });
+
+  if (currentField && currentField.name === name) {
+    const guidanceNode = document.querySelector(".create-guidance-pill");
+    if (guidanceNode) {
+      guidanceNode.outerHTML = getCreateFieldGuidance(currentField, value);
+    }
+  }
 });
 
 document.body.addEventListener("keydown", (event) => {
@@ -1984,7 +2028,8 @@ document.body.addEventListener("keydown", (event) => {
   const { name } = createFormField;
   const fieldIndex = CREATE_ACCOUNT_FIELDS.findIndex((field) => field.name === name);
   if (fieldIndex < 0) return;
-  if (!isFilled(createAccountDraft[name])) return;
+  const field = CREATE_ACCOUNT_FIELDS[fieldIndex];
+  if (!isValidCreateFieldValue(field, createAccountDraft[name])) return;
 
   if (fieldIndex + 1 >= createAccountStep && createAccountStep < 7) {
     createAccountStep = Math.min(createAccountStep + 1, CREATE_ACCOUNT_FIELDS.length);

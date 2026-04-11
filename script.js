@@ -210,9 +210,9 @@ function resetCreateAccountDraft() {
 
 function renderSettingsSwitcher(activeSection = "") {
   const settingsButtons = [
-    { key: "family-controls", label: "Family Controls" },
     { key: "add-task", label: "Add task" },
     { key: "bonus-penalty", label: "Bonus & Penalty" },
+    { key: "family-controls", label: "Family Controls" },
   ];
 
   return `
@@ -505,6 +505,7 @@ let currentKidView = "dashboard";
 let currentFamilyMode = false;
 let currentAssignedKids = [];
 let currentRewardAssignedKids = [];
+let currentThresholdAssignedKids = [];
 let isAssignPopupOpen = false;
 let assignPopupPlacement = "task";
 
@@ -569,6 +570,10 @@ function getAssignedKidNames() {
 
 function getRewardAssignedKidNames() {
   return currentRewardAssignedKids.map((kidId) => getKid(kidId)?.name).filter(Boolean);
+}
+
+function getThresholdAssignedKidNames() {
+  return currentThresholdAssignedKids.map((kidId) => getKid(kidId)?.name).filter(Boolean);
 }
 
 function getDollarEquivalent(kid) {
@@ -811,11 +816,14 @@ function updateDollarConversion(kidId, points, dollars) {
   kid.dollarRewardValue = dollars;
 }
 
-function updateCelebrationThreshold(kidId, threshold) {
-  const kid = getKid(kidId);
-  if (!kid) return;
-  kid.celebrationThreshold = threshold;
-  kid.lastCelebratedThreshold = 0;
+function updateCelebrationThreshold(kidIds, threshold) {
+  const ids = Array.isArray(kidIds) ? kidIds : [kidIds];
+  ids.forEach((kidId) => {
+    const kid = getKid(kidId);
+    if (!kid) return;
+    kid.celebrationThreshold = threshold;
+    kid.lastCelebratedThreshold = 0;
+  });
 }
 
 function addTask(kidIds, title, points, recurring, time) {
@@ -1612,6 +1620,9 @@ function renderKidPage(kidId) {
   if (!currentAssignedKids.length || currentAssignedKids.some((assignedKidId) => !getKid(assignedKidId))) {
     currentAssignedKids = [kidId];
   }
+  if (!currentThresholdAssignedKids.length || currentThresholdAssignedKids.some((assignedKidId) => !getKid(assignedKidId))) {
+    currentThresholdAssignedKids = [kidId];
+  }
 
   const familyMode = currentFamilyMode && isParentSession();
   const role = isParentSession() ? "parent" : "kid";
@@ -1871,6 +1882,35 @@ function renderKidPage(kidId) {
 
                   <div class="settings-subpage">
                     ${
+                      currentSettingsSection === "add-task"
+                        ? `
+                          <article class="reward-card settings-tile add-task-tile single-settings-tile">
+                            ${renderTileBubbles()}
+                            <p class="eyebrow">Add task</p>
+                            <form class="reward-form" id="task-form">
+                              <input type="text" name="title" placeholder="Task title" required />
+                              ${renderAssignedKidsBlock()}
+                              <select name="recurring" required>
+                                <option value="daily">Daily</option>
+                                <option value="every-other-day">Every other day</option>
+                                <option value="weekly">Weekly</option>
+                                <option value="monthly">Monthly</option>
+                              </select>
+                              <label class="time-field" aria-label="Task time">
+                                <input type="time" name="time" required />
+                              </label>
+                              <input type="number" name="points" placeholder="Points" min="1" required />
+                              <div class="button-row">
+                                <button class="action-button primary" type="submit">Add task</button>
+                                <button class="action-button danger" type="button" data-reset-tasks="true">Reset tasks & points</button>
+                              </div>
+                            </form>
+                          </article>
+                        `
+                        : ""
+                    }
+
+                    ${
                       currentSettingsSection === "family-controls"
                         ? `
                           <article class="reward-card settings-tile family-controls-tile single-settings-tile">
@@ -1972,12 +2012,24 @@ function renderKidPage(kidId) {
                                             <section class="settings-mini-section threshold-section family-controls-page">
                                               <p class="eyebrow">Celebration threshold</p>
                                               <form class="reward-form threshold-form" id="threshold-form">
-                                                <select name="thresholdKid" required>
-                                                  ${getFamilyKids().map((child) => `<option value="${escapeHtml(child.id)}">${escapeHtml(child.name)}</option>`).join("")}
-                                                </select>
+                                                <div class="reward-assignment-block">
+                                                  <p class="assign-summary">Assign to</p>
+                                                  <div class="assign-grid reward-assign-grid">
+                                                    ${getFamilyKids()
+                                                      .map(
+                                                        (child) => `
+                                                          <label class="assign-option">
+                                                            <input type="checkbox" name="thresholdAssignedKids" value="${escapeHtml(child.id)}" ${currentThresholdAssignedKids.includes(child.id) ? "checked" : ""} />
+                                                            <span>${escapeHtml(child.name)}</span>
+                                                          </label>
+                                                        `
+                                                      )
+                                                      .join("")}
+                                                  </div>
+                                                </div>
                                                 <input type="number" name="threshold" placeholder="Points target" min="1" value="${escapeHtml(kid.celebrationThreshold)}" required />
                                                 <div class="button-row">
-                                                  <button class="action-button primary" type="submit">Save threshold</button>
+                                                  <button class="action-button primary threshold-submit-button" type="submit" ${currentThresholdAssignedKids.length ? "" : "disabled"}>Save threshold</button>
                                                 </div>
                                               </form>
                                             </section>
@@ -2000,35 +2052,6 @@ function renderKidPage(kidId) {
                                   </div>
                                 `
                             }
-                          </article>
-                        `
-                        : ""
-                    }
-
-                    ${
-                      currentSettingsSection === "add-task"
-                        ? `
-                          <article class="reward-card settings-tile add-task-tile single-settings-tile">
-                            ${renderTileBubbles()}
-                            <p class="eyebrow">Add task</p>
-                            <form class="reward-form" id="task-form">
-                              <input type="text" name="title" placeholder="Task title" required />
-                              ${renderAssignedKidsBlock()}
-                              <select name="recurring" required>
-                                <option value="daily">Daily</option>
-                                <option value="every-other-day">Every other day</option>
-                                <option value="weekly">Weekly</option>
-                                <option value="monthly">Monthly</option>
-                              </select>
-                              <label class="time-field" aria-label="Task time">
-                                <input type="time" name="time" required />
-                              </label>
-                              <input type="number" name="points" placeholder="Points" min="1" required />
-                              <div class="button-row">
-                                <button class="action-button primary" type="submit">Add task</button>
-                                <button class="action-button danger" type="button" data-reset-tasks="true">Reset tasks & points</button>
-                              </div>
-                            </form>
                           </article>
                         `
                         : ""
@@ -2388,14 +2411,26 @@ document.body.addEventListener("change", (event) => {
   }
 
   const rewardCheckbox = event.target.closest?.('input[name="rewardAssignedKids"]');
-  if (!rewardCheckbox) return;
+  if (rewardCheckbox) {
+    const checked = Array.from(document.querySelectorAll('input[name="rewardAssignedKids"]:checked')).map((input) => input.value);
+    currentRewardAssignedKids = checked;
 
-  const checked = Array.from(document.querySelectorAll('input[name="rewardAssignedKids"]:checked')).map((input) => input.value);
-  currentRewardAssignedKids = checked;
+    const rewardSubmitButton = document.querySelector(".reward-submit-button");
+    if (rewardSubmitButton) {
+      rewardSubmitButton.disabled = checked.length === 0;
+    }
+    return;
+  }
 
-  const rewardSubmitButton = document.querySelector(".reward-submit-button");
-  if (rewardSubmitButton) {
-    rewardSubmitButton.disabled = checked.length === 0;
+  const thresholdCheckbox = event.target.closest?.('input[name="thresholdAssignedKids"]');
+  if (thresholdCheckbox) {
+    const checked = Array.from(document.querySelectorAll('input[name="thresholdAssignedKids"]:checked')).map((input) => input.value);
+    currentThresholdAssignedKids = checked;
+
+    const thresholdSubmitButton = document.querySelector(".threshold-submit-button");
+    if (thresholdSubmitButton) {
+      thresholdSubmitButton.disabled = checked.length === 0;
+    }
   }
 });
 
@@ -2466,16 +2501,6 @@ document.body.addEventListener("keydown", (event) => {
 });
 
 document.body.addEventListener("change", (event) => {
-  const thresholdSelect = event.target.closest?.('select[name="thresholdKid"]');
-  if (thresholdSelect) {
-    const thresholdForm = thresholdSelect.closest("#threshold-form");
-    const thresholdInput = thresholdForm?.querySelector('input[name="threshold"]');
-    const thresholdKid = getKid(thresholdSelect.value);
-    if (thresholdInput && thresholdKid) {
-      thresholdInput.value = thresholdKid.celebrationThreshold;
-    }
-  }
-
   const dollarSelect = event.target.closest?.('#dollar-form select[name="kidId"]');
   if (dollarSelect) {
     const dollarForm = dollarSelect.closest("#dollar-form");
@@ -2763,10 +2788,10 @@ document.body.addEventListener("submit", async (event) => {
   if (thresholdForm) {
     event.preventDefault();
     const formData = new FormData(thresholdForm);
-    const thresholdKidId = String(formData.get("thresholdKid") || "").trim();
     const threshold = Number(formData.get("threshold"));
-    if (!thresholdKidId || !Number.isFinite(threshold) || threshold < 1) return;
-    updateCelebrationThreshold(thresholdKidId, threshold);
+    const thresholdKidIds = currentThresholdAssignedKids.length ? currentThresholdAssignedKids : [currentKidId].filter(Boolean);
+    if (!thresholdKidIds.length || !Number.isFinite(threshold) || threshold < 1) return;
+    updateCelebrationThreshold(thresholdKidIds, threshold);
     saveState();
     renderKidPage(currentKidId || getFamilyKids()[0]?.id);
     return;

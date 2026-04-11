@@ -573,8 +573,8 @@ async function handleCreateFamilyAccount() {
       upsertFamilyInState(family);
       authAccountReady = true;
       authAccountJustCreated = true;
-      authStage = "intro";
-      authView = "create";
+      authStage = "login";
+      authView = "parent";
       resetCreateAccountDraft();
       await supabaseClient.auth.signOut().catch(() => {
         // If sign-out fails, we still continue to the login step.
@@ -585,6 +585,7 @@ async function handleCreateFamilyAccount() {
       currentFamilyMode = false;
       currentAssignedKids = [];
       saveState({ skipCloud: true });
+      showToast("Account created. Log in as parent to continue.");
       renderAuthHome();
     } catch (error) {
       showToast(error.message || "Could not create the family account.");
@@ -596,8 +597,8 @@ async function handleCreateFamilyAccount() {
   state.families.push(family);
   authAccountReady = true;
   authAccountJustCreated = true;
-  authStage = "intro";
-  authView = "create";
+  authStage = "login";
+  authView = "parent";
   resetCreateAccountDraft();
   state.session = null;
   currentKidId = null;
@@ -605,6 +606,7 @@ async function handleCreateFamilyAccount() {
   currentFamilyMode = false;
   currentAssignedKids = [];
   saveState();
+  showToast("Account created. Log in as parent to continue.");
   renderAuthHome();
 }
 

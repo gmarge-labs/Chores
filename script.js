@@ -2020,37 +2020,23 @@ function renderKidPage(kidId) {
                             <div class="bonus-penalty-body">
                               <div class="bonus-penalty-section bonus-section">
                                 <p class="eyebrow">Bonus</p>
-                                <div class="bonus-penalty-form-row">
-                                  <form class="reward-form reason-form" data-reason-type="bonus">
+                                <form class="reward-form bonus-penalty-save-form" data-adjustment-type="bonus">
+                                  <div class="bonus-penalty-form-row">
                                     <input type="text" name="reason" placeholder="Reason" required />
-                                    <div class="button-row">
-                                      <button class="action-button primary" type="submit">Add reason</button>
-                                    </div>
-                                  </form>
-                                  <form class="reward-form adjustment-form" data-adjustment-type="bonus">
                                     <input type="number" name="value" placeholder="Points" min="1" required />
-                                    <div class="button-row">
-                                      <button class="action-button primary" type="submit">Save points</button>
-                                    </div>
-                                  </form>
-                                </div>
+                                    <button class="action-button primary" type="submit">Save</button>
+                                  </div>
+                                </form>
                               </div>
                               <div class="bonus-penalty-section penalty-section">
                                 <p class="eyebrow">Penalty</p>
-                                <div class="bonus-penalty-form-row">
-                                  <form class="reward-form reason-form" data-reason-type="penalty">
+                                <form class="reward-form bonus-penalty-save-form" data-adjustment-type="penalty">
+                                  <div class="bonus-penalty-form-row">
                                     <input type="text" name="reason" placeholder="Reason" required />
-                                    <div class="button-row">
-                                      <button class="action-button primary" type="submit">Add reason</button>
-                                    </div>
-                                  </form>
-                                  <form class="reward-form adjustment-form" data-adjustment-type="penalty">
                                     <input type="number" name="value" placeholder="Points" min="1" required />
-                                    <div class="button-row">
-                                      <button class="action-button primary" type="submit">Save points</button>
-                                    </div>
-                                  </form>
-                                </div>
+                                    <button class="action-button primary" type="submit">Save</button>
+                                  </div>
+                                </form>
                               </div>
                             </div>
                           </article>
@@ -2740,33 +2726,21 @@ document.body.addEventListener("submit", async (event) => {
     return;
   }
 
-  const adjustmentForm = event.target.closest(".adjustment-form");
-  if (adjustmentForm) {
+  const bonusPenaltySaveForm = event.target.closest(".bonus-penalty-save-form");
+  if (bonusPenaltySaveForm) {
     event.preventDefault();
-    const formData = new FormData(adjustmentForm);
-    const label = adjustmentForm.dataset.adjustmentType || "bonus";
+    const formData = new FormData(bonusPenaltySaveForm);
+    const label = bonusPenaltySaveForm.dataset.adjustmentType || "bonus";
     const value = Number(formData.get("value"));
+    const reason = String(formData.get("reason") || "").trim();
     const adjustmentKidIds = currentAssignedKids.length ? currentAssignedKids : [currentKidId];
 
-    if (!Number.isFinite(value) || !adjustmentKidIds.length) return;
+    if (!reason || !Number.isFinite(value) || !adjustmentKidIds.length) return;
+    addReason(adjustmentKidIds, label, reason);
     addAdjustment(adjustmentKidIds, label, label === "penalty" ? -Math.abs(value) : Math.abs(value));
     saveState();
     renderKidPage(currentKidId || getFamilyKids()[0]?.id);
     return;
-  }
-
-  const reasonForm = event.target.closest(".reason-form");
-  if (reasonForm) {
-    event.preventDefault();
-    const formData = new FormData(reasonForm);
-    const reason = String(formData.get("reason") || "").trim();
-    const type = String(reasonForm.dataset.reasonType || "bonus").trim().toLowerCase();
-    const reasonKidIds = currentAssignedKids.length ? currentAssignedKids : [currentKidId];
-
-    if (!reason || !reasonKidIds.length) return;
-    addReason(reasonKidIds, type, reason);
-    saveState();
-    renderKidPage(currentKidId || getFamilyKids()[0]?.id);
   }
 });
 

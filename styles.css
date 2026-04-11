@@ -2943,9 +2943,9 @@ button {
 
 .bonus-penalty-form-row {
   display: grid;
-  grid-template-columns: minmax(0, 1.8fr) minmax(180px, 0.9fr);
+  grid-template-columns: minmax(0, 1.8fr) minmax(150px, 0.7fr) auto;
   gap: 12px;
-  align-items: start;
+  align-items: center;
 }
 
 .bonus-section {
@@ -3032,17 +3032,16 @@ button {
   font-size: 0.88rem;
 }
 
-.bonus-penalty-form-row .reason-form {
-  order: 1;
+.bonus-penalty-save-form {
+  width: 100%;
 }
 
-.bonus-penalty-form-row .adjustment-form {
-  order: 2;
+.bonus-penalty-save-form .bonus-penalty-form-row {
+  width: 100%;
 }
 
-.bonus-penalty-form-row .reason-form .button-row,
-.bonus-penalty-form-row .adjustment-form .button-row {
-  justify-content: flex-start;
+.bonus-penalty-save-form .action-button {
+  align-self: center;
 }
 
 .settings-tile .reward-form input,

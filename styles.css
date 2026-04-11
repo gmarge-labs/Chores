@@ -2288,6 +2288,7 @@ button {
 
 .settings-subpage {
   display: grid;
+  justify-items: center;
 }
 
 .settings-switcher {
@@ -2340,7 +2341,8 @@ button {
 
 .single-settings-tile {
   min-height: 520px;
-  width: 100%;
+  width: min(100%, 980px);
+  margin-inline: auto;
 }
 
 .single-settings-tile.family-controls-tile {

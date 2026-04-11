@@ -3098,6 +3098,37 @@ button {
   margin-inline: auto;
 }
 
+.add-rewards-section.family-controls-page {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+}
+
+.add-rewards-section.family-controls-page .reward-form {
+  width: min(100%, 780px);
+  max-width: 780px;
+  justify-items: center;
+}
+
+.add-rewards-section.family-controls-page .reward-input-row,
+.add-rewards-section.family-controls-page .reward-assignment-block,
+.add-rewards-section.family-controls-page .button-row {
+  width: 100%;
+}
+
+.add-rewards-section.family-controls-page .reward-assign-grid {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.add-rewards-section.family-controls-page .assign-option {
+  min-width: 150px;
+  justify-content: center;
+}
+
 .field-label {
   display: grid;
   gap: 4px;

@@ -2678,8 +2678,10 @@ document.body.addEventListener("submit", async (event) => {
     }
     currentAssignedKids = targetKids;
     addReward(targetKids, title, cost);
+    currentAssignedKids = [];
     saveState();
     renderKidPage(currentKidId || getFamilyKids()[0]?.id);
+    showToast("Successfully added rewards.");
     return;
   }
 

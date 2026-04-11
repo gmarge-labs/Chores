@@ -3271,12 +3271,18 @@ button {
 }
 
 .add-task-tile .button-row {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
 }
 
 .add-task-tile .button-row .action-button.danger {
-  grid-column: 1 / -1;
+  width: fit-content;
+}
+
+.add-task-tile .button-row .action-button {
+  width: fit-content;
+  min-width: 0;
 }
 
 .bonus-penalty-body {

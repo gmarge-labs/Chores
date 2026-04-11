@@ -2253,6 +2253,16 @@ button {
   overflow: hidden;
 }
 
+.kid-view[data-panel="settings"] .section-head {
+  justify-content: center;
+  text-align: center;
+}
+
+.kid-view[data-panel="settings"] .section-head > div {
+  display: grid;
+  justify-items: center;
+}
+
 .kid-view[data-panel="rewards"] .rewards-layout {
   min-height: 510px;
 }
@@ -2295,6 +2305,8 @@ button {
 .settings-detail {
   display: grid;
   gap: 20px;
+  justify-items: center;
+  align-content: start;
 }
 
 .settings-subpage {
@@ -2306,7 +2318,8 @@ button {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
-  width: 100%;
+  width: min(100%, 1120px);
+  margin-inline: auto;
 }
 
 .settings-hub .settings-switcher {

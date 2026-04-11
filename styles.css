@@ -2255,7 +2255,7 @@ button {
   overflow: auto;
 }
 
-.section-card.primary.kid-view[data-panel="settings"] {
+.section-card.primary.kid-view.active[data-panel="settings"] {
   overflow: hidden;
   display: grid;
   grid-template-rows: auto 1fr;

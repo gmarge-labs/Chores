@@ -305,7 +305,7 @@ function renderCreateAccountActions() {
   if (kidNumber < MAX_CREATE_KIDS) {
     return `
       <div class="button-row create-progress-actions">
-        <button class="action-button primary" type="submit" ${disabledAttr}>Create account</button>
+        <button class="action-button primary" type="button" data-create-submit="true" ${disabledAttr}>Create account</button>
         <button class="action-button secondary" type="button" data-add-child="true" ${disabledAttr}>Add another child</button>
       </div>
     `;
@@ -313,7 +313,7 @@ function renderCreateAccountActions() {
 
   return `
     <div class="button-row create-progress-actions">
-      <button class="action-button primary" type="submit" ${disabledAttr}>Create account</button>
+      <button class="action-button primary" type="button" data-create-submit="true" ${disabledAttr}>Create account</button>
     </div>
   `;
 }
@@ -524,6 +524,88 @@ function showToast(message) {
   notice.textContent = message;
   document.body.appendChild(notice);
   window.setTimeout(() => notice.remove(), 2200);
+}
+
+async function handleCreateFamilyAccount() {
+  const familyName = String(createAccountDraft.familyName || "").trim();
+  const parentName = String(createAccountDraft.parentName || "").trim();
+  const parentEmail = String(createAccountDraft.parentEmail || "").trim();
+  const parentPin = String(createAccountDraft.parentPin || "").trim();
+  const confirmParentPin = String(createAccountDraft.confirmParentPin || "").trim();
+
+  if (!familyName || !parentName || !parentEmail || !parentPin) return;
+  if (parentPin !== confirmParentPin) {
+    showToast("Parent PINs do not match.");
+    return;
+  }
+
+  if (!cloudModeEnabled && state.families.some((family) => family.parentEmailLower === parentEmail.toLowerCase())) {
+    showToast("That parent email already has an account.");
+    return;
+  }
+
+  const kids = [];
+  let invalidKidPin = false;
+  for (let index = 1; index <= MAX_CREATE_KIDS; index += 1) {
+    const name = String(createAccountDraft[`kidName${index}`] || "").trim();
+    const pin = String(createAccountDraft[`kidPin${index}`] || "").trim();
+    if (!name) continue;
+    if (!pin || !isValidKidPin(pin)) {
+      invalidKidPin = true;
+      continue;
+    }
+    kids.push(createKid(name, pin));
+  }
+
+  if (invalidKidPin) {
+    showToast("Each kid PIN must be exactly 4 digits.");
+    return;
+  }
+
+  if (!kids.length) {
+    showToast("Add at least one child with a 4-digit PIN.");
+    return;
+  }
+
+  if (cloudModeEnabled) {
+    try {
+      const family = await createCloudFamilyAccount({ familyName, parentName, parentEmail, parentPin, kids });
+      upsertFamilyInState(family);
+      authAccountReady = true;
+      authAccountJustCreated = true;
+      authStage = "intro";
+      authView = "create";
+      resetCreateAccountDraft();
+      await supabaseClient.auth.signOut().catch(() => {
+        // If sign-out fails, we still continue to the login step.
+      });
+      state.session = null;
+      currentKidId = null;
+      currentKidView = "dashboard";
+      currentFamilyMode = false;
+      currentAssignedKids = [];
+      saveState({ skipCloud: true });
+      renderAuthHome();
+    } catch (error) {
+      showToast(error.message || "Could not create the family account.");
+    }
+    return;
+  }
+
+  const family = createFamily({ familyName, parentName, parentEmail, parentPin, kids });
+  state.families.push(family);
+  authAccountReady = true;
+  authAccountJustCreated = true;
+  authStage = "intro";
+  authView = "create";
+  resetCreateAccountDraft();
+  state.session = null;
+  currentKidId = null;
+  currentKidView = "dashboard";
+  currentFamilyMode = false;
+  currentAssignedKids = [];
+  saveState();
+  renderAuthHome();
 }
 
 function showThresholdCelebration(kid, threshold) {
@@ -1890,6 +1972,12 @@ document.body.addEventListener("click", (event) => {
     return;
   }
 
+  const createSubmitButton = event.target.closest("[data-create-submit]");
+  if (createSubmitButton && !state.session) {
+    void handleCreateFamilyAccount();
+    return;
+  }
+
   const addChildStepButton = event.target.closest("[data-add-child]");
   if (addChildStepButton && !state.session) {
     const currentField = getCurrentCreateField();
@@ -2121,85 +2209,7 @@ document.body.addEventListener("submit", async (event) => {
   const createFamilyForm = event.target.closest("#create-family-form");
   if (createFamilyForm) {
     event.preventDefault();
-    const familyName = String(createAccountDraft.familyName || "").trim();
-    const parentName = String(createAccountDraft.parentName || "").trim();
-    const parentEmail = String(createAccountDraft.parentEmail || "").trim();
-    const parentPin = String(createAccountDraft.parentPin || "").trim();
-    const confirmParentPin = String(createAccountDraft.confirmParentPin || "").trim();
-
-    if (!familyName || !parentName || !parentEmail || !parentPin) return;
-    if (parentPin !== confirmParentPin) {
-      showToast("Parent PINs do not match.");
-      return;
-    }
-
-    if (!cloudModeEnabled && state.families.some((family) => family.parentEmailLower === parentEmail.toLowerCase())) {
-      showToast("That parent email already has an account.");
-      return;
-    }
-
-    const kids = [];
-    let invalidKidPin = false;
-    for (let index = 1; index <= MAX_CREATE_KIDS; index += 1) {
-      const name = String(createAccountDraft[`kidName${index}`] || "").trim();
-      const pin = String(createAccountDraft[`kidPin${index}`] || "").trim();
-      if (!name) continue;
-      if (!pin || !isValidKidPin(pin)) {
-        invalidKidPin = true;
-        continue;
-      }
-      kids.push(createKid(name, pin));
-    }
-
-    if (invalidKidPin) {
-      showToast("Each kid PIN must be exactly 4 digits.");
-      return;
-    }
-
-    if (!kids.length) {
-      showToast("Add at least one child with a 4-digit PIN.");
-      return;
-    }
-
-    if (cloudModeEnabled) {
-      try {
-        const family = await createCloudFamilyAccount({ familyName, parentName, parentEmail, parentPin, kids });
-        upsertFamilyInState(family);
-        authAccountReady = true;
-        authAccountJustCreated = true;
-        authStage = "intro";
-        authView = "create";
-        resetCreateAccountDraft();
-        await supabaseClient.auth.signOut().catch(() => {
-          // If sign-out fails, we still continue to the login step.
-        });
-        state.session = null;
-        currentKidId = null;
-        currentKidView = "dashboard";
-        currentFamilyMode = false;
-        currentAssignedKids = [];
-        saveState({ skipCloud: true });
-        renderAuthHome();
-      } catch (error) {
-        showToast(error.message || "Could not create the family account.");
-      }
-      return;
-    }
-
-    const family = createFamily({ familyName, parentName, parentEmail, parentPin, kids });
-    state.families.push(family);
-    authAccountReady = true;
-    authAccountJustCreated = true;
-    authStage = "intro";
-    authView = "create";
-    resetCreateAccountDraft();
-    state.session = null;
-    currentKidId = null;
-    currentKidView = "dashboard";
-    currentFamilyMode = false;
-    currentAssignedKids = [];
-    saveState();
-    renderAuthHome();
+    await handleCreateFamilyAccount();
     return;
   }
 

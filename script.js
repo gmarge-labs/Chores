@@ -1365,12 +1365,11 @@ async function bootstrapCloudSessionIfAvailable() {
   renderApp();
 }
 
-function renderAssignPopup(placement) {
-  if (!isAssignPopupOpen || assignPopupPlacement !== placement) return "";
-
+function renderAssignedKidsBlock() {
   return `
-    <div class="assign-popup">
-      <div class="assign-grid">
+    <div class="reward-assignment-block">
+      <p class="assign-summary">Assign to</p>
+      <div class="assign-grid reward-assign-grid">
         ${getFamilyKids()
           .map(
             (child) => `
@@ -1381,9 +1380,6 @@ function renderAssignPopup(placement) {
             `
           )
           .join("")}
-      </div>
-      <div class="button-row" style="margin-top: 12px;">
-        <button class="action-button primary" type="button" data-save-assign="true">Save selection</button>
       </div>
     </div>
   `;
@@ -1991,7 +1987,7 @@ function renderKidPage(kidId) {
                             <p class="eyebrow">Add task</p>
                             <form class="reward-form" id="task-form">
                               <input type="text" name="title" placeholder="Task title" required />
-                              <p class="assign-summary">Assigned to: ${escapeHtml(getAssignedKidNames().join(", ") || "No kids selected yet")}</p>
+                              ${renderAssignedKidsBlock()}
                               <select name="recurring" required>
                                 <option value="daily">Daily</option>
                                 <option value="every-other-day">Every other day</option>
@@ -2003,12 +1999,10 @@ function renderKidPage(kidId) {
                               </label>
                               <input type="number" name="points" placeholder="Points" min="1" required />
                               <div class="button-row">
-                                <button class="action-button secondary" type="button" data-open-assign="task">Assign</button>
                                 <button class="action-button primary" type="submit">Add task</button>
                                 <button class="action-button danger" type="button" data-reset-tasks="true">Reset tasks & points</button>
                               </div>
                             </form>
-                            ${renderAssignPopup("task")}
                           </article>
                         `
                         : ""
@@ -2021,10 +2015,8 @@ function renderKidPage(kidId) {
                             ${renderTileBubbles()}
                             <div class="bonus-penalty-header">
                               <p class="eyebrow">Bonus & Penalty</p>
-                              <button class="action-button secondary" type="button" data-open-assign="adjustments">Assign</button>
                             </div>
-                            <p class="assign-summary">Assigned to: ${escapeHtml(getAssignedKidNames().join(", ") || "No kids selected yet")}</p>
-                            <div class="assign-popup-slot">${renderAssignPopup("adjustments")}</div>
+                            ${renderAssignedKidsBlock()}
                             <div class="bonus-penalty-body">
                               <div class="bonus-penalty-section bonus-section">
                                 <p class="eyebrow">Bonus</p>
@@ -2232,24 +2224,6 @@ document.body.addEventListener("click", (event) => {
     return;
   }
 
-  const openAssignButton = event.target.closest("[data-open-assign]");
-  if (openAssignButton && isParentSession()) {
-    isAssignPopupOpen = true;
-    assignPopupPlacement = openAssignButton.dataset.openAssign || "task";
-    renderKidPage(currentKidId);
-    return;
-  }
-
-  const saveAssignButton = event.target.closest("[data-save-assign]");
-  if (saveAssignButton && isParentSession()) {
-    const checked = Array.from(document.querySelectorAll('input[name="assignedKids"]:checked')).map((input) => input.value);
-    if (checked.length) currentAssignedKids = checked;
-    isAssignPopupOpen = false;
-    assignPopupPlacement = "task";
-    renderKidPage(currentKidId);
-    return;
-  }
-
   const resetTasksButton = event.target.closest("[data-reset-tasks]");
   if (resetTasksButton && isParentSession()) {
     resetAllTasksAndPoints();
@@ -2383,6 +2357,12 @@ document.body.addEventListener("keydown", (event) => {
 });
 
 document.body.addEventListener("change", (event) => {
+  const assignedCheckbox = event.target.closest?.('input[name="assignedKids"]');
+  if (assignedCheckbox) {
+    currentAssignedKids = Array.from(document.querySelectorAll('input[name="assignedKids"]:checked')).map((input) => input.value);
+    return;
+  }
+
   const rewardCheckbox = event.target.closest?.('input[name="rewardAssignedKids"]');
   if (!rewardCheckbox) return;
 

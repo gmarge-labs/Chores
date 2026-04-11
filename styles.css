@@ -1808,6 +1808,49 @@ button {
   pointer-events: none;
 }
 
+.rewards-celebration-cloud {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.rewards-celebration-cloud span {
+  position: absolute;
+  font-size: clamp(1.9rem, 3.4vw, 3.6rem);
+  filter:
+    drop-shadow(0 12px 18px rgba(0, 0, 0, 0.28))
+    drop-shadow(0 0 18px rgba(255, 214, 110, 0.26));
+  opacity: 0.9;
+  animation: celebration-face-float 4.6s ease-in-out infinite;
+}
+
+.rewards-celebration-cloud span:nth-child(1) { left: 3%; top: 10%; }
+.rewards-celebration-cloud span:nth-child(2) { left: 12%; top: 24%; animation-delay: 180ms; }
+.rewards-celebration-cloud span:nth-child(3) { left: 7%; top: 47%; animation-delay: 360ms; }
+.rewards-celebration-cloud span:nth-child(4) { left: 14%; bottom: 12%; animation-delay: 540ms; }
+.rewards-celebration-cloud span:nth-child(5) { left: 28%; top: 9%; animation-delay: 720ms; }
+.rewards-celebration-cloud span:nth-child(6) { left: 34%; top: 30%; animation-delay: 900ms; }
+.rewards-celebration-cloud span:nth-child(7) { left: 29%; bottom: 10%; animation-delay: 1080ms; }
+.rewards-celebration-cloud span:nth-child(8) { left: 45%; top: 8%; animation-delay: 1260ms; }
+.rewards-celebration-cloud span:nth-child(9) { left: 48%; bottom: 18%; animation-delay: 1440ms; }
+.rewards-celebration-cloud span:nth-child(10) { right: 37%; top: 19%; animation-delay: 1620ms; }
+.rewards-celebration-cloud span:nth-child(11) { right: 32%; bottom: 8%; animation-delay: 1800ms; }
+.rewards-celebration-cloud span:nth-child(12) { right: 24%; top: 34%; animation-delay: 1980ms; }
+.rewards-celebration-cloud span:nth-child(13) { right: 18%; top: 10%; animation-delay: 2160ms; }
+.rewards-celebration-cloud span:nth-child(14) { right: 11%; top: 25%; animation-delay: 2340ms; }
+.rewards-celebration-cloud span:nth-child(15) { right: 6%; top: 46%; animation-delay: 2520ms; }
+.rewards-celebration-cloud span:nth-child(16) { right: 14%; bottom: 10%; animation-delay: 2700ms; }
+.rewards-celebration-cloud span:nth-child(17) { right: 28%; bottom: 30%; animation-delay: 2880ms; }
+.rewards-celebration-cloud span:nth-child(18) { left: 20%; top: 63%; animation-delay: 3060ms; }
+.rewards-celebration-cloud span:nth-child(19) { left: 41%; top: 56%; animation-delay: 3240ms; }
+.rewards-celebration-cloud span:nth-child(20) { left: 57%; bottom: 9%; animation-delay: 3420ms; }
+.rewards-celebration-cloud span:nth-child(21) { right: 43%; top: 48%; animation-delay: 3600ms; }
+.rewards-celebration-cloud span:nth-child(22) { right: 3%; top: 61%; animation-delay: 3780ms; }
+.rewards-celebration-cloud span:nth-child(23) { left: 60%; top: 7%; animation-delay: 3960ms; }
+.rewards-celebration-cloud span:nth-child(24) { right: 20%; bottom: 24%; animation-delay: 4140ms; }
+
 .points-celebration-cloud span {
   position: absolute;
   font-size: clamp(1.6rem, 3vw, 2.6rem);
@@ -2490,14 +2533,17 @@ button {
 }
 
 .family-controls-switcher {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 14px;
-  width: 100%;
-  max-width: 960px;
+  width: fit-content;
+  max-width: 100%;
+  margin-inline: auto;
 }
 
 .family-controls-switch-button {
+  flex: 0 0 auto;
   min-height: 74px;
   padding: 14px 18px;
   border-radius: 22px;

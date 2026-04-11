@@ -1730,6 +1730,18 @@ function renderKidPage(kidId) {
 
         <article class="section-card primary kid-view ${currentKidView === "rewards" ? "active" : ""}" data-panel="rewards">
           <span class="panel-bubbles" aria-hidden="true"><span></span><span></span><span></span></span>
+          ${
+            hasReachedThreshold
+              ? `
+                <span class="rewards-celebration-cloud" aria-hidden="true">
+                  <span>🥳</span><span>😄</span><span>😁</span><span>🤩</span><span>😆</span><span>🎉</span>
+                  <span>😄</span><span>🥳</span><span>😁</span><span>🤩</span><span>😆</span><span>🎊</span>
+                  <span>🥳</span><span>😄</span><span>😁</span><span>🤩</span><span>😆</span><span>🎉</span>
+                  <span>😄</span><span>🥳</span><span>😁</span><span>🤩</span><span>😆</span><span>🎊</span>
+                </span>
+              `
+              : ""
+          }
           <div class="section-head">
             <div>
               <p class="eyebrow">${escapeHtml(kid.name)}'s Rewards</p>

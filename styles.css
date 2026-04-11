@@ -4672,6 +4672,10 @@ button {
   margin-top: 10px;
 }
 
+.create-progress-actions {
+  justify-content: center;
+}
+
 .auth-back-button {
   min-width: 0;
 }
@@ -4688,6 +4692,20 @@ button {
 
 .auth-reset-form {
   margin-top: 16px;
+}
+
+#returning-login-form .action-button.secondary,
+#reset-passcode-form .action-button.secondary,
+#reset-passcode-form .action-button.primary {
+  color: #fff8ea;
+  border: 2px solid rgba(255, 255, 255, 0.72);
+  background:
+    radial-gradient(circle at 18% 18%, rgba(255, 255, 255, 0.78), transparent 18%),
+    linear-gradient(145deg, #6dafff, #3f84db);
+  box-shadow:
+    0 12px 26px rgba(63, 43, 24, 0.16),
+    inset 0 3px 0 rgba(255, 255, 255, 0.7);
+  text-shadow: 0 3px 0 rgba(45, 32, 18, 0.18);
 }
 
 .auth-card .view-button {

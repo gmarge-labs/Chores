@@ -2023,33 +2023,37 @@ function renderKidPage(kidId) {
                             <div class="bonus-penalty-body">
                               <div class="bonus-penalty-section bonus-section">
                                 <p class="eyebrow">Bonus</p>
-                                <form class="reward-form adjustment-form" data-adjustment-type="bonus">
-                                  <input type="number" name="value" placeholder="Points" min="1" required />
-                                  <div class="button-row">
-                                    <button class="action-button primary" type="submit">Save points</button>
-                                  </div>
-                                </form>
-                                <form class="reward-form reason-form" data-reason-type="bonus">
-                                  <input type="text" name="reason" placeholder="Reason" required />
-                                  <div class="button-row">
-                                    <button class="action-button primary" type="submit">Add reason</button>
-                                  </div>
-                                </form>
+                                <div class="bonus-penalty-form-row">
+                                  <form class="reward-form reason-form" data-reason-type="bonus">
+                                    <input type="text" name="reason" placeholder="Reason" required />
+                                    <div class="button-row">
+                                      <button class="action-button primary" type="submit">Add reason</button>
+                                    </div>
+                                  </form>
+                                  <form class="reward-form adjustment-form" data-adjustment-type="bonus">
+                                    <input type="number" name="value" placeholder="Points" min="1" required />
+                                    <div class="button-row">
+                                      <button class="action-button primary" type="submit">Save points</button>
+                                    </div>
+                                  </form>
+                                </div>
                               </div>
                               <div class="bonus-penalty-section penalty-section">
                                 <p class="eyebrow">Penalty</p>
-                                <form class="reward-form adjustment-form" data-adjustment-type="penalty">
-                                  <input type="number" name="value" placeholder="Points" min="1" required />
-                                  <div class="button-row">
-                                    <button class="action-button primary" type="submit">Save points</button>
-                                  </div>
-                                </form>
-                                <form class="reward-form reason-form" data-reason-type="penalty">
-                                  <input type="text" name="reason" placeholder="Reason" required />
-                                  <div class="button-row">
-                                    <button class="action-button primary" type="submit">Add reason</button>
-                                  </div>
-                                </form>
+                                <div class="bonus-penalty-form-row">
+                                  <form class="reward-form reason-form" data-reason-type="penalty">
+                                    <input type="text" name="reason" placeholder="Reason" required />
+                                    <div class="button-row">
+                                      <button class="action-button primary" type="submit">Add reason</button>
+                                    </div>
+                                  </form>
+                                  <form class="reward-form adjustment-form" data-adjustment-type="penalty">
+                                    <input type="number" name="value" placeholder="Points" min="1" required />
+                                    <div class="button-row">
+                                      <button class="action-button primary" type="submit">Save points</button>
+                                    </div>
+                                  </form>
+                                </div>
                               </div>
                             </div>
                           </article>

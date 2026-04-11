@@ -198,11 +198,38 @@ let createAccountStep = 1;
 let createAccountDraft = createEmptyCreateAccountDraft();
 let createAccountKidCompleteMode = false;
 let pendingCloudFamilyDraft = null;
+let currentSettingsSection = "";
 
 function resetCreateAccountDraft() {
   createAccountStep = 1;
   createAccountDraft = createEmptyCreateAccountDraft();
   createAccountKidCompleteMode = false;
+}
+
+function renderSettingsSwitcher(activeSection = "") {
+  const settingsButtons = [
+    { key: "family-controls", label: "Family Controls" },
+    { key: "add-task", label: "Add task" },
+    { key: "bonus-penalty", label: "Bonus & Penalty" },
+  ];
+
+  return `
+    <div class="settings-switcher" aria-label="Settings sections">
+      ${settingsButtons
+        .map(
+          (button) => `
+            <button
+              class="settings-switch-button ${activeSection === button.key ? "active" : ""}"
+              type="button"
+              data-settings-view="${button.key}"
+            >
+              ${escapeHtml(button.label)}
+            </button>
+          `
+        )
+        .join("")}
+    </div>
+  `;
 }
 
 function isFilled(value) {
@@ -1752,147 +1779,179 @@ function renderKidPage(kidId) {
             </div>
           </div>
 
-          <div class="settings-tiles">
-            <article class="reward-card settings-tile family-controls-tile">
-              ${renderTileBubbles()}
-              <p class="eyebrow">Family controls</p>
-              <div class="family-controls-body">
-                <section class="settings-mini-section add-rewards-section">
-                  <p class="eyebrow">Add rewards</p>
-                  <form class="reward-form" id="reward-form">
-                    <input type="text" name="title" placeholder="Example: Choose dinner" required />
-                    <input type="number" name="cost" placeholder="Points needed" min="1" required />
-                    <div class="button-row">
-                      <button class="action-button primary" type="submit">Add reward to selected kids</button>
-                    </div>
-                  </form>
-                </section>
+          ${
+            !currentSettingsSection
+              ? `
+                <div class="settings-hub">
+                  ${renderSettingsSwitcher("")}
+                </div>
+              `
+              : `
+                <div class="settings-detail">
+                  ${renderSettingsSwitcher(currentSettingsSection)}
 
-                <section class="settings-mini-section dollar-section">
-                  <p class="eyebrow">Dollar rate</p>
-                  <form class="reward-form dollar-rate-form" id="dollar-form">
-                    <select name="kidId" required>
-                      ${getFamilyKids().map((child) => `<option value="${escapeHtml(child.id)}">${escapeHtml(child.name)}</option>`).join("")}
-                    </select>
-                    <div class="dollar-rate-grid">
-                      <label class="field-label">
-                        <span>Points</span>
-                        <input type="number" name="points" placeholder="100" min="1" value="${escapeHtml(kid.pointsPerDollarReward)}" required />
-                      </label>
-                      <label class="field-label">
-                        <span>Dollars</span>
-                        <span class="money-input">
-                          <span aria-hidden="true">$</span>
-                          <input type="number" name="dollars" placeholder="20" min="1" value="${escapeHtml(kid.dollarRewardValue)}" required />
-                        </span>
-                      </label>
-                    </div>
-                    <div class="button-row">
-                      <button class="action-button primary" type="submit">Save dollar rate</button>
-                    </div>
-                  </form>
-                </section>
+                  <div class="settings-subpage">
+                    ${
+                      currentSettingsSection === "family-controls"
+                        ? `
+                          <article class="reward-card settings-tile family-controls-tile single-settings-tile">
+                            ${renderTileBubbles()}
+                            <p class="eyebrow">Family controls</p>
+                            <div class="family-controls-body">
+                              <section class="settings-mini-section add-rewards-section">
+                                <p class="eyebrow">Add rewards</p>
+                                <form class="reward-form" id="reward-form">
+                                  <input type="text" name="title" placeholder="Example: Choose dinner" required />
+                                  <input type="number" name="cost" placeholder="Points needed" min="1" required />
+                                  <div class="button-row">
+                                    <button class="action-button primary" type="submit">Add reward to selected kids</button>
+                                  </div>
+                                </form>
+                              </section>
 
-                <section class="settings-mini-section avatar-section">
-                  <p class="eyebrow">Add child</p>
-                  <form class="reward-form" id="add-child-form">
-                    <input type="text" name="childName" placeholder="Child name" required />
-                    <input type="password" name="childPin" placeholder="4-digit child PIN" inputmode="numeric" pattern="\\d{4}" maxlength="4" required />
-                    <div class="button-row">
-                      <button class="action-button primary" type="submit">Add child</button>
-                    </div>
-                  </form>
-                </section>
+                              <section class="settings-mini-section dollar-section">
+                                <p class="eyebrow">Dollar rate</p>
+                                <form class="reward-form dollar-rate-form" id="dollar-form">
+                                  <select name="kidId" required>
+                                    ${getFamilyKids().map((child) => `<option value="${escapeHtml(child.id)}">${escapeHtml(child.name)}</option>`).join("")}
+                                  </select>
+                                  <div class="dollar-rate-grid">
+                                    <label class="field-label">
+                                      <span>Points</span>
+                                      <input type="number" name="points" placeholder="100" min="1" value="${escapeHtml(kid.pointsPerDollarReward)}" required />
+                                    </label>
+                                    <label class="field-label">
+                                      <span>Dollars</span>
+                                      <span class="money-input">
+                                        <span aria-hidden="true">$</span>
+                                        <input type="number" name="dollars" placeholder="20" min="1" value="${escapeHtml(kid.dollarRewardValue)}" required />
+                                      </span>
+                                    </label>
+                                  </div>
+                                  <div class="button-row">
+                                    <button class="action-button primary" type="submit">Save dollar rate</button>
+                                  </div>
+                                </form>
+                              </section>
 
-                <section class="settings-mini-section threshold-section">
-                  <p class="eyebrow">Celebration threshold</p>
-                  <form class="reward-form threshold-form" id="threshold-form">
-                    <select name="thresholdKid" required>
-                      ${getFamilyKids().map((child) => `<option value="${escapeHtml(child.id)}">${escapeHtml(child.name)}</option>`).join("")}
-                    </select>
-                    <input type="number" name="threshold" placeholder="Points target" min="1" value="${escapeHtml(kid.celebrationThreshold)}" required />
-                    <div class="button-row">
-                      <button class="action-button primary" type="submit">Save threshold</button>
-                    </div>
-                  </form>
-                </section>
+                              <section class="settings-mini-section avatar-section">
+                                <p class="eyebrow">Add child</p>
+                                <form class="reward-form" id="add-child-form">
+                                  <input type="text" name="childName" placeholder="Child name" required />
+                                  <input type="password" name="childPin" placeholder="4-digit child PIN" inputmode="numeric" pattern="\\d{4}" maxlength="4" required />
+                                  <div class="button-row">
+                                    <button class="action-button primary" type="submit">Add child</button>
+                                  </div>
+                                </form>
+                              </section>
 
-                <section class="settings-mini-section threshold-section">
-                  <p class="eyebrow">Delete family</p>
-                  <div class="button-row">
-                    <button class="action-button danger" type="button" data-delete-family="true">Delete this family</button>
+                              <section class="settings-mini-section threshold-section">
+                                <p class="eyebrow">Celebration threshold</p>
+                                <form class="reward-form threshold-form" id="threshold-form">
+                                  <select name="thresholdKid" required>
+                                    ${getFamilyKids().map((child) => `<option value="${escapeHtml(child.id)}">${escapeHtml(child.name)}</option>`).join("")}
+                                  </select>
+                                  <input type="number" name="threshold" placeholder="Points target" min="1" value="${escapeHtml(kid.celebrationThreshold)}" required />
+                                  <div class="button-row">
+                                    <button class="action-button primary" type="submit">Save threshold</button>
+                                  </div>
+                                </form>
+                              </section>
+
+                              <section class="settings-mini-section threshold-section">
+                                <p class="eyebrow">Delete family</p>
+                                <div class="button-row">
+                                  <button class="action-button danger" type="button" data-delete-family="true">Delete this family</button>
+                                </div>
+                              </section>
+                            </div>
+                          </article>
+                        `
+                        : ""
+                    }
+
+                    ${
+                      currentSettingsSection === "add-task"
+                        ? `
+                          <article class="reward-card settings-tile add-task-tile single-settings-tile">
+                            ${renderTileBubbles()}
+                            <p class="eyebrow">Add task</p>
+                            <form class="reward-form" id="task-form">
+                              <input type="text" name="title" placeholder="Task title" required />
+                              <p class="assign-summary">Assigned to: ${escapeHtml(getAssignedKidNames().join(", ") || "No kids selected yet")}</p>
+                              <select name="recurring" required>
+                                <option value="daily">Daily</option>
+                                <option value="every-other-day">Every other day</option>
+                                <option value="weekly">Weekly</option>
+                                <option value="monthly">Monthly</option>
+                              </select>
+                              <label class="time-field" aria-label="Task time">
+                                <input type="time" name="time" required />
+                              </label>
+                              <input type="number" name="points" placeholder="Points" min="1" required />
+                              <div class="button-row">
+                                <button class="action-button secondary" type="button" data-open-assign="task">Assign</button>
+                                <button class="action-button primary" type="submit">Add task</button>
+                                <button class="action-button danger" type="button" data-reset-tasks="true">Reset tasks & points</button>
+                              </div>
+                            </form>
+                            ${renderAssignPopup("task")}
+                          </article>
+                        `
+                        : ""
+                    }
+
+                    ${
+                      currentSettingsSection === "bonus-penalty"
+                        ? `
+                          <article class="reward-card settings-tile bonus-penalty-tile single-settings-tile">
+                            ${renderTileBubbles()}
+                            <div class="bonus-penalty-header">
+                              <p class="eyebrow">Bonus & Penalty</p>
+                              <button class="action-button secondary" type="button" data-open-assign="adjustments">Assign</button>
+                            </div>
+                            <p class="assign-summary">Assigned to: ${escapeHtml(getAssignedKidNames().join(", ") || "No kids selected yet")}</p>
+                            <div class="assign-popup-slot">${renderAssignPopup("adjustments")}</div>
+                            <div class="bonus-penalty-body">
+                              <div class="bonus-penalty-section bonus-section">
+                                <p class="eyebrow">Bonus</p>
+                                <form class="reward-form adjustment-form" data-adjustment-type="bonus">
+                                  <input type="number" name="value" placeholder="Points" min="1" required />
+                                  <div class="button-row">
+                                    <button class="action-button primary" type="submit">Save points</button>
+                                  </div>
+                                </form>
+                                <form class="reward-form reason-form" data-reason-type="bonus">
+                                  <input type="text" name="reason" placeholder="Reason" required />
+                                  <div class="button-row">
+                                    <button class="action-button primary" type="submit">Add reason</button>
+                                  </div>
+                                </form>
+                              </div>
+                              <div class="bonus-penalty-section penalty-section">
+                                <p class="eyebrow">Penalty</p>
+                                <form class="reward-form adjustment-form" data-adjustment-type="penalty">
+                                  <input type="number" name="value" placeholder="Points" min="1" required />
+                                  <div class="button-row">
+                                    <button class="action-button primary" type="submit">Save points</button>
+                                  </div>
+                                </form>
+                                <form class="reward-form reason-form" data-reason-type="penalty">
+                                  <input type="text" name="reason" placeholder="Reason" required />
+                                  <div class="button-row">
+                                    <button class="action-button primary" type="submit">Add reason</button>
+                                  </div>
+                                </form>
+                              </div>
+                            </div>
+                          </article>
+                        `
+                        : ""
+                    }
                   </div>
-                </section>
-              </div>
-            </article>
-
-            <article class="reward-card settings-tile add-task-tile">
-              ${renderTileBubbles()}
-              <p class="eyebrow">Add task</p>
-              <form class="reward-form" id="task-form">
-                <input type="text" name="title" placeholder="Task title" required />
-                <p class="assign-summary">Assigned to: ${escapeHtml(getAssignedKidNames().join(", ") || "No kids selected yet")}</p>
-                <select name="recurring" required>
-                  <option value="daily">Daily</option>
-                  <option value="every-other-day">Every other day</option>
-                  <option value="weekly">Weekly</option>
-                  <option value="monthly">Monthly</option>
-                </select>
-                <label class="time-field" aria-label="Task time">
-                  <input type="time" name="time" required />
-                </label>
-                <input type="number" name="points" placeholder="Points" min="1" required />
-                <div class="button-row">
-                  <button class="action-button secondary" type="button" data-open-assign="task">Assign</button>
-                  <button class="action-button primary" type="submit">Add task</button>
-                  <button class="action-button danger" type="button" data-reset-tasks="true">Reset tasks & points</button>
                 </div>
-              </form>
-              ${renderAssignPopup("task")}
-            </article>
-
-            <article class="reward-card settings-tile bonus-penalty-tile">
-              ${renderTileBubbles()}
-              <div class="bonus-penalty-header">
-                <p class="eyebrow">Bonus & Penalty</p>
-                <button class="action-button secondary" type="button" data-open-assign="adjustments">Assign</button>
-              </div>
-              <p class="assign-summary">Assigned to: ${escapeHtml(getAssignedKidNames().join(", ") || "No kids selected yet")}</p>
-              <div class="assign-popup-slot">${renderAssignPopup("adjustments")}</div>
-              <div class="bonus-penalty-body">
-                <div class="bonus-penalty-section bonus-section">
-                  <p class="eyebrow">Bonus</p>
-                  <form class="reward-form adjustment-form" data-adjustment-type="bonus">
-                    <input type="number" name="value" placeholder="Points" min="1" required />
-                    <div class="button-row">
-                      <button class="action-button primary" type="submit">Save points</button>
-                    </div>
-                  </form>
-                  <form class="reward-form reason-form" data-reason-type="bonus">
-                    <input type="text" name="reason" placeholder="Reason" required />
-                    <div class="button-row">
-                      <button class="action-button primary" type="submit">Add reason</button>
-                    </div>
-                  </form>
-                </div>
-                <div class="bonus-penalty-section penalty-section">
-                  <p class="eyebrow">Penalty</p>
-                  <form class="reward-form adjustment-form" data-adjustment-type="penalty">
-                    <input type="number" name="value" placeholder="Points" min="1" required />
-                    <div class="button-row">
-                      <button class="action-button primary" type="submit">Save points</button>
-                    </div>
-                  </form>
-                  <form class="reward-form reason-form" data-reason-type="penalty">
-                    <input type="text" name="reason" placeholder="Reason" required />
-                    <div class="button-row">
-                      <button class="action-button primary" type="submit">Add reason</button>
-                    </div>
-                  </form>
-                </div>
-              </div>
-            </article>
-          </div>
+              `
+          }
         </article>
       </section>
     </div>
@@ -2126,6 +2185,7 @@ document.body.addEventListener("click", (event) => {
     if (isKidSession() && (view === "report" || view === "settings")) return;
 
     currentKidView = view;
+    currentSettingsSection = view === "settings" ? "" : currentSettingsSection;
     currentFamilyMode = view === "report" || view === "settings";
     isAssignPopupOpen = false;
     assignPopupPlacement = "task";
@@ -2140,10 +2200,20 @@ document.body.addEventListener("click", (event) => {
     currentKidId = firstKid.id;
     currentFamilyMode = true;
     currentKidView = familyButton.dataset.familyView;
+    currentSettingsSection = familyButton.dataset.familyView === "settings" ? "" : currentSettingsSection;
     currentAssignedKids = [firstKid.id];
     isAssignPopupOpen = false;
     assignPopupPlacement = "task";
     renderKidPage(firstKid.id);
+    return;
+  }
+
+  const settingsSwitchButton = event.target.closest("[data-settings-view]");
+  if (settingsSwitchButton && currentKidView === "settings" && isParentSession()) {
+    currentSettingsSection = settingsSwitchButton.dataset.settingsView || "";
+    isAssignPopupOpen = false;
+    assignPopupPlacement = "task";
+    renderKidPage(currentKidId);
     return;
   }
 

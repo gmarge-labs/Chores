@@ -2515,20 +2515,21 @@ button {
 
 .family-controls-body {
   display: grid;
-  grid-template-rows: repeat(4, minmax(0, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
   min-height: 0;
+  align-content: start;
 }
 
 .settings-mini-section {
   position: relative;
   z-index: 1;
   display: grid;
-  gap: 6px;
-  align-content: center;
+  gap: 10px;
+  align-content: start;
   min-height: 0;
-  padding: 10px;
-  border-radius: 20px;
+  padding: 14px;
+  border-radius: 22px;
   background:
     radial-gradient(circle at top right, rgba(255, 255, 255, 0.5), transparent 26%),
     linear-gradient(145deg, rgba(255, 255, 255, 0.78), rgba(241, 245, 249, 0.62));
@@ -2550,6 +2551,17 @@ button {
 
 .threshold-section {
   border-top: 4px solid rgba(232, 158, 44, 0.26);
+}
+
+.family-controls-body .add-rewards-section,
+.family-controls-body .dollar-section,
+.family-controls-body .avatar-section,
+.family-controls-body .threshold-section {
+  min-height: 0;
+}
+
+.family-controls-body .threshold-section:last-child {
+  grid-column: 1 / -1;
 }
 
 .add-rewards-tile {
@@ -2661,7 +2673,7 @@ button {
 
 .settings-tile .reward-form {
   align-self: center;
-  gap: 8px;
+  gap: 10px;
   min-height: 0;
 }
 
@@ -2671,17 +2683,17 @@ button {
 
 .add-task-tile .reward-form {
   align-self: center;
-  gap: 10px;
+  gap: 12px;
 }
 
 .bonus-tile .reward-form,
 .penalty-tile .reward-form,
 .bonus-penalty-tile .reward-form {
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: stretch;
   align-self: start;
-  gap: 6px;
-  padding-top: 6px;
+  gap: 10px;
+  padding-top: 10px;
   border-top: 1px solid rgba(118, 105, 94, 0.12);
 }
 
@@ -2694,7 +2706,8 @@ button {
 .bonus-tile .button-row,
 .penalty-tile .button-row,
 .bonus-penalty-tile .button-row {
-  flex-wrap: nowrap;
+  justify-content: flex-start;
+  flex-wrap: wrap;
 }
 
 .bonus-tile .action-button,
@@ -2704,13 +2717,15 @@ button {
 }
 
 .bonus-penalty-tile .reward-form input {
-  padding: 7px 9px;
-  font-size: 0.88rem;
+  padding: 10px 12px;
+  font-size: 0.92rem;
 }
 
 .bonus-penalty-tile .reward-form .action-button {
-  padding: 7px 9px;
-  font-size: 0.82rem;
+  width: fit-content;
+  min-width: 140px;
+  padding: 9px 14px;
+  font-size: 0.88rem;
 }
 
 .settings-tile .reward-form input,
@@ -2721,13 +2736,14 @@ button {
 }
 
 .settings-tile .button-row {
-  gap: 6px;
+  gap: 10px;
   align-items: center;
+  flex-wrap: wrap;
 }
 
 .settings-tile .action-button {
-  padding: 8px 10px;
-  font-size: 0.9rem;
+  padding: 10px 14px;
+  font-size: 0.92rem;
   border-radius: 12px;
 }
 
@@ -2750,13 +2766,13 @@ button {
 .settings-tile .eyebrow {
   align-self: start;
   margin: 0;
-  font-size: 0.68rem;
+  font-size: 0.76rem;
   line-height: 1;
 }
 
 .settings-tile .assign-summary {
   margin: 0;
-  font-size: 0.86rem;
+  font-size: 0.92rem;
 }
 
 .field-label {
@@ -2808,7 +2824,7 @@ button {
 .dollar-rate-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
+  gap: 12px;
 }
 
 .dollar-tile .field-label,
@@ -2825,8 +2841,28 @@ button {
 
 .dollar-tile .action-button,
 .family-controls-tile .action-button {
-  padding: 7px 10px;
-  font-size: 0.84rem;
+  padding: 9px 12px;
+  font-size: 0.88rem;
+}
+
+.family-controls-tile .button-row .action-button,
+.bonus-penalty-tile .button-row .action-button {
+  width: 100%;
+  justify-content: center;
+}
+
+.add-task-tile .button-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.add-task-tile .button-row .action-button.danger {
+  grid-column: 1 / -1;
+}
+
+.bonus-penalty-body {
+  grid-template-columns: 1fr;
+  gap: 14px;
 }
 
 

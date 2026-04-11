@@ -2084,11 +2084,17 @@ button {
 }
 
 .action-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border: 0;
   border-radius: 14px;
   padding: 11px 14px;
+  width: fit-content;
+  min-width: 0;
   cursor: pointer;
   font-weight: 800;
+  white-space: nowrap;
   transition: transform 160ms ease, box-shadow 160ms ease, filter 160ms ease;
 }
 
@@ -3021,7 +3027,7 @@ button {
 
 .bonus-penalty-tile .reward-form .action-button {
   width: fit-content;
-  min-width: 140px;
+  min-width: 0;
   padding: 9px 14px;
   font-size: 0.88rem;
 }
@@ -3261,7 +3267,6 @@ button {
 
 .family-controls-tile .button-row .action-button,
 .bonus-penalty-tile .button-row .action-button {
-  width: 100%;
   justify-content: center;
 }
 
@@ -4301,7 +4306,6 @@ button {
 }
 
 .pin-actions .action-button {
-  min-width: 118px;
   color: #fff8ea;
   border: 2px solid rgba(255, 255, 255, 0.72);
   background:
@@ -4583,7 +4587,7 @@ button {
 }
 
 .auth-back-button {
-  min-width: 180px;
+  min-width: 0;
 }
 
 .auth-panel {

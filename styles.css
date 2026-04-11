@@ -2388,25 +2388,28 @@ button {
 .family-controls-subpage {
   display: grid;
   justify-items: center;
+  width: 100%;
 }
 
 .family-controls-page {
-  min-height: 280px;
-  align-content: start;
-  width: min(100%, 760px);
+  min-height: 320px;
+  align-content: center;
+  width: 100%;
+  max-width: 100%;
 }
 
 .family-controls-detail {
   justify-items: center;
   align-content: start;
+  width: min(100%, 980px);
+  margin-inline: auto;
 }
 
 .family-controls-active-nav {
-  display: flex;
-  justify-content: center;
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
   align-items: center;
   gap: 16px;
-  flex-wrap: wrap;
   width: 100%;
 }
 
@@ -2979,6 +2982,29 @@ button {
 .settings-tile .assign-summary {
   margin: 0;
   font-size: 0.92rem;
+}
+
+.family-controls-page .reward-form,
+.family-controls-page .button-row,
+.family-controls-page .eyebrow {
+  justify-self: center;
+  width: 100%;
+}
+
+.family-controls-page .reward-form {
+  max-width: 620px;
+}
+
+.family-controls-page .eyebrow {
+  text-align: center;
+}
+
+.family-controls-page .button-row {
+  justify-content: center;
+}
+
+.family-controls-page .field-label {
+  text-align: center;
 }
 
 .field-label {
@@ -4699,6 +4725,14 @@ button {
 
   .single-settings-tile {
     min-height: 0;
+  }
+
+  .family-controls-active-nav {
+    grid-template-columns: 1fr;
+  }
+
+  .family-controls-page .reward-form {
+    max-width: 100%;
   }
 
   .kid-header {

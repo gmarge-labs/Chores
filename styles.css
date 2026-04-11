@@ -2374,6 +2374,18 @@ button {
   border-radius: 22px;
 }
 
+.settings-detail .settings-switch-button:not(.active) {
+  color: #7b8491;
+  background:
+    radial-gradient(circle at 18% 18%, rgba(255, 255, 255, 0.78), transparent 18%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.96), rgba(232, 237, 243, 0.94));
+  box-shadow:
+    0 12px 24px rgba(63, 43, 24, 0.08),
+    inset 0 3px 0 rgba(255, 255, 255, 0.78);
+  text-shadow: none;
+  filter: saturate(0.18);
+}
+
 .single-settings-tile {
   min-height: 520px;
   width: min(100%, 980px);
@@ -2501,10 +2513,24 @@ button {
 }
 
 .family-controls-back-button:hover,
-.family-controls-back-button:focus-visible,
-.family-controls-current-button:hover,
-.family-controls-current-button:focus-visible {
+.family-controls-back-button:focus-visible {
   transform: translateY(-3px);
+}
+
+.family-controls-active-nav .family-controls-switcher {
+  max-width: none;
+}
+
+.family-controls-detail .family-controls-switch-button:not(.active) {
+  color: #7b8491;
+  background:
+    radial-gradient(circle at 18% 18%, rgba(255, 255, 255, 0.78), transparent 18%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.96), rgba(232, 237, 243, 0.94));
+  box-shadow:
+    0 10px 22px rgba(63, 43, 24, 0.08),
+    inset 0 3px 0 rgba(255, 255, 255, 0.78);
+  text-shadow: none;
+  filter: saturate(0.16);
 }
 
 .settings-tiles {

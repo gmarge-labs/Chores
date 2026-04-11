@@ -1849,9 +1849,7 @@ function renderKidPage(kidId) {
                                   <div class="family-controls-detail">
                                     <div class="family-controls-active-nav">
                                       <button class="family-controls-back-button" type="button" data-family-controls-back="true">Back</button>
-                                      <button class="family-controls-current-button active" type="button" aria-current="page">
-                                        ${escapeHtml(getFamilyControlsLabel(currentFamilyControlsSection))}
-                                      </button>
+                                      ${renderFamilyControlsSwitcher(currentFamilyControlsSection)}
                                     </div>
                                     <div class="family-controls-subpage">
                                       ${

@@ -3265,6 +3265,11 @@ button {
   justify-content: center;
 }
 
+.family-controls-tile .button-row .reward-submit-button {
+  width: fit-content;
+  justify-content: center;
+}
+
 .add-task-tile .button-row {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

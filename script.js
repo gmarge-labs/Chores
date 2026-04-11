@@ -194,6 +194,7 @@ let authAccountReady = state.families.length > 0;
 let authAccountJustCreated = false;
 let aboutTopic = "";
 let aboutTransitionTimer = null;
+let authResetPasscodeOpen = false;
 let createAccountStep = 1;
 let createAccountDraft = createEmptyCreateAccountDraft();
 let createAccountKidCompleteMode = false;
@@ -1445,7 +1446,7 @@ function renderAuthHome() {
             authStage === "login"
               ? `
                 <div class="button-row auth-stage-actions">
-                  <button class="action-button secondary" type="button" data-auth-stage="intro">Back</button>
+                  <button class="action-button secondary" type="button" data-auth-stage="intro">Back to home</button>
                 </div>
               `
               : ""
@@ -1488,8 +1489,22 @@ function renderAuthHome() {
               <input type="password" name="password" placeholder="Password" required />
               <div class="button-row create-progress-actions">
                 <button class="action-button primary" type="submit">Log in</button>
+                <button class="action-button secondary" type="button" data-auth-view="back-intro">Back to home</button>
+                <button class="action-button secondary" type="button" data-reset-passcode-toggle="true">${authResetPasscodeOpen ? "Cancel reset" : "Reset passcode"}</button>
               </div>
             </form>
+            ${
+              authResetPasscodeOpen
+                ? `
+                  <form class="reward-form auth-form auth-reset-form" id="reset-passcode-form">
+                    <input type="password" name="newPassword" placeholder="New passcode" required />
+                    <div class="button-row create-progress-actions">
+                      <button class="action-button primary" type="submit">Save new passcode</button>
+                    </div>
+                  </form>
+                `
+                : ""
+            }
           </div>
 
           <div class="auth-panel ${authView === "parent" ? "active" : ""}">
@@ -2125,6 +2140,7 @@ document.body.addEventListener("click", (event) => {
     if (nextView === "back-intro") {
       authView = "";
       aboutTopic = "";
+      authResetPasscodeOpen = false;
       createAccountStep = 1;
       createAccountKidCompleteMode = false;
       renderAuthHome();
@@ -2137,6 +2153,9 @@ document.body.addEventListener("click", (event) => {
     }
     if (authView !== "create") {
       createAccountKidCompleteMode = false;
+    }
+    if (authView !== "returning") {
+      authResetPasscodeOpen = false;
     }
     renderAuthHome();
     return;
@@ -2152,6 +2171,14 @@ document.body.addEventListener("click", (event) => {
   if (authStageButton && !state.session) {
     authStage = authStageButton.dataset.authStage || "intro";
     authView = authStage === "login" ? "parent" : "";
+    authResetPasscodeOpen = false;
+    renderAuthHome();
+    return;
+  }
+
+  const resetPasscodeToggle = event.target.closest("[data-reset-passcode-toggle]");
+  if (resetPasscodeToggle && !state.session) {
+    authResetPasscodeOpen = !authResetPasscodeOpen;
     renderAuthHome();
     return;
   }
@@ -2610,6 +2637,39 @@ document.body.addEventListener("submit", async (event) => {
     currentAssignedKids = [];
     saveState();
     renderApp();
+    return;
+  }
+
+  const resetPasscodeForm = event.target.closest("#reset-passcode-form");
+  if (resetPasscodeForm) {
+    event.preventDefault();
+    const loginForm = document.querySelector("#returning-login-form");
+    const usernameInput = loginForm?.querySelector('input[name="username"]');
+    const newPasswordInput = resetPasscodeForm.querySelector('input[name="newPassword"]');
+    const email = String(usernameInput?.value || "").trim().toLowerCase();
+    const newPassword = String(newPasswordInput?.value || "").trim();
+
+    if (!email) {
+      showToast("Enter your username first.");
+      return;
+    }
+
+    if (!newPassword) {
+      showToast("Enter a new passcode.");
+      return;
+    }
+
+    const family = state.families.find((entry) => entry.parentEmailLower === email);
+    if (!family) {
+      showToast("No account was found for that username.");
+      return;
+    }
+
+    family.parentPin = newPassword;
+    saveState();
+    authResetPasscodeOpen = false;
+    renderAuthHome();
+    showToast("Passcode updated.");
     return;
   }
 

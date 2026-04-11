@@ -4686,6 +4686,10 @@ button {
   margin-top: 28px;
 }
 
+.auth-reset-form {
+  margin-top: 16px;
+}
+
 .auth-card .view-button {
   width: 360px;
   max-width: 100%;

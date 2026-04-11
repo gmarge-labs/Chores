@@ -199,6 +199,7 @@ let createAccountDraft = createEmptyCreateAccountDraft();
 let createAccountKidCompleteMode = false;
 let pendingCloudFamilyDraft = null;
 let currentSettingsSection = "";
+let currentFamilyControlsSection = "";
 
 function resetCreateAccountDraft() {
   createAccountStep = 1;
@@ -222,6 +223,34 @@ function renderSettingsSwitcher(activeSection = "") {
               class="settings-switch-button ${activeSection === button.key ? "active" : ""}"
               type="button"
               data-settings-view="${button.key}"
+            >
+              ${escapeHtml(button.label)}
+            </button>
+          `
+        )
+        .join("")}
+    </div>
+  `;
+}
+
+function renderFamilyControlsSwitcher(activeSection = "") {
+  const controlButtons = [
+    { key: "add-rewards", label: "Add Rewards" },
+    { key: "dollar-rate", label: "Dollar Rate" },
+    { key: "add-child", label: "Add Child" },
+    { key: "celebration-threshold", label: "Celebration Threshold" },
+    { key: "delete-family", label: "Delete Family" },
+  ];
+
+  return `
+    <div class="family-controls-switcher" aria-label="Family control sections">
+      ${controlButtons
+        .map(
+          (button) => `
+            <button
+              class="family-controls-switch-button ${activeSection === button.key ? "active" : ""}"
+              type="button"
+              data-family-controls-view="${button.key}"
             >
               ${escapeHtml(button.label)}
             </button>
@@ -1797,74 +1826,113 @@ function renderKidPage(kidId) {
                           <article class="reward-card settings-tile family-controls-tile single-settings-tile">
                             ${renderTileBubbles()}
                             <p class="eyebrow">Family controls</p>
-                            <div class="family-controls-body">
-                              <section class="settings-mini-section add-rewards-section">
-                                <p class="eyebrow">Add rewards</p>
-                                <form class="reward-form" id="reward-form">
-                                  <input type="text" name="title" placeholder="Example: Choose dinner" required />
-                                  <input type="number" name="cost" placeholder="Points needed" min="1" required />
-                                  <div class="button-row">
-                                    <button class="action-button primary" type="submit">Add reward to selected kids</button>
+                            ${
+                              !currentFamilyControlsSection
+                                ? `
+                                  <div class="family-controls-hub">
+                                    ${renderFamilyControlsSwitcher("")}
                                   </div>
-                                </form>
-                              </section>
-
-                              <section class="settings-mini-section dollar-section">
-                                <p class="eyebrow">Dollar rate</p>
-                                <form class="reward-form dollar-rate-form" id="dollar-form">
-                                  <select name="kidId" required>
-                                    ${getFamilyKids().map((child) => `<option value="${escapeHtml(child.id)}">${escapeHtml(child.name)}</option>`).join("")}
-                                  </select>
-                                  <div class="dollar-rate-grid">
-                                    <label class="field-label">
-                                      <span>Points</span>
-                                      <input type="number" name="points" placeholder="100" min="1" value="${escapeHtml(kid.pointsPerDollarReward)}" required />
-                                    </label>
-                                    <label class="field-label">
-                                      <span>Dollars</span>
-                                      <span class="money-input">
-                                        <span aria-hidden="true">$</span>
-                                        <input type="number" name="dollars" placeholder="20" min="1" value="${escapeHtml(kid.dollarRewardValue)}" required />
-                                      </span>
-                                    </label>
+                                `
+                                : `
+                                  <div class="family-controls-detail">
+                                    ${renderFamilyControlsSwitcher(currentFamilyControlsSection)}
+                                    <div class="family-controls-subpage">
+                                      ${
+                                        currentFamilyControlsSection === "add-rewards"
+                                          ? `
+                                            <section class="settings-mini-section add-rewards-section family-controls-page">
+                                              <p class="eyebrow">Add rewards</p>
+                                              <form class="reward-form" id="reward-form">
+                                                <input type="text" name="title" placeholder="Example: Choose dinner" required />
+                                                <input type="number" name="cost" placeholder="Points needed" min="1" required />
+                                                <div class="button-row">
+                                                  <button class="action-button primary" type="submit">Add reward to selected kids</button>
+                                                </div>
+                                              </form>
+                                            </section>
+                                          `
+                                          : ""
+                                      }
+                                      ${
+                                        currentFamilyControlsSection === "dollar-rate"
+                                          ? `
+                                            <section class="settings-mini-section dollar-section family-controls-page">
+                                              <p class="eyebrow">Dollar rate</p>
+                                              <form class="reward-form dollar-rate-form" id="dollar-form">
+                                                <select name="kidId" required>
+                                                  ${getFamilyKids().map((child) => `<option value="${escapeHtml(child.id)}">${escapeHtml(child.name)}</option>`).join("")}
+                                                </select>
+                                                <div class="dollar-rate-grid">
+                                                  <label class="field-label">
+                                                    <span>Points</span>
+                                                    <input type="number" name="points" placeholder="100" min="1" value="${escapeHtml(kid.pointsPerDollarReward)}" required />
+                                                  </label>
+                                                  <label class="field-label">
+                                                    <span>Dollars</span>
+                                                    <span class="money-input">
+                                                      <span aria-hidden="true">$</span>
+                                                      <input type="number" name="dollars" placeholder="20" min="1" value="${escapeHtml(kid.dollarRewardValue)}" required />
+                                                    </span>
+                                                  </label>
+                                                </div>
+                                                <div class="button-row">
+                                                  <button class="action-button primary" type="submit">Save dollar rate</button>
+                                                </div>
+                                              </form>
+                                            </section>
+                                          `
+                                          : ""
+                                      }
+                                      ${
+                                        currentFamilyControlsSection === "add-child"
+                                          ? `
+                                            <section class="settings-mini-section avatar-section family-controls-page">
+                                              <p class="eyebrow">Add child</p>
+                                              <form class="reward-form" id="add-child-form">
+                                                <input type="text" name="childName" placeholder="Child name" required />
+                                                <input type="password" name="childPin" placeholder="4-digit child PIN" inputmode="numeric" pattern="\\d{4}" maxlength="4" required />
+                                                <div class="button-row">
+                                                  <button class="action-button primary" type="submit">Add child</button>
+                                                </div>
+                                              </form>
+                                            </section>
+                                          `
+                                          : ""
+                                      }
+                                      ${
+                                        currentFamilyControlsSection === "celebration-threshold"
+                                          ? `
+                                            <section class="settings-mini-section threshold-section family-controls-page">
+                                              <p class="eyebrow">Celebration threshold</p>
+                                              <form class="reward-form threshold-form" id="threshold-form">
+                                                <select name="thresholdKid" required>
+                                                  ${getFamilyKids().map((child) => `<option value="${escapeHtml(child.id)}">${escapeHtml(child.name)}</option>`).join("")}
+                                                </select>
+                                                <input type="number" name="threshold" placeholder="Points target" min="1" value="${escapeHtml(kid.celebrationThreshold)}" required />
+                                                <div class="button-row">
+                                                  <button class="action-button primary" type="submit">Save threshold</button>
+                                                </div>
+                                              </form>
+                                            </section>
+                                          `
+                                          : ""
+                                      }
+                                      ${
+                                        currentFamilyControlsSection === "delete-family"
+                                          ? `
+                                            <section class="settings-mini-section threshold-section family-controls-page">
+                                              <p class="eyebrow">Delete family</p>
+                                              <div class="button-row">
+                                                <button class="action-button danger" type="button" data-delete-family="true">Delete this family</button>
+                                              </div>
+                                            </section>
+                                          `
+                                          : ""
+                                      }
+                                    </div>
                                   </div>
-                                  <div class="button-row">
-                                    <button class="action-button primary" type="submit">Save dollar rate</button>
-                                  </div>
-                                </form>
-                              </section>
-
-                              <section class="settings-mini-section avatar-section">
-                                <p class="eyebrow">Add child</p>
-                                <form class="reward-form" id="add-child-form">
-                                  <input type="text" name="childName" placeholder="Child name" required />
-                                  <input type="password" name="childPin" placeholder="4-digit child PIN" inputmode="numeric" pattern="\\d{4}" maxlength="4" required />
-                                  <div class="button-row">
-                                    <button class="action-button primary" type="submit">Add child</button>
-                                  </div>
-                                </form>
-                              </section>
-
-                              <section class="settings-mini-section threshold-section">
-                                <p class="eyebrow">Celebration threshold</p>
-                                <form class="reward-form threshold-form" id="threshold-form">
-                                  <select name="thresholdKid" required>
-                                    ${getFamilyKids().map((child) => `<option value="${escapeHtml(child.id)}">${escapeHtml(child.name)}</option>`).join("")}
-                                  </select>
-                                  <input type="number" name="threshold" placeholder="Points target" min="1" value="${escapeHtml(kid.celebrationThreshold)}" required />
-                                  <div class="button-row">
-                                    <button class="action-button primary" type="submit">Save threshold</button>
-                                  </div>
-                                </form>
-                              </section>
-
-                              <section class="settings-mini-section threshold-section">
-                                <p class="eyebrow">Delete family</p>
-                                <div class="button-row">
-                                  <button class="action-button danger" type="button" data-delete-family="true">Delete this family</button>
-                                </div>
-                              </section>
-                            </div>
+                                `
+                            }
                           </article>
                         `
                         : ""
@@ -2186,6 +2254,7 @@ document.body.addEventListener("click", (event) => {
 
     currentKidView = view;
     currentSettingsSection = view === "settings" ? "" : currentSettingsSection;
+    currentFamilyControlsSection = view === "settings" ? "" : currentFamilyControlsSection;
     currentFamilyMode = view === "report" || view === "settings";
     isAssignPopupOpen = false;
     assignPopupPlacement = "task";
@@ -2201,6 +2270,7 @@ document.body.addEventListener("click", (event) => {
     currentFamilyMode = true;
     currentKidView = familyButton.dataset.familyView;
     currentSettingsSection = familyButton.dataset.familyView === "settings" ? "" : currentSettingsSection;
+    currentFamilyControlsSection = familyButton.dataset.familyView === "settings" ? "" : currentFamilyControlsSection;
     currentAssignedKids = [firstKid.id];
     isAssignPopupOpen = false;
     assignPopupPlacement = "task";
@@ -2211,8 +2281,16 @@ document.body.addEventListener("click", (event) => {
   const settingsSwitchButton = event.target.closest("[data-settings-view]");
   if (settingsSwitchButton && currentKidView === "settings" && isParentSession()) {
     currentSettingsSection = settingsSwitchButton.dataset.settingsView || "";
+    currentFamilyControlsSection = "";
     isAssignPopupOpen = false;
     assignPopupPlacement = "task";
+    renderKidPage(currentKidId);
+    return;
+  }
+
+  const familyControlsSwitchButton = event.target.closest("[data-family-controls-view]");
+  if (familyControlsSwitchButton && currentKidView === "settings" && currentSettingsSection === "family-controls" && isParentSession()) {
+    currentFamilyControlsSection = familyControlsSwitchButton.dataset.familyControlsView || "";
     renderKidPage(currentKidId);
     return;
   }

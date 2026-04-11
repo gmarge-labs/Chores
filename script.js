@@ -261,6 +261,18 @@ function renderFamilyControlsSwitcher(activeSection = "") {
   `;
 }
 
+function getFamilyControlsLabel(sectionKey = "") {
+  const labels = {
+    "add-rewards": "Add Rewards",
+    "dollar-rate": "Dollar Rate",
+    "add-child": "Add Child",
+    "celebration-threshold": "Celebration Threshold",
+    "delete-family": "Delete Family",
+  };
+
+  return labels[sectionKey] || "Family Controls";
+}
+
 function isFilled(value) {
   return String(value || "").trim().length > 0;
 }
@@ -1835,7 +1847,12 @@ function renderKidPage(kidId) {
                                 `
                                 : `
                                   <div class="family-controls-detail">
-                                    ${renderFamilyControlsSwitcher(currentFamilyControlsSection)}
+                                    <div class="family-controls-active-nav">
+                                      <button class="family-controls-back-button" type="button" data-family-controls-back="true">Back</button>
+                                      <button class="family-controls-current-button active" type="button" aria-current="page">
+                                        ${escapeHtml(getFamilyControlsLabel(currentFamilyControlsSection))}
+                                      </button>
+                                    </div>
                                     <div class="family-controls-subpage">
                                       ${
                                         currentFamilyControlsSection === "add-rewards"
@@ -2291,6 +2308,13 @@ document.body.addEventListener("click", (event) => {
   const familyControlsSwitchButton = event.target.closest("[data-family-controls-view]");
   if (familyControlsSwitchButton && currentKidView === "settings" && currentSettingsSection === "family-controls" && isParentSession()) {
     currentFamilyControlsSection = familyControlsSwitchButton.dataset.familyControlsView || "";
+    renderKidPage(currentKidId);
+    return;
+  }
+
+  const familyControlsBackButton = event.target.closest("[data-family-controls-back]");
+  if (familyControlsBackButton && currentKidView === "settings" && currentSettingsSection === "family-controls" && isParentSession()) {
+    currentFamilyControlsSection = "";
     renderKidPage(currentKidId);
     return;
   }

@@ -3061,6 +3061,8 @@ button {
 .reward-submit-button {
   width: fit-content;
   min-width: 0;
+  justify-self: center;
+  padding-inline: 24px;
 }
 
 #dollar-form .action-button.primary {

@@ -196,6 +196,7 @@ let aboutTransitionTimer = null;
 let createAccountStep = 1;
 let createAccountDraft = createEmptyCreateAccountDraft();
 let createAccountKidCompleteMode = false;
+let pendingCloudFamilyDraft = null;
 
 function resetCreateAccountDraft() {
   createAccountStep = 1;
@@ -571,6 +572,7 @@ async function handleCreateFamilyAccount() {
     try {
       const family = await createCloudFamilyAccount({ familyName, parentName, parentEmail, parentPin, kids });
       upsertFamilyInState(family);
+      pendingCloudFamilyDraft = null;
       authAccountReady = true;
       authAccountJustCreated = true;
       authStage = "login";
@@ -590,6 +592,7 @@ async function handleCreateFamilyAccount() {
     } catch (error) {
       const message = String(error?.message || "");
       if (/rate limit/i.test(message) || /already registered/i.test(message)) {
+        pendingCloudFamilyDraft = { familyName, parentName, parentEmail, parentPin, kids };
         authAccountReady = true;
         authAccountJustCreated = false;
         authStage = "login";
@@ -944,39 +947,7 @@ async function fetchCloudFamilyForUser(user) {
   });
 }
 
-async function createCloudFamilyAccount({ familyName, parentName, parentEmail, parentPin, kids }) {
-  if (!supabaseClient) throw new Error("Cloud sync is not configured yet.");
-  const authPassword = buildCloudAuthPassword(parentEmail, parentPin);
-
-  const { data: signUpData, error: signUpError } = await supabaseClient.auth.signUp({
-    email: parentEmail,
-    password: authPassword,
-    options: {
-      data: {
-        parent_name: parentName,
-        family_name: familyName,
-      },
-    },
-  });
-
-  if (signUpError) throw signUpError;
-
-  let session = signUpData.session;
-  if (!session) {
-    const { data: signInData, error: signInError } = await supabaseClient.auth.signInWithPassword({
-      email: parentEmail,
-      password: authPassword,
-    });
-
-    if (signInError || !signInData.session) {
-      throw new Error("Signup worked, but Supabase still needs email confirmation. In Supabase, disable Confirm email for now or confirm the email before logging in.");
-    }
-
-    session = signInData.session;
-  }
-
-  const user = session.user;
-
+async function createCloudFamilyDataForUser(user, { familyName, parentName, parentPin, kids }) {
   const { data: familyRow, error: familyError } = await supabaseClient
     .from("families")
     .insert({ family_name: familyName })
@@ -1022,6 +993,41 @@ async function createCloudFamilyAccount({ familyName, parentName, parentEmail, p
   }
 
   return fetchCloudFamilyForUser(user);
+}
+
+async function createCloudFamilyAccount({ familyName, parentName, parentEmail, parentPin, kids }) {
+  if (!supabaseClient) throw new Error("Cloud sync is not configured yet.");
+  const authPassword = buildCloudAuthPassword(parentEmail, parentPin);
+
+  const { data: signUpData, error: signUpError } = await supabaseClient.auth.signUp({
+    email: parentEmail,
+    password: authPassword,
+    options: {
+      data: {
+        parent_name: parentName,
+        family_name: familyName,
+      },
+    },
+  });
+
+  if (signUpError) throw signUpError;
+
+  let session = signUpData.session;
+  if (!session) {
+    const { data: signInData, error: signInError } = await supabaseClient.auth.signInWithPassword({
+      email: parentEmail,
+      password: authPassword,
+    });
+
+    if (signInError || !signInData.session) {
+      throw new Error("Signup worked, but Supabase still needs email confirmation. In Supabase, disable Confirm email for now or confirm the email before logging in.");
+    }
+
+    session = signInData.session;
+  }
+
+  const user = session.user;
+  return createCloudFamilyDataForUser(user, { familyName, parentName, parentPin, kids });
 }
 
 async function loginCloudParent(parentEmail, parentPin) {
@@ -2234,7 +2240,14 @@ document.body.addEventListener("submit", async (event) => {
 
     if (cloudModeEnabled) {
       try {
-        const family = await loginCloudParent(email, pin);
+        let family = await loginCloudParent(email, pin);
+        if (!family && pendingCloudFamilyDraft && pendingCloudFamilyDraft.parentEmail.toLowerCase() === email && pendingCloudFamilyDraft.parentPin === pin) {
+          const { data } = await supabaseClient.auth.getSession();
+          if (data.session?.user) {
+            family = await createCloudFamilyDataForUser(data.session.user, pendingCloudFamilyDraft);
+            pendingCloudFamilyDraft = null;
+          }
+        }
         if (!family) {
           showToast("No family was found for this parent account yet.");
           return;
@@ -2283,7 +2296,14 @@ document.body.addEventListener("submit", async (event) => {
 
     if (cloudModeEnabled) {
       try {
-        const family = await loginCloudParent(email, pin);
+        let family = await loginCloudParent(email, pin);
+        if (!family && pendingCloudFamilyDraft && pendingCloudFamilyDraft.parentEmail.toLowerCase() === email && pendingCloudFamilyDraft.parentPin === pin) {
+          const { data } = await supabaseClient.auth.getSession();
+          if (data.session?.user) {
+            family = await createCloudFamilyDataForUser(data.session.user, pendingCloudFamilyDraft);
+            pendingCloudFamilyDraft = null;
+          }
+        }
         if (!family) {
           showToast("No family was found for this account.");
           return;

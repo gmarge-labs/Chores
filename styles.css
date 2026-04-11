@@ -2410,7 +2410,8 @@ button {
   grid-template-columns: 240px minmax(0, 1fr);
   align-items: center;
   gap: 16px;
-  width: 100%;
+  width: min(100%, 980px);
+  margin-inline: auto;
 }
 
 .family-controls-back-button,

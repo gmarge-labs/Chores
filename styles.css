@@ -1969,6 +1969,18 @@ button {
   gap: 10px;
 }
 
+.reward-input-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 190px;
+  gap: 12px;
+  width: 100%;
+}
+
+.reward-points-input {
+  max-width: 190px;
+  justify-self: end;
+}
+
 .reward-form input {
   width: 100%;
   border: 1px solid var(--line);
@@ -4760,6 +4772,15 @@ button {
 
   .family-controls-page .reward-form {
     max-width: 100%;
+  }
+
+  .reward-input-row {
+    grid-template-columns: 1fr;
+  }
+
+  .reward-points-input {
+    max-width: 100%;
+    justify-self: stretch;
   }
 
   .kid-header {

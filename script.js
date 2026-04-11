@@ -1860,8 +1860,10 @@ function renderKidPage(kidId) {
                                             <section class="settings-mini-section add-rewards-section family-controls-page">
                                               <p class="eyebrow">Add rewards</p>
                                               <form class="reward-form" id="reward-form">
-                                                <input type="text" name="title" placeholder="Example: Choose dinner" required />
-                                                <input type="number" name="cost" placeholder="Points needed" min="1" required />
+                                                <div class="reward-input-row">
+                                                  <input type="text" name="title" placeholder="Example: Choose dinner" required />
+                                                  <input class="reward-points-input" type="number" name="cost" placeholder="Points" min="1" required />
+                                                </div>
                                                 <p class="assign-summary">Selected kids: ${escapeHtml(getAssignedKidNames().join(", ") || "No kids selected yet")}</p>
                                                 <div class="button-row">
                                                   <button class="action-button secondary" type="button" data-open-assign="rewards">Select kid to reward</button>

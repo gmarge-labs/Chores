@@ -458,6 +458,13 @@ function upsertFamilyInState(family) {
   return normalized;
 }
 
+function upsertLocalFamilyDraft({ familyName, parentName, parentEmail, parentPin, kids }) {
+  const existing = state.families.find((entry) => entry.parentEmailLower === parentEmail.trim().toLowerCase());
+  const family = createFamily({ familyName, parentName, parentEmail, parentPin, kids });
+  family.id = existing?.id || family.id;
+  return upsertFamilyInState(family);
+}
+
 function getFamilyKids() {
   return getCurrentFamily()?.kids || [];
 }
@@ -592,13 +599,15 @@ async function handleCreateFamilyAccount() {
     } catch (error) {
       const message = String(error?.message || "");
       if (/rate limit/i.test(message) || /already registered/i.test(message)) {
+        upsertLocalFamilyDraft({ familyName, parentName, parentEmail, parentPin, kids });
         pendingCloudFamilyDraft = { familyName, parentName, parentEmail, parentPin, kids };
         authAccountReady = true;
         authAccountJustCreated = false;
         authStage = "login";
         authView = "parent";
+        saveState({ skipCloud: true });
         renderAuthHome();
-        showToast("This email already started signup. Please log in as parent or wait a moment before trying again.");
+        showToast("Cloud signup is busy. You can log in on this device now, and sync can catch up later.");
         return;
       }
       showToast(message || "Could not create the family account.");
@@ -2264,6 +2273,20 @@ document.body.addEventListener("submit", async (event) => {
         saveState({ skipCloud: true });
         renderApp();
       } catch (error) {
+        const localFamily = state.families.find((entry) => entry.parentEmailLower === email && entry.parentPin === pin);
+        if (localFamily) {
+          state.session = { familyId: localFamily.id, role: "parent" };
+          authStage = "login";
+          authAccountJustCreated = false;
+          currentKidId = null;
+          currentKidView = "dashboard";
+          currentFamilyMode = false;
+          currentAssignedKids = [];
+          saveState({ skipCloud: true });
+          showToast("Logged in on this device. Cloud sync will reconnect later.");
+          renderApp();
+          return;
+        }
         showToast(error.message || "Incorrect parent login.");
       }
       return;
@@ -2321,6 +2344,21 @@ document.body.addEventListener("submit", async (event) => {
         saveState({ skipCloud: true });
         renderApp();
       } catch (error) {
+        const localFamily = state.families.find((entry) => entry.parentEmailLower === email && entry.parentPin === pin);
+        if (localFamily) {
+          authStage = "login";
+          authView = "parent";
+          authAccountJustCreated = false;
+          state.session = { familyId: localFamily.id, role: "parent" };
+          currentKidId = null;
+          currentKidView = "dashboard";
+          currentFamilyMode = false;
+          currentAssignedKids = [];
+          saveState({ skipCloud: true });
+          showToast("Logged in on this device. Cloud sync will reconnect later.");
+          renderApp();
+          return;
+        }
         showToast(error.message || "Incorrect login.");
       }
       return;

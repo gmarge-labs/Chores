@@ -1862,10 +1862,13 @@ function renderKidPage(kidId) {
                                               <form class="reward-form" id="reward-form">
                                                 <input type="text" name="title" placeholder="Example: Choose dinner" required />
                                                 <input type="number" name="cost" placeholder="Points needed" min="1" required />
+                                                <p class="assign-summary">Selected kids: ${escapeHtml(getAssignedKidNames().join(", ") || "No kids selected yet")}</p>
                                                 <div class="button-row">
-                                                  <button class="action-button primary" type="submit">Add reward to selected kids</button>
+                                                  <button class="action-button secondary" type="button" data-open-assign="rewards">Select kid to reward</button>
+                                                  <button class="action-button primary" type="submit">Add rewards</button>
                                                 </div>
                                               </form>
+                                              <div class="assign-popup-slot">${renderAssignPopup("rewards")}</div>
                                             </section>
                                           `
                                           : ""

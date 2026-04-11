@@ -2251,11 +2251,17 @@ button {
 
 .section-card.primary.kid-view[data-panel="settings"] {
   overflow: hidden;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  justify-items: center;
+  align-content: start;
 }
 
 .kid-view[data-panel="settings"] .section-head {
   justify-content: center;
   text-align: center;
+  width: min(100%, 1120px);
+  margin-inline: auto;
 }
 
 .kid-view[data-panel="settings"] .section-head > div {
@@ -2300,6 +2306,8 @@ button {
   min-height: 380px;
   display: grid;
   place-items: center;
+  width: min(100%, 1120px);
+  margin-inline: auto;
 }
 
 .settings-detail {
@@ -2307,11 +2315,14 @@ button {
   gap: 20px;
   justify-items: center;
   align-content: start;
+  width: min(100%, 1120px);
+  margin-inline: auto;
 }
 
 .settings-subpage {
   display: grid;
   justify-items: center;
+  width: 100%;
 }
 
 .settings-switcher {
@@ -3003,6 +3014,11 @@ button {
 .reward-submit-button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.reward-assignment-block {
+  justify-items: center;
+  text-align: center;
 }
 
 .kid-view[data-panel="settings"] .action-button,

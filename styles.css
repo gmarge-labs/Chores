@@ -3007,6 +3007,32 @@ button {
   text-align: center;
 }
 
+.settings-detail,
+.settings-subpage {
+  width: 100%;
+}
+
+.single-settings-tile.family-controls-tile {
+  width: min(100%, 1120px);
+  margin-inline: auto;
+  justify-items: center;
+}
+
+.single-settings-tile.family-controls-tile > .eyebrow {
+  width: 100%;
+  text-align: center;
+}
+
+.single-settings-tile.family-controls-tile .tile-bubbles,
+.single-settings-tile.family-controls-tile .family-controls-detail,
+.single-settings-tile.family-controls-tile .family-controls-hub {
+  width: 100%;
+}
+
+.single-settings-tile.family-controls-tile .settings-mini-section {
+  margin-inline: auto;
+}
+
 .field-label {
   display: grid;
   gap: 4px;

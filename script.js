@@ -1453,6 +1453,7 @@ function renderParentHome() {
   document.getElementById("page-home").innerHTML = `
     <div class="home-shell">
       <header class="home-header home-header--session">
+        <button class="back-button home-logout-button" type="button" data-logout="true">Log out</button>
         <p class="eyebrow">${escapeHtml(family.familyName)} family</p>
         <h1 class="rainbow-title" aria-label="CHORES">
           <span class="title-star" aria-hidden="true">✦</span>
@@ -1464,11 +1465,6 @@ function renderParentHome() {
           <span aria-hidden="true">S</span>
           <span class="title-star" aria-hidden="true">✦</span>
         </h1>
-        <div class="session-strip">
-          <span class="summary-stat">${escapeHtml(kids.length)} kids</span>
-          <span class="summary-stat">Parent: ${escapeHtml(family.parentName)}</span>
-          <button class="back-button" type="button" data-logout="true">Log out</button>
-        </div>
       </header>
 
       <section class="kid-grid" id="home-kids">

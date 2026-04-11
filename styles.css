@@ -4407,6 +4407,7 @@ button {
 
 .home-header--session {
   padding-bottom: 12px;
+  position: relative;
 }
 
 .session-strip {
@@ -4416,6 +4417,12 @@ button {
   gap: 12px;
   margin-top: 18px;
   flex-wrap: wrap;
+}
+
+.home-logout-button {
+  position: absolute;
+  top: 0;
+  right: 0;
 }
 
 @media (max-width: 980px) {
@@ -4450,6 +4457,12 @@ button {
 
   .kid-header .back-button {
     margin-left: 0;
+  }
+
+  .home-logout-button {
+    position: static;
+    align-self: flex-end;
+    margin-bottom: 12px;
   }
 }
 

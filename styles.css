@@ -2372,6 +2372,8 @@ button {
 }
 
 .section-card.primary.kid-view.active[data-panel="settings"] {
+  height: auto;
+  min-height: 420px;
   overflow: hidden;
   display: grid;
   grid-template-rows: auto 1fr;
@@ -2425,7 +2427,7 @@ button {
 }
 
 .settings-hub {
-  min-height: 380px;
+  min-height: 220px;
   display: grid;
   place-items: center;
   width: min(100%, 1120px);

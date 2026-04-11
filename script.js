@@ -1631,14 +1631,19 @@ function renderKidPage(kidId) {
   const canSeeReports = role === "parent";
   const canSeeSettings = role === "parent";
   const hasReachedThreshold = Number(kid.celebrationThreshold) > 0 && Number(kid.points) >= Number(kid.celebrationThreshold);
+  const settingsFocusedNav = currentKidView === "settings" && canSeeSettings;
 
   document.getElementById("page-kid").innerHTML = `
     <div class="kid-shell ${escapeHtml(shellClass)}">
       <header class="kid-header">
         <h1>${escapeHtml(pageTitle)}</h1>
         <div class="view-switcher">
-          <button class="view-button ${currentKidView === "dashboard" ? "active" : ""}" type="button" data-view="dashboard">Dashboard</button>
-          <button class="view-button ${["rewards", "favors"].includes(currentKidView) ? "active" : ""}" type="button" data-view="rewards">Rewards</button>
+          ${
+            settingsFocusedNav
+              ? ""
+              : `<button class="view-button ${currentKidView === "dashboard" ? "active" : ""}" type="button" data-view="dashboard">Dashboard</button>
+          <button class="view-button ${["rewards", "favors"].includes(currentKidView) ? "active" : ""}" type="button" data-view="rewards">Rewards</button>`
+          }
           ${
             canSeeReports
               ? `<button class="view-button ${currentKidView === "report" ? "active" : ""}" type="button" data-view="report">Reports</button>`

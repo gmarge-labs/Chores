@@ -1864,13 +1864,25 @@ function renderKidPage(kidId) {
                                                   <input type="text" name="title" placeholder="Example: Choose dinner" required />
                                                   <input class="reward-points-input" type="number" name="cost" placeholder="Points" min="1" required />
                                                 </div>
-                                                <p class="assign-summary">Selected kids: ${escapeHtml(getAssignedKidNames().join(", ") || "No kids selected yet")}</p>
+                                                <div class="reward-assignment-block">
+                                                  <p class="assign-summary">Assign to</p>
+                                                  <div class="assign-grid reward-assign-grid">
+                                                    ${getFamilyKids()
+                                                      .map(
+                                                        (child) => `
+                                                          <label class="assign-option">
+                                                            <input type="checkbox" name="rewardAssignedKids" value="${escapeHtml(child.id)}" ${currentAssignedKids.includes(child.id) ? "checked" : ""} />
+                                                            <span>${escapeHtml(child.name)}</span>
+                                                          </label>
+                                                        `
+                                                      )
+                                                      .join("")}
+                                                  </div>
+                                                </div>
                                                 <div class="button-row">
-                                                  <button class="action-button secondary" type="button" data-open-assign="rewards">Select kid to reward</button>
-                                                  <button class="action-button primary" type="submit">Add rewards</button>
+                                                  <button class="action-button primary reward-submit-button" type="submit" ${currentAssignedKids.length ? "" : "disabled"}>Add rewards</button>
                                                 </div>
                                               </form>
-                                              <div class="assign-popup-slot">${renderAssignPopup("rewards")}</div>
                                             </section>
                                           `
                                           : ""
@@ -2355,6 +2367,19 @@ document.body.addEventListener("keydown", (event) => {
   }
 });
 
+document.body.addEventListener("change", (event) => {
+  const rewardCheckbox = event.target.closest?.('input[name="rewardAssignedKids"]');
+  if (!rewardCheckbox) return;
+
+  const checked = Array.from(document.querySelectorAll('input[name="rewardAssignedKids"]:checked')).map((input) => input.value);
+  currentAssignedKids = checked;
+
+  const rewardSubmitButton = document.querySelector(".reward-submit-button");
+  if (rewardSubmitButton) {
+    rewardSubmitButton.disabled = checked.length === 0;
+  }
+});
+
 document.body.addEventListener("mouseover", (event) => {
   const aboutTopicButton = event.target.closest?.("[data-about-topic]");
   if (!aboutTopicButton || state.session) return;
@@ -2635,9 +2660,13 @@ document.body.addEventListener("submit", async (event) => {
     const formData = new FormData(rewardForm);
     const title = String(formData.get("title") || "").trim();
     const cost = Number(formData.get("cost"));
-    const targetKids = currentAssignedKids.length ? currentAssignedKids : getFamilyKids().map((kid) => kid.id);
+    const targetKids = formData.getAll("rewardAssignedKids").map((value) => String(value)).filter(Boolean);
 
-    if (!title || !Number.isFinite(cost) || cost < 1 || !targetKids.length) return;
+    if (!title || !Number.isFinite(cost) || cost < 1 || !targetKids.length) {
+      if (!targetKids.length) showToast("Select at least one kid for this reward.");
+      return;
+    }
+    currentAssignedKids = targetKids;
     addReward(targetKids, title, cost);
     saveState();
     renderKidPage(currentKidId || getFamilyKids()[0]?.id);

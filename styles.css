@@ -2025,6 +2025,17 @@ button {
   font-weight: 700;
 }
 
+.reward-assignment-block {
+  display: grid;
+  gap: 10px;
+  width: 100%;
+}
+
+.reward-assign-grid {
+  grid-template-columns: repeat(auto-fit, minmax(150px, max-content));
+  justify-content: center;
+}
+
 .assign-option {
   display: flex;
   align-items: center;
@@ -2969,6 +2980,16 @@ button {
   padding: 10px 14px;
   font-size: 0.92rem;
   border-radius: 12px;
+}
+
+.reward-submit-button {
+  width: fit-content;
+  min-width: 0;
+}
+
+.reward-submit-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .kid-view[data-panel="settings"] .action-button,

@@ -1604,6 +1604,7 @@ function renderKidPage(kidId) {
   const pageTitle = familyMode ? family.familyName : kid.name;
   const canSeeReports = role === "parent";
   const canSeeSettings = role === "parent";
+  const hasReachedThreshold = Number(kid.celebrationThreshold) > 0 && Number(kid.points) >= Number(kid.celebrationThreshold);
 
   document.getElementById("page-kid").innerHTML = `
     <div class="kid-shell ${escapeHtml(shellClass)}">
@@ -1712,8 +1713,18 @@ function renderKidPage(kidId) {
 
           <div class="rewards-layout">
             <div class="points-column">
-              <article class="points-card is-bursting" data-points-card="true" role="button" tabindex="0" aria-label="Make points sparkle">
+              <article class="points-card is-bursting ${hasReachedThreshold ? "threshold-celebration" : ""}" data-points-card="true" role="button" tabindex="0" aria-label="Make points sparkle">
                 ${renderTileBubbles()}
+                ${
+                  hasReachedThreshold
+                    ? `
+                      <span class="points-celebration-cloud" aria-hidden="true">
+                        <span>🥳</span><span>😄</span><span>😁</span><span>🤩</span><span>😆</span><span>🎉</span>
+                        <span>😄</span><span>🥳</span><span>😁</span><span>🤩</span><span>😆</span><span>🎊</span>
+                      </span>
+                    `
+                    : ""
+                }
                 <span class="points-star-cloud" aria-hidden="true">
                   <span></span><span></span><span></span><span></span><span></span><span></span>
                   <span></span><span></span><span></span><span></span><span></span><span></span>

@@ -1703,6 +1703,35 @@ button {
   transition: filter 180ms ease, box-shadow 180ms ease;
 }
 
+.kid-view[data-panel="rewards"] .points-card.threshold-celebration {
+  background:
+    radial-gradient(circle at 50% 38%, rgba(255, 239, 162, 0.62) 0 7%, rgba(255, 239, 162, 0.18) 10%, transparent 30%),
+    radial-gradient(circle at 22% 20%, rgba(255, 133, 92, 0.34) 0 5%, transparent 16%),
+    radial-gradient(circle at 80% 18%, rgba(110, 184, 255, 0.3) 0 6%, transparent 16%),
+    radial-gradient(circle at 18% 82%, rgba(255, 140, 200, 0.26) 0 6%, transparent 18%),
+    radial-gradient(circle at 84% 76%, rgba(79, 199, 181, 0.28) 0 7%, transparent 18%),
+    repeating-conic-gradient(
+      from -20deg at 50% 40%,
+      rgba(255, 167, 94, 0.3) 0deg 10deg,
+      transparent 10deg 20deg,
+      rgba(255, 220, 104, 0.24) 20deg 30deg,
+      transparent 30deg 42deg,
+      rgba(255, 104, 162, 0.18) 42deg 52deg,
+      transparent 52deg 64deg,
+      rgba(79, 199, 181, 0.22) 64deg 76deg,
+      transparent 76deg 88deg,
+      rgba(109, 175, 255, 0.2) 88deg 100deg,
+      transparent 100deg 114deg
+    ),
+    linear-gradient(160deg, rgba(16, 18, 44, 0.98), rgba(40, 19, 70, 0.9) 44%, rgba(var(--kid-accent-rgb), 0.54) 100%);
+  box-shadow:
+    0 38px 82px rgba(var(--kid-accent-rgb), 0.44),
+    0 0 0 10px rgba(255, 255, 255, 0.14),
+    0 0 34px rgba(255, 255, 255, 0.22),
+    0 0 70px rgba(255, 185, 76, 0.24),
+    inset 0 4px 0 rgba(255, 255, 255, 0.74);
+}
+
 .kid-view[data-panel="rewards"] .points-card:hover,
 .kid-view[data-panel="rewards"] .points-card:focus-visible {
   filter: saturate(1.14) brightness(1.03);
@@ -1771,6 +1800,36 @@ button {
   z-index: 1;
   pointer-events: none;
 }
+
+.points-celebration-cloud {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.points-celebration-cloud span {
+  position: absolute;
+  font-size: clamp(1.6rem, 3vw, 2.6rem);
+  filter:
+    drop-shadow(0 10px 18px rgba(0, 0, 0, 0.32))
+    drop-shadow(0 0 14px rgba(255, 214, 110, 0.22));
+  opacity: 0.9;
+  animation: celebration-face-float 3.8s ease-in-out infinite;
+}
+
+.points-celebration-cloud span:nth-child(1) { left: 10%; top: 16%; }
+.points-celebration-cloud span:nth-child(2) { right: 12%; top: 16%; animation-delay: 220ms; }
+.points-celebration-cloud span:nth-child(3) { left: 14%; bottom: 18%; animation-delay: 420ms; }
+.points-celebration-cloud span:nth-child(4) { right: 15%; bottom: 18%; animation-delay: 620ms; }
+.points-celebration-cloud span:nth-child(5) { left: 24%; top: 34%; animation-delay: 820ms; }
+.points-celebration-cloud span:nth-child(6) { right: 24%; top: 36%; animation-delay: 1020ms; }
+.points-celebration-cloud span:nth-child(7) { left: 31%; bottom: 28%; animation-delay: 1220ms; }
+.points-celebration-cloud span:nth-child(8) { right: 31%; bottom: 30%; animation-delay: 1420ms; }
+.points-celebration-cloud span:nth-child(9) { left: 42%; top: 12%; animation-delay: 1620ms; }
+.points-celebration-cloud span:nth-child(10) { right: 42%; top: 14%; animation-delay: 1820ms; }
+.points-celebration-cloud span:nth-child(11) { left: 44%; bottom: 12%; animation-delay: 2020ms; }
+.points-celebration-cloud span:nth-child(12) { right: 44%; bottom: 12%; animation-delay: 2220ms; }
 
 .points-star-cloud span {
   position: absolute;
@@ -3537,6 +3596,25 @@ button {
   100% {
     transform: translateX(0) translateY(0) scale(1) rotate(0deg);
     filter: drop-shadow(0 8px 0 rgba(255, 255, 255, 0.16)) brightness(1);
+  }
+}
+
+@keyframes celebration-face-float {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
+  }
+
+  20% {
+    transform: translate3d(-8px, -10px, 0) scale(1.08) rotate(-6deg);
+  }
+
+  45% {
+    transform: translate3d(10px, -18px, 0) scale(0.96) rotate(7deg);
+  }
+
+  70% {
+    transform: translate3d(-6px, 8px, 0) scale(1.04) rotate(-4deg);
   }
 }
 

@@ -2015,8 +2015,11 @@ button {
 }
 
 .assign-grid {
-  display: grid;
-  gap: 10px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
 }
 
 .assign-summary {
@@ -2031,19 +2034,16 @@ button {
   width: 100%;
 }
 
-.reward-assign-grid {
-  grid-template-columns: repeat(auto-fit, minmax(150px, max-content));
-  justify-content: center;
-}
-
 .assign-option {
   display: flex;
   align-items: center;
   gap: 10px;
   padding: 10px 12px;
+  min-width: 150px;
   border-radius: 14px;
   background: white;
   border: 1px solid var(--line);
+  justify-content: center;
 }
 
 .assign-option input[type="checkbox"] {
@@ -3183,16 +3183,11 @@ button {
 }
 
 .add-rewards-section.family-controls-page .reward-assign-grid {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 12px;
+  width: 100%;
 }
 
 .add-rewards-section.family-controls-page .assign-option {
   min-width: 150px;
-  justify-content: center;
 }
 
 .field-label {

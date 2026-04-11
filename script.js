@@ -1,6 +1,7 @@
 const STORAGE_KEY = "chores-multi-family-state-v1";
 const cloudConfig = window.CHORES_SUPABASE_CONFIG || {};
 const cloudModeEnabled = Boolean(cloudConfig.enabled && cloudConfig.url && cloudConfig.anonKey);
+const cloudAuthEnabled = false;
 const supabaseClient = cloudModeEnabled && window.supabase?.createClient
   ? window.supabase.createClient(cloudConfig.url, cloudConfig.anonKey, {
       auth: {
@@ -160,7 +161,7 @@ const state = loadState();
 function saveState(options = {}) {
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 
-  if (!options.skipCloud && cloudModeEnabled && isParentSession()) {
+  if (!options.skipCloud && cloudAuthEnabled && cloudModeEnabled && isParentSession()) {
     void queueCloudSync();
   }
 }
@@ -189,7 +190,7 @@ updateMissedStreaksForToday();
 
 let authStage = "intro";
 let authView = "";
-let authAccountReady = state.families.length > 0 || cloudModeEnabled;
+let authAccountReady = state.families.length > 0;
 let authAccountJustCreated = false;
 let aboutTopic = "";
 let aboutTransitionTimer = null;
@@ -547,7 +548,7 @@ async function handleCreateFamilyAccount() {
     return;
   }
 
-  if (!cloudModeEnabled && state.families.some((family) => family.parentEmailLower === parentEmail.toLowerCase())) {
+  if (state.families.some((family) => family.parentEmailLower === parentEmail.toLowerCase())) {
     showToast("That parent email already has an account.");
     return;
   }
@@ -575,7 +576,7 @@ async function handleCreateFamilyAccount() {
     return;
   }
 
-  if (cloudModeEnabled) {
+  if (cloudAuthEnabled && cloudModeEnabled) {
     try {
       const family = await createCloudFamilyAccount({ familyName, parentName, parentEmail, parentPin, kids });
       upsertFamilyInState(family);
@@ -790,7 +791,7 @@ function resetAllTasksAndPoints() {
 }
 
 async function logout() {
-  if (cloudModeEnabled && isParentSession() && supabaseClient) {
+  if (cloudAuthEnabled && cloudModeEnabled && isParentSession() && supabaseClient) {
     await supabaseClient.auth.signOut().catch(() => {
       // Local logout still happens even if cloud sign out fails.
     });
@@ -1237,7 +1238,7 @@ function queueCloudSync() {
 }
 
 async function bootstrapCloudSessionIfAvailable() {
-  if (!supabaseClient || cloudBootstrapStarted) return;
+  if (!cloudAuthEnabled || !supabaseClient || cloudBootstrapStarted) return;
   cloudBootstrapStarted = true;
 
   const { data, error } = await supabaseClient.auth.getSession();
@@ -2247,7 +2248,7 @@ document.body.addEventListener("submit", async (event) => {
     const email = String(formData.get("parentEmail") || "").trim().toLowerCase();
     const pin = String(formData.get("parentPin") || "").trim();
 
-    if (cloudModeEnabled) {
+    if (cloudAuthEnabled && cloudModeEnabled) {
       try {
         let family = await loginCloudParent(email, pin);
         if (!family && pendingCloudFamilyDraft && pendingCloudFamilyDraft.parentEmail.toLowerCase() === email && pendingCloudFamilyDraft.parentPin === pin) {
@@ -2317,7 +2318,7 @@ document.body.addEventListener("submit", async (event) => {
     const email = String(formData.get("username") || "").trim().toLowerCase();
     const pin = String(formData.get("password") || "").trim();
 
-    if (cloudModeEnabled) {
+    if (cloudAuthEnabled && cloudModeEnabled) {
       try {
         let family = await loginCloudParent(email, pin);
         if (!family && pendingCloudFamilyDraft && pendingCloudFamilyDraft.parentEmail.toLowerCase() === email && pendingCloudFamilyDraft.parentPin === pin) {

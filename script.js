@@ -503,6 +503,7 @@ let currentKidId = null;
 let currentKidView = "dashboard";
 let currentFamilyMode = false;
 let currentAssignedKids = [];
+let currentRewardAssignedKids = [];
 let isAssignPopupOpen = false;
 let assignPopupPlacement = "task";
 
@@ -563,6 +564,10 @@ function isKidSession() {
 
 function getAssignedKidNames() {
   return currentAssignedKids.map((kidId) => getKid(kidId)?.name).filter(Boolean);
+}
+
+function getRewardAssignedKidNames() {
+  return currentRewardAssignedKids.map((kidId) => getKid(kidId)?.name).filter(Boolean);
 }
 
 function getDollarEquivalent(kid) {
@@ -1877,7 +1882,7 @@ function renderKidPage(kidId) {
                                                       .map(
                                                         (child) => `
                                                           <label class="assign-option">
-                                                            <input type="checkbox" name="rewardAssignedKids" value="${escapeHtml(child.id)}" ${currentAssignedKids.includes(child.id) ? "checked" : ""} />
+                                                            <input type="checkbox" name="rewardAssignedKids" value="${escapeHtml(child.id)}" ${currentRewardAssignedKids.includes(child.id) ? "checked" : ""} />
                                                             <span>${escapeHtml(child.name)}</span>
                                                           </label>
                                                         `
@@ -1886,7 +1891,7 @@ function renderKidPage(kidId) {
                                                   </div>
                                                 </div>
                                                 <div class="button-row">
-                                                  <button class="action-button primary reward-submit-button" type="submit" ${currentAssignedKids.length ? "" : "disabled"}>Add rewards</button>
+                                                  <button class="action-button primary reward-submit-button" type="submit" ${currentRewardAssignedKids.length ? "" : "disabled"}>Add rewards</button>
                                                 </div>
                                               </form>
                                             </section>
@@ -2382,7 +2387,7 @@ document.body.addEventListener("change", (event) => {
   if (!rewardCheckbox) return;
 
   const checked = Array.from(document.querySelectorAll('input[name="rewardAssignedKids"]:checked')).map((input) => input.value);
-  currentAssignedKids = checked;
+  currentRewardAssignedKids = checked;
 
   const rewardSubmitButton = document.querySelector(".reward-submit-button");
   if (rewardSubmitButton) {
@@ -2676,9 +2681,8 @@ document.body.addEventListener("submit", async (event) => {
       if (!targetKids.length) showToast("Select at least one kid for this reward.");
       return;
     }
-    currentAssignedKids = targetKids;
     addReward(targetKids, title, cost);
-    currentAssignedKids = [];
+    currentRewardAssignedKids = [];
     saveState();
     renderKidPage(currentKidId || getFamilyKids()[0]?.id);
     showToast("Successfully added rewards.");

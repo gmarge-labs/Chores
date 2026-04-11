@@ -195,10 +195,12 @@ let aboutTopic = "";
 let aboutTransitionTimer = null;
 let createAccountStep = 1;
 let createAccountDraft = createEmptyCreateAccountDraft();
+let createAccountKidCompleteMode = false;
 
 function resetCreateAccountDraft() {
   createAccountStep = 1;
   createAccountDraft = createEmptyCreateAccountDraft();
+  createAccountKidCompleteMode = false;
 }
 
 function isFilled(value) {
@@ -261,6 +263,10 @@ function getKidNumberFromFieldName(name) {
   return match ? Number(match[1]) : null;
 }
 
+function isKidPinCreateStep(field = getCurrentCreateField()) {
+  return Boolean(field && /^kidPin\d+$/.test(field.name));
+}
+
 function renderCreateAccountActions() {
   const currentField = getCurrentCreateField();
   if (!currentField) return "";
@@ -288,6 +294,14 @@ function renderCreateAccountActions() {
   const kidNumber = getKidNumberFromFieldName(currentField.name);
   if (!kidNumber) return "";
 
+  if (!createAccountKidCompleteMode) {
+    return `
+      <div class="button-row create-progress-actions">
+        <button class="action-button primary" type="button" data-create-complete="true" ${disabledAttr}>Complete</button>
+      </div>
+    `;
+  }
+
   if (kidNumber < MAX_CREATE_KIDS) {
     return `
       <div class="button-row create-progress-actions">
@@ -314,6 +328,20 @@ function renderCurrentCreateStep() {
     return `
       ${renderCreateField(currentField.name, currentField.placeholder, currentField.type)}
       ${guidance}
+    `;
+  }
+
+  if (isKidPinCreateStep(currentField) && createAccountKidCompleteMode) {
+    const kidNumber = getKidNumberFromFieldName(currentField.name);
+    const kidName = String(createAccountDraft[`kidName${kidNumber}`] || "").trim() || `Kid ${kidNumber}`;
+    return `
+      <div class="auth-kid-block single-step-kid-block">
+        <p class="eyebrow">Add your kids</p>
+        <div class="create-complete-card">
+          <p class="create-complete-label">${escapeHtml(kidName)} is ready.</p>
+          <p class="create-complete-copy">Choose whether to create the account now or add another child first.</p>
+        </div>
+      </div>
     `;
   }
 
@@ -1799,6 +1827,7 @@ document.body.addEventListener("click", (event) => {
       authView = "";
       aboutTopic = "";
       createAccountStep = 1;
+      createAccountKidCompleteMode = false;
       renderAuthHome();
       return;
     }
@@ -1806,6 +1835,9 @@ document.body.addEventListener("click", (event) => {
     authView = nextView;
     if (authView !== "about") {
       aboutTopic = "";
+    }
+    if (authView !== "create") {
+      createAccountKidCompleteMode = false;
     }
     renderAuthHome();
     return;
@@ -1837,9 +1869,24 @@ document.body.addEventListener("click", (event) => {
       return;
     }
     createAccountStep = Math.min(createAccountStep + 1, CREATE_ACCOUNT_FIELDS.length);
+    createAccountKidCompleteMode = false;
     renderAuthHome();
     const nextField = document.querySelector(`#create-family-form input[name="${CREATE_ACCOUNT_FIELDS[Math.min(createAccountStep - 1, CREATE_ACCOUNT_FIELDS.length - 1)].name}"]`);
     nextField?.focus();
+    return;
+  }
+
+  const createCompleteButton = event.target.closest("[data-create-complete]");
+  if (createCompleteButton && !state.session) {
+    const currentField = getCurrentCreateField();
+    if (!isKidPinCreateStep(currentField)) return;
+    const currentValue = createAccountDraft[currentField.name] || "";
+    if (!isValidCreateFieldValue(currentField, currentValue)) {
+      showToast("Kid password must be exactly 4 digits before you can continue.");
+      return;
+    }
+    createAccountKidCompleteMode = true;
+    renderAuthHome();
     return;
   }
 
@@ -1850,6 +1897,7 @@ document.body.addEventListener("click", (event) => {
     if (!currentKidNumber || currentKidNumber >= MAX_CREATE_KIDS) return;
     const nextStep = BASE_CREATE_FIELDS.length + (currentKidNumber * 2) + 1;
     createAccountStep = nextStep;
+    createAccountKidCompleteMode = false;
     renderAuthHome();
     const nextField = document.querySelector(`#create-family-form input[name="${CREATE_ACCOUNT_FIELDS[nextStep - 1].name}"]`);
     nextField?.focus();
@@ -2005,10 +2053,13 @@ document.body.addEventListener("input", (event) => {
   if (!Object.prototype.hasOwnProperty.call(createAccountDraft, name)) return;
 
   createAccountDraft[name] = value;
+  if (/^kidPin\d+$/.test(name)) {
+    createAccountKidCompleteMode = false;
+  }
 
   const currentField = getCurrentCreateField();
   const canAdvance = currentField ? isValidCreateFieldValue(currentField, createAccountDraft[currentField.name]) : false;
-  document.querySelectorAll("[data-create-next], [data-add-child], #create-family-form button[type='submit']").forEach((button) => {
+  document.querySelectorAll("[data-create-next], [data-create-complete], [data-add-child], #create-family-form button[type='submit']").forEach((button) => {
     button.disabled = !canAdvance;
   });
 
@@ -2034,6 +2085,7 @@ document.body.addEventListener("keydown", (event) => {
 
   if (fieldIndex + 1 >= createAccountStep && createAccountStep < CREATE_ACCOUNT_FIELDS.length) {
     createAccountStep = Math.min(createAccountStep + 1, CREATE_ACCOUNT_FIELDS.length);
+    createAccountKidCompleteMode = false;
     renderAuthHome();
   }
 

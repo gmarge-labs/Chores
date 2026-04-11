@@ -588,7 +588,17 @@ async function handleCreateFamilyAccount() {
       showToast("Account created. Log in as parent to continue.");
       renderAuthHome();
     } catch (error) {
-      showToast(error.message || "Could not create the family account.");
+      const message = String(error?.message || "");
+      if (/rate limit/i.test(message) || /already registered/i.test(message)) {
+        authAccountReady = true;
+        authAccountJustCreated = false;
+        authStage = "login";
+        authView = "parent";
+        renderAuthHome();
+        showToast("This email already started signup. Please log in as parent or wait a moment before trying again.");
+        return;
+      }
+      showToast(message || "Could not create the family account.");
     }
     return;
   }

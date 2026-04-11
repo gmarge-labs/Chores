@@ -2470,7 +2470,7 @@ button {
 
 .family-controls-active-nav {
   display: grid;
-  grid-template-columns: 240px minmax(0, 1fr);
+  grid-template-columns: 240px 1fr;
   align-items: center;
   gap: 16px;
   width: min(100%, 980px);
@@ -2497,10 +2497,13 @@ button {
   box-shadow:
     0 12px 24px rgba(63, 43, 24, 0.1),
     inset 0 3px 0 rgba(255, 255, 255, 0.78);
+  justify-self: start;
 }
 
 .family-controls-current-button {
   min-width: 240px;
+  width: fit-content;
+  max-width: 100%;
   color: #fff8ea;
   background:
     radial-gradient(circle at 18% 18%, rgba(255, 255, 255, 0.78), transparent 18%),
@@ -2510,6 +2513,7 @@ button {
     inset 0 3px 0 rgba(255, 255, 255, 0.78),
     inset 0 -10px 18px rgba(20, 70, 130, 0.12);
   text-shadow: 0 3px 0 rgba(45, 32, 18, 0.18);
+  justify-self: end;
 }
 
 .family-controls-back-button:hover,
@@ -3035,6 +3039,11 @@ button {
 }
 
 .reward-submit-button {
+  width: fit-content;
+  min-width: 0;
+}
+
+#dollar-form .action-button.primary {
   width: fit-content;
   min-width: 0;
 }

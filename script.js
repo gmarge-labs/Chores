@@ -273,6 +273,17 @@ function getFamilyControlsLabel(sectionKey = "") {
   return labels[sectionKey] || "Family Controls";
 }
 
+function renderActiveFamilyControlsHeader(activeSection = "") {
+  return `
+    <div class="family-controls-active-nav">
+      <button class="family-controls-back-button" type="button" data-family-controls-back="true">Back</button>
+      <button class="family-controls-current-button active" type="button" aria-current="page">
+        ${escapeHtml(getFamilyControlsLabel(activeSection))}
+      </button>
+    </div>
+  `;
+}
+
 function isFilled(value) {
   return String(value || "").trim().length > 0;
 }
@@ -1847,10 +1858,7 @@ function renderKidPage(kidId) {
                                 `
                                 : `
                                   <div class="family-controls-detail">
-                                    <div class="family-controls-active-nav">
-                                      <button class="family-controls-back-button" type="button" data-family-controls-back="true">Back</button>
-                                      ${renderFamilyControlsSwitcher(currentFamilyControlsSection)}
-                                    </div>
+                                    ${renderActiveFamilyControlsHeader(currentFamilyControlsSection)}
                                     <div class="family-controls-subpage">
                                       ${
                                         currentFamilyControlsSection === "add-rewards"

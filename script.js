@@ -790,6 +790,27 @@ function resetAllTasksAndPoints() {
   });
 }
 
+function deleteCurrentFamilyFromDevice() {
+  const family = getCurrentFamily();
+  if (!family) return false;
+
+  state.families = state.families.filter((entry) => entry.id !== family.id);
+  state.session = null;
+  currentKidId = null;
+  currentKidView = "dashboard";
+  currentFamilyMode = false;
+  currentAssignedKids = [];
+  isAssignPopupOpen = false;
+  assignPopupPlacement = "task";
+  authStage = "intro";
+  authView = "";
+  authAccountJustCreated = false;
+  authAccountReady = state.families.length > 0;
+  resetCreateAccountDraft();
+  saveState({ skipCloud: true });
+  return true;
+}
+
 async function logout() {
   if (cloudAuthEnabled && cloudModeEnabled && isParentSession() && supabaseClient) {
     await supabaseClient.auth.signOut().catch(() => {
@@ -1799,6 +1820,13 @@ function renderKidPage(kidId) {
                     </div>
                   </form>
                 </section>
+
+                <section class="settings-mini-section threshold-section">
+                  <p class="eyebrow">Delete family</p>
+                  <div class="button-row">
+                    <button class="action-button danger" type="button" data-delete-family="true">Delete this family</button>
+                  </div>
+                </section>
               </div>
             </article>
 
@@ -2056,6 +2084,17 @@ document.body.addEventListener("click", (event) => {
     saveState();
     renderKidPage(currentKidId);
     showToast("Tasks and points reset.");
+    return;
+  }
+
+  const deleteFamilyButton = event.target.closest("[data-delete-family]");
+  if (deleteFamilyButton && isParentSession()) {
+    const confirmed = window.confirm("Delete this family from this device? This cannot be undone.");
+    if (!confirmed) return;
+    const deleted = deleteCurrentFamilyFromDevice();
+    if (!deleted) return;
+    showToast("Family deleted from this device.");
+    renderApp();
     return;
   }
 

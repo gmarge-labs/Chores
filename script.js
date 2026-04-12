@@ -226,6 +226,8 @@ let currentFamilyControlsSection = "";
 let currentChildAvatarPreset = AVATAR_LIBRARY[0].id;
 let currentAvatarEditKidId = "";
 let currentAvatarLibrarySelection = AVATAR_LIBRARY[0].id;
+let currentProfileAvatarPickerOpen = false;
+let currentProfileAvatarSelection = AVATAR_LIBRARY[0].id;
 
 function resetCreateAccountDraft() {
   createAccountStep = 1;
@@ -1745,11 +1747,27 @@ function renderKidPage(kidId) {
   const canSeeSettings = role === "parent";
   const hasReachedThreshold = Number(kid.celebrationThreshold) > 0 && Number(kid.points) >= Number(kid.celebrationThreshold);
   const parentFocusedNav = (currentKidView === "settings" || currentKidView === "report") && isParentSession();
+  const canEditProfileAvatar = !familyMode;
+  if (!currentProfileAvatarSelection) {
+    currentProfileAvatarSelection = getAvatarPreset(kid.avatar).id;
+  }
 
   document.getElementById("page-kid").innerHTML = `
     <div class="kid-shell ${escapeHtml(shellClass)}">
       <header class="kid-header">
-        <h1>${escapeHtml(pageTitle)}</h1>
+        <div class="kid-profile-pill">
+          ${
+            canEditProfileAvatar
+              ? `
+                <button class="profile-avatar-button" type="button" data-open-profile-avatar="true" aria-label="Change avatar for ${escapeHtml(kid.name)}">
+                  <span class="avatar">${renderAvatar(kid)}</span>
+                  <span class="profile-avatar-hint">Change avatar</span>
+                </button>
+              `
+              : `<span class="profile-avatar-display avatar">${renderAvatar(kid)}</span>`
+          }
+          <h1>${escapeHtml(pageTitle)}</h1>
+        </div>
         <div class="view-switcher">
           ${
             parentFocusedNav
@@ -1770,6 +1788,23 @@ function renderKidPage(kidId) {
         </div>
         <button class="back-button" type="button" id="back-home">${isParentSession() ? "← Back to family" : "Log out"}</button>
       </header>
+
+      ${
+        canEditProfileAvatar && currentProfileAvatarPickerOpen
+          ? `
+            <section class="profile-avatar-panel">
+              <div class="profile-avatar-panel-head">
+                <p class="eyebrow">Choose a cartoon avatar</p>
+                <button class="action-button secondary" type="button" data-close-profile-avatar="true">Close</button>
+              </div>
+              ${renderAvatarLibraryOptions({ inputName: "profileAvatarSelection", selectedValue: currentProfileAvatarSelection })}
+              <div class="button-row">
+                <button class="action-button primary" type="button" data-save-profile-avatar="true">Save avatar</button>
+              </div>
+            </section>
+          `
+          : ""
+      }
 
       <section class="kid-layout">
         <article class="section-card primary kid-view ${currentKidView === "dashboard" ? "active" : ""}" data-panel="dashboard">
@@ -2443,6 +2478,34 @@ document.body.addEventListener("click", (event) => {
     return;
   }
 
+  const openProfileAvatarButton = event.target.closest("[data-open-profile-avatar]");
+  if (openProfileAvatarButton && currentKidId) {
+    const activeKid = getKid(currentKidId);
+    currentProfileAvatarSelection = getAvatarPreset(activeKid?.avatar).id;
+    currentProfileAvatarPickerOpen = true;
+    renderKidPage(currentKidId);
+    return;
+  }
+
+  const closeProfileAvatarButton = event.target.closest("[data-close-profile-avatar]");
+  if (closeProfileAvatarButton && currentKidId) {
+    currentProfileAvatarPickerOpen = false;
+    renderKidPage(currentKidId);
+    return;
+  }
+
+  const saveProfileAvatarButton = event.target.closest("[data-save-profile-avatar]");
+  if (saveProfileAvatarButton && currentKidId) {
+    const activeKid = getKid(currentKidId);
+    if (!activeKid) return;
+    activeKid.avatar = `preset:${currentProfileAvatarSelection}`;
+    currentProfileAvatarPickerOpen = false;
+    saveState();
+    renderKidPage(currentKidId);
+    showToast("Avatar updated.");
+    return;
+  }
+
   const pointsCard = event.target.closest("[data-points-card]");
   if (pointsCard) {
     triggerPointsBurst(pointsCard);
@@ -2515,6 +2578,7 @@ document.body.addEventListener("click", (event) => {
     currentSettingsSection = view === "settings" ? "" : currentSettingsSection;
     currentFamilyControlsSection = view === "settings" ? "" : currentFamilyControlsSection;
     currentFamilyMode = view === "report" || view === "settings";
+    currentProfileAvatarPickerOpen = false;
     isAssignPopupOpen = false;
     assignPopupPlacement = "task";
     renderKidPage(currentKidId);
@@ -2530,6 +2594,7 @@ document.body.addEventListener("click", (event) => {
     currentKidView = familyButton.dataset.familyView;
     currentSettingsSection = familyButton.dataset.familyView === "settings" ? "" : currentSettingsSection;
     currentFamilyControlsSection = familyButton.dataset.familyView === "settings" ? "" : currentFamilyControlsSection;
+    currentProfileAvatarPickerOpen = false;
     currentAssignedKids = [];
     currentRewardAssignedKids = [];
     currentThresholdAssignedKids = [];
@@ -2543,6 +2608,7 @@ document.body.addEventListener("click", (event) => {
   if (settingsSwitchButton && currentKidView === "settings" && isParentSession()) {
     currentSettingsSection = settingsSwitchButton.dataset.settingsView || "";
     currentFamilyControlsSection = "";
+    currentProfileAvatarPickerOpen = false;
     currentAssignedKids = [];
     currentRewardAssignedKids = [];
     currentThresholdAssignedKids = [];
@@ -2557,6 +2623,7 @@ document.body.addEventListener("click", (event) => {
     currentFamilyControlsSection = familyControlsSwitchButton.dataset.familyControlsView || "";
     if (currentFamilyControlsSection === "add-rewards") currentRewardAssignedKids = [];
     if (currentFamilyControlsSection === "celebration-threshold") currentThresholdAssignedKids = [];
+    currentProfileAvatarPickerOpen = false;
     renderKidPage(currentKidId);
     return;
   }
@@ -2564,6 +2631,7 @@ document.body.addEventListener("click", (event) => {
   const familyControlsBackButton = event.target.closest("[data-family-controls-back]");
   if (familyControlsBackButton && currentKidView === "settings" && currentSettingsSection === "family-controls" && isParentSession()) {
     currentFamilyControlsSection = "";
+    currentProfileAvatarPickerOpen = false;
     renderKidPage(currentKidId);
     return;
   }
@@ -2593,6 +2661,7 @@ document.body.addEventListener("click", (event) => {
     currentKidId = kidCard.dataset.kidId;
     currentKidView = "dashboard";
     currentFamilyMode = false;
+    currentProfileAvatarPickerOpen = false;
     currentAssignedKids = [];
     currentRewardAssignedKids = [];
     currentThresholdAssignedKids = [];
@@ -3098,6 +3167,13 @@ document.body.addEventListener("submit", async (event) => {
   const avatarLibrarySelectionRadio = event.target.closest?.('input[name="avatarLibrarySelection"]');
   if (avatarLibrarySelectionRadio) {
     currentAvatarLibrarySelection = avatarLibrarySelectionRadio.value;
+    renderKidPage(currentKidId || getFamilyKids()[0]?.id);
+    return;
+  }
+
+  const profileAvatarSelectionRadio = event.target.closest?.('input[name="profileAvatarSelection"]');
+  if (profileAvatarSelectionRadio) {
+    currentProfileAvatarSelection = profileAvatarSelectionRadio.value;
     renderKidPage(currentKidId || getFamilyKids()[0]?.id);
     return;
   }

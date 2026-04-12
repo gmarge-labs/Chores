@@ -817,6 +817,52 @@ function formatCustomDate(dateValue) {
   });
 }
 
+function formatTaskTimeValue(timeValue) {
+  const [hoursRaw, minutesRaw] = String(timeValue || "").split(":");
+  const hoursNum = Number(hoursRaw);
+  if (!Number.isFinite(hoursNum)) return "";
+  const minutes = minutesRaw || "00";
+  const suffix = hoursNum >= 12 ? "PM" : "AM";
+  const displayHour = ((hoursNum + 11) % 12) + 1;
+  return `${displayHour}:${minutes} ${suffix}`;
+}
+
+function getTaskSchedulePreviewText(recurring, timeValue, customDate = "") {
+  const timeLabel = formatTaskTimeValue(timeValue);
+  if (!timeLabel) return "Choose a repeat style and time to preview the schedule.";
+
+  const labels = {
+    daily: `Repeats daily at ${timeLabel}`,
+    "every-other-day": `Repeats every other day at ${timeLabel}`,
+    weekly: `Repeats weekly at ${timeLabel}`,
+    monthly: `Repeats monthly at ${timeLabel}`,
+    "custom-date": customDate ? `Happens on ${formatCustomDate(customDate)} at ${timeLabel}` : `Choose the custom date for ${timeLabel}`,
+  };
+
+  return labels[recurring] || `Repeats daily at ${timeLabel}`;
+}
+
+function updateTaskSchedulePreview(taskForm) {
+  if (!taskForm) return;
+  const preview = taskForm.querySelector("[data-task-schedule-preview]");
+  const customDateInput = taskForm.querySelector('input[name="customDate"]');
+  const recurringInput = taskForm.querySelector('input[name="recurring"]:checked');
+  const timeInput = taskForm.querySelector('input[name="time"]');
+  const scheduleBlock = taskForm.querySelector(".task-schedule-block");
+  if (!preview || !customDateInput || !timeInput || !scheduleBlock) return;
+
+  const recurring = recurringInput?.value || "daily";
+  const showCustomDate = recurring === "custom-date";
+  scheduleBlock.classList.toggle("has-custom-date", showCustomDate);
+  customDateInput.classList.toggle("is-hidden", !showCustomDate);
+  customDateInput.required = showCustomDate;
+  if (!showCustomDate) {
+    customDateInput.value = "";
+  }
+
+  preview.textContent = getTaskSchedulePreviewText(recurring, timeInput.value, customDateInput.value);
+}
+
 function buildTaskDetail(recurring, time, customDateLabel = "") {
   const labels = {
     daily: "Daily",
@@ -1508,6 +1554,41 @@ function renderAssignedKidsBlock() {
   `;
 }
 
+function renderTaskRecurringBlock() {
+  const options = [
+    { value: "daily", label: "Daily" },
+    { value: "every-other-day", label: "Every other day" },
+    { value: "weekly", label: "Weekly" },
+    { value: "monthly", label: "Monthly" },
+    { value: "custom-date", label: "Custom date" },
+  ];
+
+  return `
+    <div class="task-schedule-block">
+      <div class="task-recurring-group" role="radiogroup" aria-label="Task repeat options">
+        ${options
+          .map(
+            (option, index) => `
+              <label class="task-recurring-pill ${index === 0 ? "is-default" : ""}">
+                <input type="radio" name="recurring" value="${escapeHtml(option.value)}" ${index === 0 ? "checked" : ""} />
+                <span>${escapeHtml(option.label)}</span>
+              </label>
+            `
+          )
+          .join("")}
+      </div>
+      <div class="task-time-row">
+        <input class="custom-date-field is-hidden" type="date" name="customDate" aria-label="Custom date" />
+        <label class="time-field task-time-capsule" aria-label="Task time">
+          <span class="task-time-icon" aria-hidden="true">◔</span>
+          <input type="time" name="time" required />
+        </label>
+      </div>
+      <p class="task-schedule-preview" data-task-schedule-preview="true">Choose a repeat style and time to preview the schedule.</p>
+    </div>
+  `;
+}
+
 function renderAuthHome() {
   if (authStage === "intro" && !["about", "create", "returning", ""].includes(authView)) {
     authView = "";
@@ -2072,17 +2153,7 @@ function renderKidPage(kidId) {
                             <form class="reward-form" id="task-form">
                               <input type="text" name="title" placeholder="Task title" required />
                               ${renderAssignedKidsBlock()}
-                              <select name="recurring" required>
-                                <option value="daily">Daily</option>
-                                <option value="every-other-day">Every other day</option>
-                                <option value="weekly">Weekly</option>
-                                <option value="monthly">Monthly</option>
-                                <option value="custom-date">Custom date</option>
-                              </select>
-                              <input class="custom-date-field is-hidden" type="date" name="customDate" aria-label="Custom date" />
-                              <label class="time-field" aria-label="Task time">
-                                <input type="time" name="time" required />
-                              </label>
+                              ${renderTaskRecurringBlock()}
                               <input type="number" name="points" placeholder="Points" min="1" required />
                               <div class="button-row">
                                 <button class="action-button primary" type="submit">Add task</button>
@@ -2330,6 +2401,7 @@ function renderKidPage(kidId) {
   });
 
   showPage("page-kid");
+  updateTaskSchedulePreview(document.querySelector("#task-form"));
 }
 
 function renderApp() {
@@ -2790,18 +2862,10 @@ document.body.addEventListener("keydown", (event) => {
 });
 
 document.body.addEventListener("change", (event) => {
-  const recurringSelect = event.target.closest?.('#task-form select[name="recurring"]');
-  if (recurringSelect) {
-    const taskForm = recurringSelect.closest("#task-form");
-    const customDateInput = taskForm?.querySelector('input[name="customDate"]');
-    if (customDateInput) {
-      const showCustomDate = recurringSelect.value === "custom-date";
-      customDateInput.classList.toggle("is-hidden", !showCustomDate);
-      customDateInput.required = showCustomDate;
-      if (!showCustomDate) {
-        customDateInput.value = "";
-      }
-    }
+  const taskScheduleField = event.target.closest?.('#task-form input[name="recurring"], #task-form input[name="customDate"], #task-form input[name="time"]');
+  if (taskScheduleField) {
+    const taskForm = taskScheduleField.closest("#task-form");
+    updateTaskSchedulePreview(taskForm);
   }
 
   const dollarSelect = event.target.closest?.('#dollar-form select[name="kidId"]');
@@ -2815,6 +2879,13 @@ document.body.addEventListener("change", (event) => {
       dollarsInput.value = selectedKid.dollarRewardValue;
     }
   }
+});
+
+document.body.addEventListener("input", (event) => {
+  const taskScheduleField = event.target.closest?.('#task-form input[name="customDate"], #task-form input[name="time"]');
+  if (!taskScheduleField) return;
+  const taskForm = taskScheduleField.closest("#task-form");
+  updateTaskSchedulePreview(taskForm);
 });
 
 document.body.addEventListener("submit", async (event) => {
@@ -3117,12 +3188,7 @@ document.body.addEventListener("submit", async (event) => {
       return;
     }
 
-    const [hoursRaw, minutesRaw] = timeValue.split(":");
-    const hoursNum = Number(hoursRaw);
-    const minutes = minutesRaw || "00";
-    const suffix = hoursNum >= 12 ? "PM" : "AM";
-    const displayHour = ((hoursNum + 11) % 12) + 1;
-    const displayTime = `${displayHour}:${minutes} ${suffix}`;
+    const displayTime = formatTaskTimeValue(timeValue);
 
     addTask(assignedKids, title, points, recurring, displayTime, customDate);
     saveState();

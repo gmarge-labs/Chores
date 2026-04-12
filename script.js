@@ -2846,6 +2846,7 @@ document.body.addEventListener("submit", async (event) => {
 
     addTask(assignedKids, title, points, recurring, displayTime);
     saveState();
+    currentAssignedKids = [];
     renderKidPage(currentKidId || getFamilyKids()[0]?.id);
     return;
   }

@@ -3170,6 +3170,21 @@ button {
   align-self: center;
 }
 
+.settings-tile .bonus-penalty-save-form .action-button,
+.kid-view[data-panel="settings"] .bonus-penalty-save-form .action-button,
+.kid-shell.family .bonus-penalty-save-form .action-button {
+  color: #fff8ea;
+  border: 2px solid rgba(255, 255, 255, 0.72);
+  background:
+    radial-gradient(circle at 18% 18%, rgba(255, 255, 255, 0.78), transparent 18%),
+    linear-gradient(180deg, #6f8fe9 0%, #7a95eb 32%, #8da0ea 62%, #a694d8 100%);
+  box-shadow:
+    0 12px 26px rgba(72, 80, 150, 0.2),
+    inset 0 3px 0 rgba(255, 255, 255, 0.7),
+    inset 0 -7px 16px rgba(20, 70, 130, 0.12);
+  text-shadow: 0 3px 0 rgba(53, 61, 129, 0.24);
+}
+
 .settings-tile .reward-form input,
 .settings-tile .reward-form select {
   padding: 8px 10px;

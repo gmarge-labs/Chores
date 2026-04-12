@@ -4904,6 +4904,118 @@ button {
   filter: saturate(1.06);
 }
 
+/* Rainbow magic pass for app-wide pills, excluding the home family dashboard pills */
+.kid-shell .action-button,
+.kid-shell .sub-view-button,
+.kid-shell .back-button:not(.home-logout-button),
+.settings-hub .settings-switch-button,
+.settings-switch-button.active,
+.family-controls-hub .family-controls-switch-button,
+.family-controls-switch-button.active,
+.family-controls-current-button,
+.assign-option,
+.report-watch .watch-pill,
+.kid-view[data-panel="rewards"] .favor-pill,
+.auth-panel .action-button,
+.pin-actions .action-button {
+  position: relative;
+  overflow: hidden;
+  color: #fff9ee;
+  border: 2px solid rgba(255, 255, 255, 0.78);
+  background:
+    radial-gradient(circle at 18% 18%, rgba(255, 255, 255, 0.82), transparent 18%),
+    linear-gradient(135deg, #ffad79 0%, #ffe07a 18%, #86e0c9 40%, #77b8ff 62%, #a693f0 82%, #ff9dcb 100%);
+  box-shadow:
+    0 16px 30px rgba(77, 87, 164, 0.22),
+    0 0 0 6px rgba(255, 255, 255, 0.08),
+    inset 0 3px 0 rgba(255, 255, 255, 0.72),
+    inset 0 -10px 18px rgba(58, 86, 153, 0.14);
+  text-shadow: 0 3px 0 rgba(62, 55, 122, 0.24);
+}
+
+.kid-shell .action-button::before,
+.kid-shell .sub-view-button::before,
+.kid-shell .back-button:not(.home-logout-button)::before,
+.settings-hub .settings-switch-button::before,
+.settings-switch-button.active::before,
+.family-controls-hub .family-controls-switch-button::before,
+.family-controls-switch-button.active::before,
+.family-controls-current-button::before,
+.assign-option::before,
+.report-watch .watch-pill::before,
+.auth-panel .action-button::before,
+.pin-actions .action-button::before {
+  content: "";
+  position: absolute;
+  inset: 8px 14px auto 14px;
+  height: 12px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.78), transparent);
+  pointer-events: none;
+  animation: score-shine 2.6s ease-in-out infinite;
+}
+
+.kid-shell .action-button:hover,
+.kid-shell .sub-view-button:hover,
+.kid-shell .back-button:not(.home-logout-button):hover,
+.settings-hub .settings-switch-button:hover,
+.settings-switch-button.active:hover,
+.family-controls-hub .family-controls-switch-button:hover,
+.family-controls-switch-button.active:hover,
+.family-controls-current-button:hover,
+.assign-option:hover,
+.report-watch .watch-pill:hover,
+.auth-panel .action-button:hover,
+.pin-actions .action-button:hover {
+  box-shadow:
+    0 20px 36px rgba(77, 87, 164, 0.28),
+    0 0 0 8px rgba(255, 255, 255, 0.12),
+    inset 0 3px 0 rgba(255, 255, 255, 0.78),
+    inset 0 -12px 20px rgba(58, 86, 153, 0.16);
+  filter: saturate(1.08) brightness(1.02);
+}
+
+.assign-option {
+  background:
+    radial-gradient(circle at 18% 18%, rgba(255, 255, 255, 0.82), transparent 18%),
+    linear-gradient(135deg, rgba(255, 173, 121, 0.72) 0%, rgba(255, 224, 122, 0.66) 18%, rgba(134, 224, 201, 0.7) 40%, rgba(119, 184, 255, 0.72) 62%, rgba(166, 147, 240, 0.74) 82%, rgba(255, 157, 203, 0.72) 100%);
+  box-shadow:
+    0 12px 24px rgba(77, 87, 164, 0.16),
+    inset 0 2px 0 rgba(255, 255, 255, 0.74);
+}
+
+.assign-option:has(input:checked) {
+  filter: saturate(1.08);
+  box-shadow:
+    0 18px 32px rgba(77, 87, 164, 0.24),
+    0 0 0 6px rgba(255, 255, 255, 0.1),
+    inset 0 2px 0 rgba(255, 255, 255, 0.78);
+}
+
+.report-watch .watch-pill.simra {
+  background:
+    radial-gradient(circle at 18% 18%, rgba(255, 255, 255, 0.82), transparent 18%),
+    linear-gradient(135deg, #ffaf7d 0%, #ffd86f 26%, #f3a6bf 100%);
+}
+
+.report-watch .watch-pill.jinan {
+  background:
+    radial-gradient(circle at 18% 18%, rgba(255, 255, 255, 0.82), transparent 18%),
+    linear-gradient(135deg, #7edfd4 0%, #7fd6a8 38%, #6aa2ff 100%);
+}
+
+.report-watch .watch-pill.rayyan {
+  background:
+    radial-gradient(circle at 18% 18%, rgba(255, 255, 255, 0.82), transparent 18%),
+    linear-gradient(135deg, #80b5ff 0%, #8d98f0 44%, #c291f2 100%);
+}
+
+.kid-shell .action-button.danger {
+  background:
+    radial-gradient(circle at 18% 18%, rgba(255, 255, 255, 0.82), transparent 18%),
+    linear-gradient(135deg, #ff9f7f 0%, #ff7aa8 34%, #b17cff 70%, #7f91ff 100%);
+}
+
 .auth-about-display {
   margin-top: 22px;
   min-height: 260px;

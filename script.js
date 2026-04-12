@@ -1492,26 +1492,30 @@ function renderAuthHome() {
           </div>
 
           <div class="auth-panel ${authView === "returning" ? "active" : ""}">
-            <form class="reward-form auth-form" id="returning-login-form">
-              <input type="email" name="username" placeholder="Username" required />
-              <input type="password" name="password" placeholder="Password" required />
-              <div class="button-row create-progress-actions">
-                <button class="action-button primary" type="submit">Log in</button>
-                <button class="action-button secondary" type="button" data-auth-view="back-intro">Back to home</button>
-                <button class="action-button secondary" type="button" data-reset-passcode-toggle="true">${authResetPasscodeOpen ? "Cancel reset" : "Reset passcode"}</button>
-              </div>
-            </form>
             ${
               authResetPasscodeOpen
                 ? `
                   <form class="reward-form auth-form auth-reset-form" id="reset-passcode-form">
+                    <input type="email" name="username" placeholder="Username" required />
                     <input type="password" name="newPassword" placeholder="New passcode" required />
                     <div class="button-row create-progress-actions">
                       <button class="action-button primary" type="submit">Save new passcode</button>
+                      <button class="action-button secondary" type="button" data-auth-view="back-intro">Back to home</button>
+                      <button class="action-button secondary" type="button" data-reset-passcode-toggle="true">Cancel reset</button>
                     </div>
                   </form>
                 `
-                : ""
+                : `
+                  <form class="reward-form auth-form" id="returning-login-form">
+                    <input type="email" name="username" placeholder="Username" required />
+                    <input type="password" name="password" placeholder="Password" required />
+                    <div class="button-row create-progress-actions">
+                      <button class="action-button primary" type="submit">Log in</button>
+                      <button class="action-button secondary" type="button" data-auth-view="back-intro">Back to home</button>
+                      <button class="action-button secondary" type="button" data-reset-passcode-toggle="true">Reset passcode</button>
+                    </div>
+                  </form>
+                `
             }
           </div>
 
@@ -2685,8 +2689,7 @@ document.body.addEventListener("submit", async (event) => {
   const resetPasscodeForm = event.target.closest("#reset-passcode-form");
   if (resetPasscodeForm) {
     event.preventDefault();
-    const loginForm = document.querySelector("#returning-login-form");
-    const usernameInput = loginForm?.querySelector('input[name="username"]');
+    const usernameInput = resetPasscodeForm.querySelector('input[name="username"]');
     const newPasswordInput = resetPasscodeForm.querySelector('input[name="newPassword"]');
     const email = String(usernameInput?.value || "").trim().toLowerCase();
     const newPassword = String(newPasswordInput?.value || "").trim();

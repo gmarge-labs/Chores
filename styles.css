@@ -3269,6 +3269,18 @@ button {
   justify-items: center;
 }
 
+.single-settings-tile.family-controls-tile.family-controls-overview-tile {
+  background: transparent;
+  box-shadow: none;
+  border-color: transparent;
+}
+
+.single-settings-tile.family-controls-tile.family-controls-overview-tile::before,
+.single-settings-tile.family-controls-tile.family-controls-overview-tile::after,
+.single-settings-tile.family-controls-tile.family-controls-overview-tile .tile-bubbles {
+  display: none;
+}
+
 .single-settings-tile.family-controls-tile > .eyebrow {
   width: 100%;
   text-align: center;

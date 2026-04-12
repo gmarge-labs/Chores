@@ -1930,7 +1930,7 @@ function renderKidPage(kidId) {
                     ${
                       currentSettingsSection === "family-controls"
                         ? `
-                          <article class="reward-card settings-tile family-controls-tile single-settings-tile">
+                          <article class="reward-card settings-tile family-controls-tile single-settings-tile ${!currentFamilyControlsSection ? "family-controls-overview-tile" : ""}">
                             ${renderTileBubbles()}
                             <p class="eyebrow">Family controls</p>
                             ${

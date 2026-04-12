@@ -88,6 +88,7 @@ function createFamily({ familyName, parentName, parentEmail, parentPin, kids }) 
     parentEmailLower: parentEmail.trim().toLowerCase(),
     parentPin,
     kids,
+    favorClaims: [],
     createdAt: new Date().toISOString(),
   };
 }
@@ -138,6 +139,7 @@ function normalizeFamily(family) {
     parentPin: family.parentPin || "",
     createdAt: family.createdAt || new Date().toISOString(),
     kids: Array.isArray(family.kids) ? family.kids.map(normalizeKid) : [],
+    favorClaims: Array.isArray(family.favorClaims) ? family.favorClaims : [],
   };
 }
 
@@ -862,13 +864,58 @@ function moveTask(kidId, fromStatus, toStatus, taskIndex) {
   }
 }
 
+function formatClaimTimestamp(value) {
+  if (!value) return "Just now";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Just now";
+  return date.toLocaleString([], {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
 function claimReward(kidId, rewardId) {
+  const family = getCurrentFamily();
   const kid = getKid(kidId);
-  if (!kid) return;
+  if (!family || !kid) return { ok: false, reason: "missing-kid" };
 
   const reward = kid.rewards.find((entry) => entry.id === rewardId);
-  if (!reward) return;
-  kid.points = Math.max(0, kid.points - reward.cost);
+  if (!reward) return { ok: false, reason: "missing-reward" };
+
+  const cost = Math.max(0, Number(reward.cost) || 0);
+  const currentPoints = Math.max(0, Number(kid.points) || 0);
+  if (currentPoints < cost) {
+    return {
+      ok: false,
+      reason: "not-enough-points",
+      missingPoints: cost - currentPoints,
+      rewardTitle: reward.title,
+      kidName: kid.name,
+    };
+  }
+
+  kid.points = currentPoints - cost;
+  family.favorClaims = [
+    {
+      id: createId("favor-claim"),
+      kidId: kid.id,
+      kidName: kid.name,
+      rewardId: reward.id,
+      rewardTitle: reward.title,
+      cost,
+      claimedAt: new Date().toISOString(),
+    },
+    ...(Array.isArray(family.favorClaims) ? family.favorClaims : []),
+  ].slice(0, 20);
+
+  return {
+    ok: true,
+    rewardTitle: reward.title,
+    kidName: kid.name,
+    cost,
+  };
 }
 
 function resetAllTasksAndPoints() {
@@ -1877,6 +1924,23 @@ function renderKidPage(kidId) {
                 .join("")}
             </div>
           </div>
+
+          <div class="report-claims">
+            <p class="eyebrow">Favor claim notifications</p>
+            <div class="report-claims-list">
+              ${renderCardList(
+                Array.isArray(family.favorClaims) ? family.favorClaims : [],
+                (claim) => `
+                  <article class="entry-card report-claim-card">
+                    <h4>${escapeHtml(claim.kidName)} claimed ${escapeHtml(claim.rewardTitle)}</h4>
+                    <p class="meta">${escapeHtml(claim.cost)} points used</p>
+                    <p class="meta">${escapeHtml(formatClaimTimestamp(claim.claimedAt))}</p>
+                  </article>
+                `,
+                "No favors have been claimed yet."
+              )}
+            </div>
+          </div>
         </article>
 
         <article class="section-card primary kid-view ${currentKidView === "settings" && canSeeSettings ? "active" : ""}" data-panel="settings">
@@ -2328,7 +2392,18 @@ document.body.addEventListener("click", (event) => {
 
   const claimRewardButton = event.target.closest("[data-claim-reward]");
   if (claimRewardButton && currentKidId) {
-    claimReward(currentKidId, claimRewardButton.dataset.claimReward);
+    const result = claimReward(currentKidId, claimRewardButton.dataset.claimReward);
+    if (!result?.ok) {
+      if (result?.reason === "not-enough-points") {
+        const pointLabel = result.missingPoints === 1 ? "point" : "points";
+        showToast(`${result.kidName} needs ${result.missingPoints} more ${pointLabel} to claim ${result.rewardTitle}.`);
+      } else {
+        showToast("That favor could not be claimed.");
+      }
+      renderKidPage(currentKidId);
+      return;
+    }
+    showToast(`${result.kidName} successfully claimed ${result.rewardTitle}.`);
     saveState();
     renderKidPage(currentKidId);
     return;

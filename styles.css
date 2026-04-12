@@ -4849,6 +4849,13 @@ button {
     inset 0 2px 0 rgba(255, 255, 255, 0.5);
 }
 
+.auth-panel .reward-form.auth-form#kid-login-form,
+.auth-panel .reward-form.auth-form#parent-login-form,
+.auth-panel .reward-form.auth-form#returning-login-form,
+.auth-panel .reward-form.auth-form#reset-passcode-form {
+  width: min(100%, 960px);
+}
+
 .auth-panel .button-row {
   justify-content: center;
 }

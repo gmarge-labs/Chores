@@ -3217,6 +3217,22 @@ button {
   min-width: 0;
 }
 
+.kid-view[data-panel="settings"] #dollar-form .action-button.primary,
+.kid-shell.family #dollar-form .action-button.primary,
+.kid-view[data-panel="settings"] .dollar-rate-form .action-button.primary,
+.kid-shell.family .dollar-rate-form .action-button.primary {
+  color: #fff8ea;
+  border: 2px solid rgba(255, 255, 255, 0.72);
+  background:
+    radial-gradient(circle at 18% 18%, rgba(255, 255, 255, 0.78), transparent 18%),
+    linear-gradient(180deg, #6f8fe9 0%, #7a95eb 32%, #8da0ea 62%, #a694d8 100%);
+  box-shadow:
+    0 12px 26px rgba(72, 80, 150, 0.2),
+    inset 0 3px 0 rgba(255, 255, 255, 0.7),
+    inset 0 -7px 16px rgba(20, 70, 130, 0.12);
+  text-shadow: 0 3px 0 rgba(53, 61, 129, 0.24);
+}
+
 .reward-submit-button:disabled {
   opacity: 0.5;
   cursor: not-allowed;

@@ -1631,7 +1631,7 @@ function renderKidPage(kidId) {
   const canSeeReports = role === "parent";
   const canSeeSettings = role === "parent";
   const hasReachedThreshold = Number(kid.celebrationThreshold) > 0 && Number(kid.points) >= Number(kid.celebrationThreshold);
-  const settingsFocusedNav = currentKidView === "settings" && canSeeSettings;
+  const parentFocusedNav = (currentKidView === "settings" || currentKidView === "report") && isParentSession();
 
   document.getElementById("page-kid").innerHTML = `
     <div class="kid-shell ${escapeHtml(shellClass)}">
@@ -1639,7 +1639,7 @@ function renderKidPage(kidId) {
         <h1>${escapeHtml(pageTitle)}</h1>
         <div class="view-switcher">
           ${
-            settingsFocusedNav
+            parentFocusedNav
               ? ""
               : `<button class="view-button ${currentKidView === "dashboard" ? "active" : ""}" type="button" data-view="dashboard">Dashboard</button>
           <button class="view-button ${["rewards", "favors"].includes(currentKidView) ? "active" : ""}" type="button" data-view="rewards">Rewards</button>`

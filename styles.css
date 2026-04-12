@@ -1136,6 +1136,7 @@ button {
   isolation: isolate;
   overflow: hidden;
   min-height: 420px;
+  height: 520px;
   display: grid;
   grid-template-rows: auto 1fr;
   gap: 14px;
@@ -1182,6 +1183,7 @@ button {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  flex-shrink: 0;
 }
 
 .report-head h3 {
@@ -1205,6 +1207,24 @@ button {
   display: grid;
   gap: 8px;
   align-content: start;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 8px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.65) transparent;
+}
+
+.report-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.report-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.report-list::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.6);
 }
 
 .report-watch {

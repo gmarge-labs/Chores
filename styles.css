@@ -4073,6 +4073,25 @@ button {
   }
 }
 
+@keyframes settings-pill-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  25% {
+    transform: translateY(-4px);
+  }
+
+  50% {
+    transform: translateY(-1px);
+  }
+
+  75% {
+    transform: translateY(-6px);
+  }
+}
+
 @keyframes title-glow {
   0%,
   100% {
@@ -5079,6 +5098,37 @@ button {
     inset 0 3px 0 rgba(255, 255, 255, 0.78),
     inset 0 -12px 20px rgba(58, 86, 153, 0.16);
   filter: saturate(1.08) brightness(1.02);
+}
+
+.kid-view[data-panel="settings"] .settings-switch-button,
+.kid-view[data-panel="settings"] .family-controls-switch-button,
+.kid-view[data-panel="settings"] .family-controls-current-button,
+.kid-view[data-panel="settings"] .action-button,
+.kid-shell.family .settings-switch-button,
+.kid-shell.family .family-controls-switch-button,
+.kid-shell.family .family-controls-current-button,
+.kid-shell.family .action-button {
+  animation: settings-pill-float 5.8s ease-in-out infinite;
+}
+
+.kid-view[data-panel="settings"] .settings-switcher > *:nth-child(2),
+.kid-view[data-panel="settings"] .family-controls-hub > *:nth-child(2),
+.kid-view[data-panel="settings"] .button-row .action-button:nth-child(2),
+.kid-shell.family .settings-switcher > *:nth-child(2),
+.kid-shell.family .family-controls-hub > *:nth-child(2),
+.kid-shell.family .button-row .action-button:nth-child(2) {
+  animation-duration: 6.4s;
+  animation-delay: 0.2s;
+}
+
+.kid-view[data-panel="settings"] .settings-switcher > *:nth-child(3),
+.kid-view[data-panel="settings"] .family-controls-hub > *:nth-child(3),
+.kid-view[data-panel="settings"] .button-row .action-button:nth-child(3),
+.kid-shell.family .settings-switcher > *:nth-child(3),
+.kid-shell.family .family-controls-hub > *:nth-child(3),
+.kid-shell.family .button-row .action-button:nth-child(3) {
+  animation-duration: 6.9s;
+  animation-delay: 0.35s;
 }
 
 .assign-option {

@@ -211,7 +211,7 @@ button {
 
 .page.active {
   display: block;
-  animation: page-enter 420ms ease;
+  animation: page-enter 980ms ease;
 }
 
 .eyebrow {
@@ -3592,19 +3592,19 @@ button {
 .task-stack > *:nth-child(1),
 .reward-stack > *:nth-child(1),
 .entry-stack > *:nth-child(1) {
-  animation: rise-in 360ms ease both;
+  animation: rise-in 820ms ease both;
 }
 
 .task-stack > *:nth-child(2),
 .reward-stack > *:nth-child(2),
 .entry-stack > *:nth-child(2) {
-  animation: rise-in 420ms ease both;
+  animation: rise-in 980ms ease both;
 }
 
 .task-stack > *:nth-child(3),
 .reward-stack > *:nth-child(3),
 .entry-stack > *:nth-child(3) {
-  animation: rise-in 480ms ease both;
+  animation: rise-in 1140ms ease both;
 }
 
 @keyframes rise-in {
@@ -4819,7 +4819,7 @@ button {
 
 .auth-panel {
   display: none;
-  animation: card-pop 420ms ease both;
+  animation: card-pop 920ms ease both;
 }
 
 .auth-panel.active {
@@ -5202,7 +5202,7 @@ button {
     0 18px 34px rgba(63, 43, 24, 0.12),
     inset 0 2px 0 rgba(255, 255, 255, 0.58);
   text-align: center;
-  transition: transform 420ms ease, box-shadow 420ms ease, opacity 420ms ease;
+  transition: transform 980ms ease, box-shadow 980ms ease, opacity 980ms ease;
   opacity: 1;
 }
 

@@ -1621,12 +1621,9 @@ function renderKidPage(kidId) {
   if (!family || !kid) return;
 
   currentKidId = kidId;
-  if (!currentAssignedKids.length || currentAssignedKids.some((assignedKidId) => !getKid(assignedKidId))) {
-    currentAssignedKids = [kidId];
-  }
-  if (!currentThresholdAssignedKids.length || currentThresholdAssignedKids.some((assignedKidId) => !getKid(assignedKidId))) {
-    currentThresholdAssignedKids = [kidId];
-  }
+  currentAssignedKids = currentAssignedKids.filter((assignedKidId) => Boolean(getKid(assignedKidId)));
+  currentThresholdAssignedKids = currentThresholdAssignedKids.filter((assignedKidId) => Boolean(getKid(assignedKidId)));
+  currentRewardAssignedKids = currentRewardAssignedKids.filter((assignedKidId) => Boolean(getKid(assignedKidId)));
 
   const familyMode = currentFamilyMode && isParentSession();
   const role = isParentSession() ? "parent" : "kid";
@@ -2362,7 +2359,9 @@ document.body.addEventListener("click", (event) => {
     currentKidView = familyButton.dataset.familyView;
     currentSettingsSection = familyButton.dataset.familyView === "settings" ? "" : currentSettingsSection;
     currentFamilyControlsSection = familyButton.dataset.familyView === "settings" ? "" : currentFamilyControlsSection;
-    currentAssignedKids = [firstKid.id];
+    currentAssignedKids = [];
+    currentRewardAssignedKids = [];
+    currentThresholdAssignedKids = [];
     isAssignPopupOpen = false;
     assignPopupPlacement = "task";
     renderKidPage(firstKid.id);
@@ -2373,6 +2372,9 @@ document.body.addEventListener("click", (event) => {
   if (settingsSwitchButton && currentKidView === "settings" && isParentSession()) {
     currentSettingsSection = settingsSwitchButton.dataset.settingsView || "";
     currentFamilyControlsSection = "";
+    currentAssignedKids = [];
+    currentRewardAssignedKids = [];
+    currentThresholdAssignedKids = [];
     isAssignPopupOpen = false;
     assignPopupPlacement = "task";
     renderKidPage(currentKidId);
@@ -2382,6 +2384,8 @@ document.body.addEventListener("click", (event) => {
   const familyControlsSwitchButton = event.target.closest("[data-family-controls-view]");
   if (familyControlsSwitchButton && currentKidView === "settings" && currentSettingsSection === "family-controls" && isParentSession()) {
     currentFamilyControlsSection = familyControlsSwitchButton.dataset.familyControlsView || "";
+    if (currentFamilyControlsSection === "add-rewards") currentRewardAssignedKids = [];
+    if (currentFamilyControlsSection === "celebration-threshold") currentThresholdAssignedKids = [];
     renderKidPage(currentKidId);
     return;
   }
@@ -2398,7 +2402,9 @@ document.body.addEventListener("click", (event) => {
     currentKidId = kidCard.dataset.kidId;
     currentKidView = "dashboard";
     currentFamilyMode = false;
-    currentAssignedKids = [currentKidId];
+    currentAssignedKids = [];
+    currentRewardAssignedKids = [];
+    currentThresholdAssignedKids = [];
     isAssignPopupOpen = false;
     assignPopupPlacement = "task";
     renderKidPage(currentKidId);
@@ -2419,7 +2425,9 @@ document.body.addEventListener("keydown", (event) => {
     currentKidId = kidCard.dataset.kidId;
     currentKidView = "dashboard";
     currentFamilyMode = false;
-    currentAssignedKids = [currentKidId];
+    currentAssignedKids = [];
+    currentRewardAssignedKids = [];
+    currentThresholdAssignedKids = [];
     renderKidPage(currentKidId);
   }
 });

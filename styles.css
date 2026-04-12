@@ -2280,6 +2280,10 @@ button {
   display: block;
 }
 
+.custom-date-field.is-hidden {
+  display: none;
+}
+
 .assign-grid {
   display: flex;
   justify-content: center;

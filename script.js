@@ -805,12 +805,23 @@ function maybeCelebrateThreshold(kid, previousPoints) {
   showThresholdCelebration(kid, threshold);
 }
 
-function buildTaskDetail(recurring, time) {
+function formatCustomDate(dateValue) {
+  const parsed = new Date(`${dateValue}T00:00:00`);
+  if (Number.isNaN(parsed.getTime())) return "Custom date";
+  return parsed.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+function buildTaskDetail(recurring, time, customDateLabel = "") {
   const labels = {
     daily: "Daily",
     "every-other-day": "Every other day",
     weekly: "Weekly",
     monthly: "Monthly",
+    "custom-date": customDateLabel || "Custom date",
   };
 
   return `${labels[recurring] || "Daily"} • ${time}`;
@@ -881,7 +892,7 @@ function updateCelebrationThreshold(kidIds, threshold) {
   });
 }
 
-function addTask(kidIds, title, points, recurring, time) {
+function addTask(kidIds, title, points, recurring, time, customDate = "") {
   kidIds.forEach((kidId) => {
     const kid = getKid(kidId);
     if (!kid) return;
@@ -889,10 +900,11 @@ function addTask(kidIds, title, points, recurring, time) {
     kid.due.push({
       id: createId("task"),
       title,
-      detail: buildTaskDetail(recurring, time),
+      detail: buildTaskDetail(recurring, time, customDate ? formatCustomDate(customDate) : ""),
       points,
       recurring,
       time,
+      customDate,
     });
   });
 }
@@ -2030,7 +2042,9 @@ function renderKidPage(kidId) {
                                 <option value="every-other-day">Every other day</option>
                                 <option value="weekly">Weekly</option>
                                 <option value="monthly">Monthly</option>
+                                <option value="custom-date">Custom date</option>
                               </select>
+                              <input class="custom-date-field is-hidden" type="date" name="customDate" aria-label="Custom date" />
                               <label class="time-field" aria-label="Task time">
                                 <input type="time" name="time" required />
                               </label>
@@ -2707,6 +2721,20 @@ document.body.addEventListener("keydown", (event) => {
 });
 
 document.body.addEventListener("change", (event) => {
+  const recurringSelect = event.target.closest?.('#task-form select[name="recurring"]');
+  if (recurringSelect) {
+    const taskForm = recurringSelect.closest("#task-form");
+    const customDateInput = taskForm?.querySelector('input[name="customDate"]');
+    if (customDateInput) {
+      const showCustomDate = recurringSelect.value === "custom-date";
+      customDateInput.classList.toggle("is-hidden", !showCustomDate);
+      customDateInput.required = showCustomDate;
+      if (!showCustomDate) {
+        customDateInput.value = "";
+      }
+    }
+  }
+
   const dollarSelect = event.target.closest?.('#dollar-form select[name="kidId"]');
   if (dollarSelect) {
     const dollarForm = dollarSelect.closest("#dollar-form");
@@ -3011,9 +3039,14 @@ document.body.addEventListener("submit", async (event) => {
     const points = Number(formData.get("points"));
     const recurring = String(formData.get("recurring") || "daily").trim().toLowerCase();
     const timeValue = String(formData.get("time") || "").trim();
+    const customDate = String(formData.get("customDate") || "").trim();
     const assignedKids = currentAssignedKids.length ? currentAssignedKids : [currentKidId];
 
     if (!title || !Number.isFinite(points) || points < 1 || !timeValue || !assignedKids.length) return;
+    if (recurring === "custom-date" && !customDate) {
+      showToast("Choose the custom date for this task.");
+      return;
+    }
 
     const [hoursRaw, minutesRaw] = timeValue.split(":");
     const hoursNum = Number(hoursRaw);
@@ -3022,7 +3055,7 @@ document.body.addEventListener("submit", async (event) => {
     const displayHour = ((hoursNum + 11) % 12) + 1;
     const displayTime = `${displayHour}:${minutes} ${suffix}`;
 
-    addTask(assignedKids, title, points, recurring, displayTime);
+    addTask(assignedKids, title, points, recurring, displayTime, customDate);
     saveState();
     currentAssignedKids = [];
     renderKidPage(currentKidId || getFamilyKids()[0]?.id);

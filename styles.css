@@ -3220,7 +3220,9 @@ button {
 .kid-view[data-panel="settings"] #dollar-form .action-button.primary,
 .kid-shell.family #dollar-form .action-button.primary,
 .kid-view[data-panel="settings"] .dollar-rate-form .action-button.primary,
-.kid-shell.family .dollar-rate-form .action-button.primary {
+.kid-shell.family .dollar-rate-form .action-button.primary,
+.kid-view[data-panel="settings"] #add-child-form .action-button.primary,
+.kid-shell.family #add-child-form .action-button.primary {
   color: #fff8ea;
   border: 2px solid rgba(255, 255, 255, 0.72);
   background:

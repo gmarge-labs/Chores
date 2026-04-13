@@ -1519,6 +1519,7 @@ button {
 
 .points-column {
   display: grid;
+  gap: 18px;
 }
 
 .points-card {
@@ -1538,6 +1539,76 @@ button {
   justify-content: center;
   align-items: center;
   text-align: center;
+}
+
+.daily-adjustment-panel {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.daily-adjustment-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 24px;
+  padding: 18px 18px 20px;
+  border: 2px solid rgba(255, 255, 255, 0.52);
+  box-shadow:
+    0 18px 36px rgba(76, 93, 133, 0.14),
+    inset 0 2px 0 rgba(255, 255, 255, 0.64);
+  background:
+    radial-gradient(circle at 20% 16%, rgba(255, 255, 255, 0.42), transparent 18%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.94), rgba(239, 247, 255, 0.94));
+}
+
+.daily-adjustment-card.bonus.has-update {
+  background:
+    radial-gradient(circle at 20% 16%, rgba(255, 255, 255, 0.4), transparent 18%),
+    linear-gradient(145deg, rgba(134, 246, 210, 0.94), rgba(120, 205, 245, 0.9));
+}
+
+.daily-adjustment-card.penalty.has-update {
+  background:
+    radial-gradient(circle at 20% 16%, rgba(255, 255, 255, 0.42), transparent 18%),
+    linear-gradient(145deg, rgba(255, 191, 171, 0.95), rgba(255, 145, 179, 0.9));
+}
+
+.daily-adjustment-card.is-empty {
+  opacity: 0.92;
+}
+
+.daily-adjustment-card::before {
+  content: "";
+  position: absolute;
+  top: 16px;
+  left: -26%;
+  width: 52%;
+  height: 28px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  transform: rotate(-14deg);
+  animation: score-shine 3.2s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.daily-adjustment-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+.daily-adjustment-card .eyebrow {
+  margin-bottom: 8px;
+}
+
+.daily-adjustment-card h4 {
+  margin: 0;
+  font-size: clamp(1.15rem, 2vw, 1.4rem);
+}
+
+.daily-adjustment-card p:last-child {
+  margin: 8px 0 0;
+  color: rgba(44, 54, 78, 0.82);
+  line-height: 1.4;
 }
 
 .kid-view[data-panel="rewards"] .points-card {
@@ -2497,6 +2568,10 @@ button {
 @media (max-width: 780px) {
   .task-schedule-block.has-custom-date .task-time-row,
   .task-time-row {
+    grid-template-columns: 1fr;
+  }
+
+  .daily-adjustment-panel {
     grid-template-columns: 1fr;
   }
 }

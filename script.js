@@ -85,8 +85,8 @@ function createKid(name, kidPin, avatar = getDefaultAvatarPreset(name)) {
     completed: [],
     rewards: [],
     bonusPenalty: [
-      { type: "bonus", title: "+0 points", value: "+0 points" },
-      { type: "penalty", title: "-0 points", value: "-0 points" },
+      { type: "bonus", title: "+0 points", value: "+0 points", reason: "", dateKey: null, createdAt: null },
+      { type: "penalty", title: "-0 points", value: "-0 points", reason: "", dateKey: null, createdAt: null },
     ],
     bonusReasons: [],
     penaltyReasons: [],
@@ -137,10 +137,13 @@ function normalizeKid(kid) {
           type: entry.type || "bonus",
           title: entry.title || "",
           value: entry.value || "",
+          reason: entry.reason || "",
+          dateKey: entry.dateKey || null,
+          createdAt: entry.createdAt || null,
         }))
       : [
-          { type: "bonus", title: "+0 points", value: "+0 points" },
-          { type: "penalty", title: "-0 points", value: "-0 points" },
+          { type: "bonus", title: "+0 points", value: "+0 points", reason: "", dateKey: null, createdAt: null },
+          { type: "penalty", title: "-0 points", value: "-0 points", reason: "", dateKey: null, createdAt: null },
         ],
     bonusReasons: Array.isArray(kid.bonusReasons) ? kid.bonusReasons : [],
     penaltyReasons: Array.isArray(kid.penaltyReasons) ? kid.penaltyReasons : [],
@@ -817,6 +820,14 @@ function formatCustomDate(dateValue) {
   });
 }
 
+function getTodayDateKey() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 function formatTaskTimeValue(timeValue) {
   const [hoursRaw, minutesRaw] = String(timeValue || "").split(":");
   const hoursNum = Number(hoursRaw);
@@ -825,6 +836,11 @@ function formatTaskTimeValue(timeValue) {
   const suffix = hoursNum >= 12 ? "PM" : "AM";
   const displayHour = ((hoursNum + 11) % 12) + 1;
   return `${displayHour}:${minutes} ${suffix}`;
+}
+
+function getKidAdjustmentForToday(kid, type) {
+  const todayKey = getTodayDateKey();
+  return (kid.bonusPenalty || []).find((entry) => (entry.type || "").toLowerCase() === type && entry.dateKey === todayKey) || null;
 }
 
 function getTaskSchedulePreviewText(recurring, timeValue, customDate = "") {
@@ -888,18 +904,22 @@ function addReward(kidIds, title, cost) {
   });
 }
 
-function addAdjustment(kidIds, label, value) {
+function addAdjustment(kidIds, label, value, reason = "") {
   kidIds.forEach((kidId) => {
     const kid = getKid(kidId);
     if (!kid) return;
 
     const type = label.toLowerCase();
     const previousPoints = kid.points;
+    const now = new Date().toISOString();
     kid.bonusPenalty = kid.bonusPenalty.filter((entry) => (entry.type || "").toLowerCase() !== type);
     kid.bonusPenalty.push({
       type,
       title: `${value > 0 ? "+" : ""}${value} points`,
       value: `${value > 0 ? "+" : ""}${value} points`,
+      reason,
+      dateKey: getTodayDateKey(),
+      createdAt: now,
     });
 
     kid.points = Math.max(0, kid.points + value);
@@ -1827,6 +1847,8 @@ function renderKidPage(kidId) {
   const canSeeReports = role === "parent";
   const canSeeSettings = role === "parent";
   const hasReachedThreshold = Number(kid.celebrationThreshold) > 0 && Number(kid.points) >= Number(kid.celebrationThreshold);
+  const todayBonus = getKidAdjustmentForToday(kid, "bonus");
+  const todayPenalty = getKidAdjustmentForToday(kid, "penalty");
   const parentFocusedNav = (currentKidView === "settings" || currentKidView === "report") && isParentSession();
   const canEditProfileAvatar = !familyMode;
   if (!currentProfileAvatarSelection) {
@@ -2006,6 +2028,37 @@ function renderKidPage(kidId) {
                 <h3 class="points-total">${escapeHtml(kid.points)}</h3>
                 <p class="points-message is-changing">You are building your treasure, ${escapeHtml(kid.name)}!</p>
               </article>
+
+              <section class="daily-adjustment-panel">
+                <article class="daily-adjustment-card bonus ${todayBonus ? "has-update" : "is-empty"}">
+                  <p class="eyebrow">Today's bonus</p>
+                  ${
+                    todayBonus
+                      ? `
+                        <h4>${escapeHtml(todayBonus.value)}</h4>
+                        <p>${escapeHtml(todayBonus.reason || "A bonus was added today.")}</p>
+                      `
+                      : `
+                        <h4>No bonus yet</h4>
+                        <p>No bonus has been added for today.</p>
+                      `
+                  }
+                </article>
+                <article class="daily-adjustment-card penalty ${todayPenalty ? "has-update" : "is-empty"}">
+                  <p class="eyebrow">Today's penalty</p>
+                  ${
+                    todayPenalty
+                      ? `
+                        <h4>${escapeHtml(todayPenalty.value)}</h4>
+                        <p>${escapeHtml(todayPenalty.reason || "A penalty was added today.")}</p>
+                      `
+                      : `
+                        <h4>No penalty yet</h4>
+                        <p>No penalty has been added for today.</p>
+                      `
+                  }
+                </article>
+              </section>
             </div>
 
             <section class="reward-stack">
@@ -3208,7 +3261,7 @@ document.body.addEventListener("submit", async (event) => {
 
     if (!reason || !Number.isFinite(value) || !adjustmentKidIds.length) return;
     addReason(adjustmentKidIds, label, reason);
-    addAdjustment(adjustmentKidIds, label, label === "penalty" ? -Math.abs(value) : Math.abs(value));
+    addAdjustment(adjustmentKidIds, label, label === "penalty" ? -Math.abs(value) : Math.abs(value), reason);
     saveState();
     renderKidPage(currentKidId || getFamilyKids()[0]?.id);
     return;

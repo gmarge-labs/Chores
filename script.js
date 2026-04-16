@@ -76,6 +76,7 @@ function createEmptyCreateAccountDraft() {
   for (let index = 1; index <= MAX_CREATE_KIDS; index += 1) {
     draft[`kidName${index}`] = "";
     draft[`kidPin${index}`] = "";
+    draft[`kidColour${index}`] = index - 1; // palette index
   }
 
   return draft;
@@ -92,12 +93,6 @@ const KID_COLOUR_PALETTE = [
   { accent: "#a8e063", deep: "#74bb2a" },
 ];
 
-const KID_DEFAULT_COLOURS = {
-  simra:  KID_COLOUR_PALETTE[0],
-  jinan:  KID_COLOUR_PALETTE[1],
-  rayyan: KID_COLOUR_PALETTE[2],
-};
-
 function hexToRgb(hex) {
   const h = String(hex || "").replace("#", "");
   if (h.length !== 6) return "109,175,255";
@@ -106,8 +101,7 @@ function hexToRgb(hex) {
 }
 
 function getDefaultKidColour(name, index = 0) {
-  const lname = String(name || "").trim().toLowerCase();
-  return KID_DEFAULT_COLOURS[lname] || KID_COLOUR_PALETTE[index % KID_COLOUR_PALETTE.length];
+  return KID_COLOUR_PALETTE[index % KID_COLOUR_PALETTE.length];
 }
 
 function createKid(name, kidPin, avatar = "", colourIndex = 0) {
@@ -489,6 +483,26 @@ function renderCurrentCreateStep() {
     `;
   }
 
+  const kidNumber = getKidNumberFromFieldName(currentField.name);
+  const kidName = kidNumber ? (String(createAccountDraft[`kidName${kidNumber}`] || "").trim() || `Kid ${kidNumber}`) : "";
+  const selectedColourIdx = kidNumber ? (Number(createAccountDraft[`kidColour${kidNumber}`]) || 0) : 0;
+
+  const colourPickerHtml = isKidPinCreateStep(currentField) && kidNumber ? `
+    <div class="create-colour-picker">
+      <p class="eyebrow" style="margin-bottom:8px;">Pick ${escapeHtml(kidName)}'s colour</p>
+      <div class="colour-swatch-row">
+        ${KID_COLOUR_PALETTE.map((col, i) => `
+          <button type="button"
+            class="colour-swatch ${i === selectedColourIdx ? "colour-swatch--selected" : ""}"
+            style="background:${col.accent};"
+            data-create-kid-colour="${kidNumber}"
+            data-create-colour-index="${i}"
+            aria-label="Colour ${i + 1}"></button>
+        `).join("")}
+      </div>
+    </div>
+  ` : "";
+
   return `
     <div class="auth-kid-block single-step-kid-block">
       <p class="eyebrow">Add your kids</p>
@@ -496,6 +510,7 @@ function renderCurrentCreateStep() {
         ${renderCreateField(currentField.name, currentField.placeholder, currentField.type)}
       </div>
       ${guidance}
+      ${colourPickerHtml}
     </div>
   `;
 }
@@ -670,10 +685,7 @@ function renderCardList(items, renderer, emptyText) {
 }
 
 function getShellClass(name, familyMode) {
-  if (familyMode) return "family";
-  const lower = String(name || "").trim().toLowerCase();
-  if (["simra", "jinan", "rayyan"].includes(lower)) return lower;
-  return "family";
+  return familyMode ? "family" : "kid";
 }
 
 function showToast(message) {
@@ -712,7 +724,8 @@ async function handleCreateFamilyAccount() {
       invalidKidPin = true;
       continue;
     }
-    kids.push(createKid(name, pin));
+    const colourIdx = Number(createAccountDraft[`kidColour${index}`]) || (kids.length);
+    kids.push(createKid(name, pin, "", colourIdx));
   }
 
   if (invalidKidPin) {
@@ -3050,6 +3063,19 @@ document.body.addEventListener("click", async (event) => {
     updateKidColour(kidId, accent, deep);
     saveState();
     renderKidPage(currentKidId || getFamilyKids()[0]?.id);
+    return;
+  }
+
+  // ── CREATE ACCOUNT KID COLOUR SWATCH ─────────────────────────
+  const createKidColourSwatch = event.target.closest("[data-create-kid-colour]");
+  if (createKidColourSwatch && !state.session) {
+    const kidNumber = Number(createKidColourSwatch.dataset.createKidColour);
+    const colourIndex = Number(createKidColourSwatch.dataset.createColourIndex);
+    createAccountDraft[`kidColour${kidNumber}`] = colourIndex;
+    // Update selected state without full re-render
+    document.querySelectorAll(`[data-create-kid-colour="${kidNumber}"]`).forEach(s => {
+      s.classList.toggle("colour-swatch--selected", Number(s.dataset.createColourIndex) === colourIndex);
+    });
     return;
   }
 

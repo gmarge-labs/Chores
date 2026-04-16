@@ -31,7 +31,6 @@ function createId(prefix) {
   return `${prefix}-${Math.random().toString(36).slice(2, 10)}-${Date.now().toString(36)}`;
 }
 
-// \u2500\u2500 PIN HASHING (PBKDF2) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 async function hashPin(pin) {
   const enc = new TextEncoder();
   const keyMaterial = await crypto.subtle.importKey("raw", enc.encode(pin), "PBKDF2", false, ["deriveBits"]);
@@ -44,20 +43,9 @@ async function hashPin(pin) {
 
 async function verifyPin(plain, stored) {
   if (!stored) return false;
-  // Legacy plain-text PIN: not a 64-char hex hash
   const isHashed = /^[0-9a-f]{64}$/.test(stored);
   if (!isHashed) return plain === stored;
   try { return (await hashPin(plain)) === stored; } catch { return false; }
-}
-
-async function migrateKidPin(kid) {
-  if (!kid.kidPin || /^[0-9a-f]{64}$/.test(kid.kidPin)) return;
-  kid.kidPin = await hashPin(kid.kidPin);
-}
-
-async function migrateParentPin(family) {
-  if (!family.parentPin || /^[0-9a-f]{64}$/.test(family.parentPin)) return;
-  family.parentPin = await hashPin(family.parentPin);
 }
 
 function buildCloudAuthPassword(parentEmail, parentPin) {
@@ -76,7 +64,7 @@ function createEmptyCreateAccountDraft() {
   for (let index = 1; index <= MAX_CREATE_KIDS; index += 1) {
     draft[`kidName${index}`] = "";
     draft[`kidPin${index}`] = "";
-    draft[`kidColour${index}`] = index - 1; // palette index
+    draft[`kidColour${index}`] = index - 1;
   }
 
   return draft;
@@ -321,10 +309,10 @@ function renderFamilyControlsSwitcher(activeSection = "") {
 
 function getFamilyControlsLabel(sectionKey = "") {
   const labels = {
+    "add-child": "Add Child",
     "add-rewards": "Add Rewards",
     "manage-rewards": "Manage Rewards",
     "dollar-rate": "Dollar Rate",
-    "add-child": "Add Child",
     "celebration-threshold": "Celebration Threshold",
     "kid-colours": "Edit Kid Colours",
     "delete-kid": "Remove Child",
@@ -488,25 +476,15 @@ function renderCurrentCreateStep() {
   }
 
   const kidNumber = getKidNumberFromFieldName(currentField.name);
-  const kidName = kidNumber ? (String(createAccountDraft[`kidName${kidNumber}`] || "").trim() || `Kid ${kidNumber}`) : "";
-  const selectedColourIdx = kidNumber ? (Number(createAccountDraft[`kidColour${kidNumber}`]) || 0) : 0;
-
-  const colourPickerHtml = isKidPinCreateStep(currentField) && kidNumber ? `
-    <div class="create-colour-picker">
-      <p class="eyebrow" style="margin-bottom:8px;">Pick ${escapeHtml(kidName)}'s colour</p>
-      <div class="colour-swatch-row">
-        ${KID_COLOUR_PALETTE.map((col, i) => `
-          <button type="button"
-            class="colour-swatch ${i === selectedColourIdx ? "colour-swatch--selected" : ""}"
-            style="background:${col.accent};"
-            data-create-kid-colour="${kidNumber}"
-            data-create-colour-index="${i}"
-            aria-label="Colour ${i + 1}"></button>
-        `).join("")}
-      </div>
-    </div>
-  ` : "";
-
+  const kidName2 = kidNumber ? (String(createAccountDraft["kidName" + kidNumber] || "").trim() || ("Kid " + kidNumber)) : "";
+  const selColourIdx = kidNumber ? (Number(createAccountDraft["kidColour" + kidNumber]) || 0) : 0;
+  const colourPickerHtml = isKidPinCreateStep(currentField) && kidNumber ? (
+    "<div class=\"create-colour-picker\"><p class=\"eyebrow\" style=\"margin-bottom:8px;\">Pick " + escapeHtml(kidName2) + "&#39;s colour</p><div class=\"colour-swatch-row\">" +
+    KID_COLOUR_PALETTE.map(function(col, i) {
+      return "<button type=\"button\" class=\"colour-swatch " + (i === selColourIdx ? "colour-swatch--selected" : "") + "\" style=\"background:" + col.accent + ";\" data-create-kid-colour=\"" + kidNumber + "\" data-create-colour-index=\"" + i + "\" aria-label=\"Colour " + (i+1) + "\"></button>";
+    }).join("") +
+    "</div></div>"
+  ) : "";
   return `
     <div class="auth-kid-block single-step-kid-block">
       <p class="eyebrow">Add your kids</p>
@@ -669,25 +647,12 @@ function renderPointsHistory(kid) {
   const recent = history.slice().reverse().slice(0, 20);
   const rows = recent.map(function(h) {
     const isPos = (h.pointsDelta || 0) >= 0;
-    const dotClass = h.changeType === "task" ? "history-dot--task"
-      : h.changeType === "bonus" ? "history-dot--bonus"
-      : h.changeType === "penalty" ? "history-dot--penalty"
-      : "history-dot--reward_claim";
+    const dotClass = h.changeType === "task" ? "history-dot--task" : h.changeType === "bonus" ? "history-dot--bonus" : h.changeType === "penalty" ? "history-dot--penalty" : "history-dot--reward_claim";
     const deltaLabel = isPos ? ("+" + h.pointsDelta) : String(h.pointsDelta);
-    const timeLabel = h.createdAt
-      ? new Date(h.createdAt).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })
-      : "";
-    return '<div class="history-entry">'
-      + '<span class="history-dot ' + dotClass + '"></span>'
-      + '<span class="history-desc">' + escapeHtml(h.description || h.changeType) + '</span>'
-      + '<span class="history-delta ' + (isPos ? "history-delta--pos" : "history-delta--neg") + '">' + escapeHtml(deltaLabel) + '</span>'
-      + '<span class="history-time">' + escapeHtml(timeLabel) + '</span>'
-      + '</div>';
+    const timeLabel = h.createdAt ? new Date(h.createdAt).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : "";
+    return '<div class="history-entry"><span class="history-dot ' + dotClass + '"></span><span class="history-desc">' + escapeHtml(h.description || h.changeType) + '</span><span class="history-delta ' + (isPos ? "history-delta--pos" : "history-delta--neg") + '">' + escapeHtml(deltaLabel) + '</span><span class="history-time">' + escapeHtml(timeLabel) + '</span></div>';
   }).join("");
-  return '<div class="points-history-block">'
-    + '<p class="eyebrow" style="margin-bottom:10px;">Points history</p>'
-    + '<div class="history-list">' + rows + '</div>'
-    + '</div>';
+  return '<div class="points-history-block"><p class="eyebrow" style="margin-bottom:10px;">Points history</p><div class="history-list">' + rows + '</div></div>';
 }
 
 function renderAvatar(kid) {
@@ -721,17 +686,12 @@ function getShellClass(name, familyMode) {
 
 function showFieldError(form, message) {
   if (!form) { showToast(message); return; }
-  // Remove any existing error
   form.querySelector(".form-error-msg")?.remove();
   const err = document.createElement("p");
   err.className = "form-error-msg";
   err.textContent = message;
   form.appendChild(err);
   setTimeout(() => err?.remove(), 3200);
-}
-
-function clearFieldError(form) {
-  form?.querySelector(".form-error-msg")?.remove();
 }
 
 function showToast(message) {
@@ -824,12 +784,8 @@ async function handleCreateFamilyAccount() {
     return;
   }
 
-  // Hash parent PIN before storing
   const hashedParentPin = await hashPin(parentPin);
-  // Hash kid PINs
-  for (const kid of kids) {
-    kid.kidPin = await hashPin(kid.kidPin);
-  }
+  for (const kid of kids) { kid.kidPin = await hashPin(kid.kidPin); }
   const family = createFamily({ familyName, parentName, parentEmail, parentPin: hashedParentPin, kids });
   state.families.push(family);
   authAccountReady = true;
@@ -1154,70 +1110,43 @@ function buildTaskDetail(recurring, time, customDateLabel = "") {
   return `${labels[recurring] || "Daily"} \u2022 ${time}`;
 }
 
-// \u2500\u2500 POINTS HISTORY \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 function addPointsHistory(kid, changeType, pointsDelta, description) {
   if (!Array.isArray(kid.pointsHistory)) kid.pointsHistory = [];
-  kid.pointsHistory.push({
-    id: createId("hist"),
-    changeType,
-    pointsDelta,
-    pointsAfter: kid.points,
-    description: description || changeType,
-    createdAt: new Date().toISOString(),
-  });
+  kid.pointsHistory.push({ id: createId("hist"), changeType, pointsDelta, pointsAfter: kid.points, description: description || changeType, createdAt: new Date().toISOString() });
   if (kid.pointsHistory.length > 500) kid.pointsHistory = kid.pointsHistory.slice(-500);
 }
 
-// \u2500\u2500 TASK EDIT / DELETE \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 function editTask(kidId, templateId, newTitle, newPoints, newTime) {
-  const kid = getKid(kidId);
-  if (!kid) return;
-  const tmpl = kid.taskTemplates.find(t => t.id === templateId);
-  if (!tmpl) return;
-  tmpl.title = String(newTitle || "").trim().slice(0, 100) || tmpl.title;
+  const kid = getKid(kidId); if (!kid) return;
+  const tmpl = kid.taskTemplates.find(t => t.id === templateId); if (!tmpl) return;
+  tmpl.title = String(newTitle || "").trim().slice(0,100) || tmpl.title;
   tmpl.points = Math.max(0, Number(newPoints) || 0);
   tmpl.time = String(newTime || "").trim();
-  // Update today's instances in due/awaiting
-  [...kid.due, ...kid.awaiting].forEach(task => {
-    if (task.templateId === templateId) {
-      task.title = tmpl.title;
-      task.points = tmpl.points;
-      task.time = tmpl.time;
-      task.detail = buildTaskDetail(task.recurring, tmpl.time, task.customDate ? formatCustomDate(task.customDate) : "");
-    }
-  });
+  [...kid.due, ...kid.awaiting].forEach(t => { if (t.templateId === templateId) { t.title = tmpl.title; t.points = tmpl.points; t.time = tmpl.time; t.detail = buildTaskDetail(t.recurring, tmpl.time, t.customDate ? formatCustomDate(t.customDate) : ""); } });
 }
 
 function deleteTask(kidId, templateId) {
-  const kid = getKid(kidId);
-  if (!kid) return;
+  const kid = getKid(kidId); if (!kid) return;
   kid.taskTemplates = kid.taskTemplates.filter(t => t.id !== templateId);
-  kid.due      = kid.due.filter(t => t.templateId !== templateId);
+  kid.due = kid.due.filter(t => t.templateId !== templateId);
   kid.awaiting = kid.awaiting.filter(t => t.templateId !== templateId);
 }
 
-// \u2500\u2500 REWARD EDIT / DELETE \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 function editReward(kidId, rewardId, newTitle, newCost) {
-  const kid = getKid(kidId);
-  if (!kid) return;
-  const reward = kid.rewards.find(r => r.id === rewardId);
-  if (!reward) return;
-  reward.title = String(newTitle || "").trim().slice(0, 100) || reward.title;
-  reward.cost  = Math.max(0, Number(newCost) || 0);
+  const kid = getKid(kidId); if (!kid) return;
+  const r = kid.rewards.find(r => r.id === rewardId); if (!r) return;
+  r.title = String(newTitle || "").trim().slice(0,100) || r.title;
+  r.cost = Math.max(0, Number(newCost) || 0);
 }
 
 function deleteReward(kidId, rewardId) {
-  const kid = getKid(kidId);
-  if (!kid) return;
+  const kid = getKid(kidId); if (!kid) return;
   kid.rewards = kid.rewards.filter(r => r.id !== rewardId);
 }
 
-// \u2500\u2500 KID COLOUR UPDATE \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 function updateKidColour(kidId, accent, deep) {
-  const kid = getKid(kidId);
-  if (!kid) return;
-  kid.accentColour = accent;
-  kid.accentColourDeep = deep;
+  const kid = getKid(kidId); if (!kid) return;
+  kid.accentColour = accent; kid.accentColourDeep = deep;
 }
 
 function addReward(kidIds, title, cost) {
@@ -1272,10 +1201,7 @@ function addChild(name, kidPin, avatar = "", accentColour = "", accentColourDeep
   if (!family) return;
   const colourIndex = family.kids.length;
   const kid = createKid(name, kidPin, avatar, colourIndex);
-  if (accentColour) {
-    kid.accentColour = accentColour;
-    kid.accentColourDeep = accentColourDeep || accentColour;
-  }
+  if (accentColour) { kid.accentColour = accentColour; kid.accentColourDeep = accentColourDeep || accentColour; }
   family.kids.push(kid);
 }
 
@@ -1334,14 +1260,13 @@ function moveTask(kidId, fromStatus, toStatus, taskIndex) {
   kid[toStatus].push(task);
   if (toStatus === "completed" && fromStatus !== "completed") {
     kid.points += Number(task.points) || 0;
-    addPointsHistory(kid, "task", Number(task.points) || 0, `Completed: ${task.title}`);
+    addPointsHistory(kid, "task", Number(task.points)||0, "Completed: " + task.title);
     maybeCelebrateThreshold(kid, previousPoints);
   }
-
   if (fromStatus === "completed" && toStatus !== "completed") {
-    const delta = -(Number(task.points) || 0);
+    const delta = -(Number(task.points)||0);
     kid.points = Math.max(0, kid.points + delta);
-    addPointsHistory(kid, "task", delta, `Uncompleted: ${task.title}`);
+    addPointsHistory(kid, "task", delta, "Uncompleted: " + task.title);
   }
 }
 
@@ -1378,7 +1303,7 @@ function claimReward(kidId, rewardId) {
   }
 
   kid.points = currentPoints - cost;
-  addPointsHistory(kid, "reward_claim", -cost, `Claimed: ${reward.title}`);
+  addPointsHistory(kid, "reward_claim", -cost, "Claimed: " + reward.title);
   family.favorClaims = [
     {
       id: createId("favor-claim"),
@@ -1402,21 +1327,14 @@ function claimReward(kidId, rewardId) {
 
 function resetAllTasks() {
   getFamilyKids().forEach((kid) => {
-    kid.due = [];
-    kid.awaiting = [];
-    kid.completed = [];
-    kid.taskTemplates = [];
-    kid.missedDaysInARow = 0;
-    kid.lastMissedCheckDate = getTodayDateKey();
-    kid.lastTaskRefreshDate = getTodayDateKey();
+    kid.due = []; kid.awaiting = []; kid.completed = []; kid.taskTemplates = [];
+    kid.missedDaysInARow = 0; kid.lastMissedCheckDate = getTodayDateKey(); kid.lastTaskRefreshDate = getTodayDateKey();
   });
 }
 
 function resetAllPoints() {
   getFamilyKids().forEach((kid) => {
-    kid.points = 0;
-    kid.lastCelebratedThreshold = 0;
-    kid.pointsHistory = [];
+    kid.points = 0; kid.lastCelebratedThreshold = 0; kid.pointsHistory = [];
     kid.bonusPenalty = [
       { type: "bonus", title: "+0 points", value: "+0 points", reason: "", dateKey: null, createdAt: null },
       { type: "penalty", title: "-0 points", value: "-0 points", reason: "", dateKey: null, createdAt: null },
@@ -1424,18 +1342,12 @@ function resetAllPoints() {
   });
 }
 
-function resetAllTasksAndPoints() {
-  resetAllTasks();
-  resetAllPoints();
-}
+function resetAllTasksAndPoints() { resetAllTasks(); resetAllPoints(); }
 
 function deleteKid(kidId) {
-  const family = getCurrentFamily();
-  if (!family) return false;
-  const kid = family.kids.find(k => k.id === kidId);
-  if (!kid) return false;
+  const family = getCurrentFamily(); if (!family) return false;
+  const kid = family.kids.find(k => k.id === kidId); if (!kid) return false;
   family.kids = family.kids.filter(k => k.id !== kidId);
-  // Clean up favour claims for this kid
   family.favorClaims = (family.favorClaims || []).filter(c => c.kidId !== kidId);
   return kid.name;
 }
@@ -2171,7 +2083,7 @@ function renderParentHome() {
         ${kids
           .map(
             (kid) => `
-              <article class="kid-card ${escapeHtml(getShellClass(kid.name, false))}" data-kid-id="${escapeHtml(kid.id)}" role="button" tabindex="0" ${kid.accentColour ? `style="--kid-accent:${kid.accentColour};--kid-accent-deep:${kid.accentColourDeep||kid.accentColour};--kid-accent-soft:rgba(${hexToRgb(kid.accentColour)},0.12);"` : ""}>
+              <article class="kid-card ${escapeHtml(getShellClass(kid.name, false))}" data-kid-id="${escapeHtml(kid.id)}" role="button" tabindex="0" ${kid.accentColour ? `style="--kid-accent:${kid.accentColour};--kid-accent-deep:${kid.accentColourDeep||kid.accentColour};--kid-accent-soft:rgba(${hexToRgb(kid.accentColour)},0.12);--kid-accent-rgb:${hexToRgb(kid.accentColour)};"` : ""}>
                 ${renderTileBubbles()}
                 <div class="kid-card-top">
                   <div class="avatar">${renderAvatar(kid)}</div>
@@ -2222,6 +2134,7 @@ function renderKidPage(kidId) {
   const familyMode = currentFamilyMode && isParentSession();
   const role = isParentSession() ? "parent" : "kid";
   const shellClass = getShellClass(kid.name, familyMode);
+  const kidInlineStyle = kid.accentColour ? `style="--kid-accent:${kid.accentColour};--kid-accent-deep:${kid.accentColourDeep||kid.accentColour};--kid-accent-soft:rgba(${hexToRgb(kid.accentColour)},0.12);--kid-accent-rgb:${hexToRgb(kid.accentColour)};"` : "";
   const pageTitle = familyMode ? family.familyName : kid.name;
   const canSeeReports = role === "parent";
   const canSeeSettings = role === "parent";
@@ -2229,7 +2142,6 @@ function renderKidPage(kidId) {
   const todayBonus = getKidAdjustmentForToday(kid, "bonus");
   const todayPenalty = getKidAdjustmentForToday(kid, "penalty");
   const parentFocusedNav = (currentKidView === "settings" || currentKidView === "report") && isParentSession();
-  const kidInlineStyle = kid.accentColour ? `style="--kid-accent:${kid.accentColour};--kid-accent-deep:${kid.accentColourDeep || kid.accentColour};--kid-accent-soft:rgba(${hexToRgb(kid.accentColour)},0.12);--kid-accent-rgb:${hexToRgb(kid.accentColour)};"` : "";
   document.getElementById("page-kid").innerHTML = `
     <div class="kid-shell ${escapeHtml(shellClass)}" ${kidInlineStyle}>
       <header class="kid-header">
@@ -2415,7 +2327,6 @@ function renderKidPage(kidId) {
                 <span class="score-sparkles" aria-hidden="true"></span>
                 <span>Buy favors with your points</span>
               </button>
-
               ${renderPointsHistory(kid)}
             </section>
           </div>
@@ -2498,7 +2409,7 @@ function renderKidPage(kidId) {
                   const missedDays = Number(child.missedDaysInARow) || 0;
                   const cappedDays = Math.min(missedDays, 3);
                   return `
-                    <article class="watch-pill ${escapeHtml(getShellClass(child.name, false))} ${missedDays >= 3 ? "alert" : ""}">
+                    <article class="watch-pill ${escapeHtml(getShellClass(child.name, false))} ${missedDays >= 3 ? "alert" : ""}" ${child.accentColour ? `style="--kid-accent:${child.accentColour};--kid-accent-deep:${child.accentColourDeep||child.accentColour};--kid-accent-soft:rgba(${hexToRgb(child.accentColour)},0.12);"` : ""}>
                       <strong>${escapeHtml(child.name)}</strong>
                       <span>${escapeHtml(cappedDays)}/3 days</span>
                       <em>${missedDays >= 3 ? "Check in today" : child.due.length ? "Still has due tasks" : "On track"}</em>
@@ -2506,28 +2417,6 @@ function renderKidPage(kidId) {
                   `;
                 })
                 .join("")}
-            </div>
-          </div>
-
-          <div class="report-history">
-            <p class="eyebrow">Points history</p>
-            <div class="report-history-grid">
-              ${getFamilyKids().map(child => {
-                const history = Array.isArray(child.pointsHistory) ? child.pointsHistory.slice().reverse().slice(0, 15) : [];
-                if (!history.length) return "";
-                return `
-                  <section class="history-kid-block">
-                    <p class="eyebrow" style="font-size:0.68rem;margin-bottom:8px;">${escapeHtml(child.name)}</p>
-                    ${history.map(h => `
-                      <div class="history-entry history-entry--${escapeHtml(h.changeType || "task")}">
-                        <span class="history-entry-desc">${escapeHtml(h.description || h.changeType)}</span>
-                        <span class="history-entry-delta ${h.pointsDelta >= 0 ? "positive" : "negative"}">${h.pointsDelta >= 0 ? "+" : ""}${escapeHtml(h.pointsDelta)}</span>
-                        <span class="history-entry-time">${escapeHtml(formatClaimTimestamp(h.createdAt))}</span>
-                      </div>
-                    `).join("")}
-                  </section>
-                `;
-              }).join("")}
             </div>
           </div>
 
@@ -2586,12 +2475,11 @@ function renderKidPage(kidId) {
                                 <button class="action-button danger" type="button" data-reset-points="true">Reset points</button>
                               </div>
                             </form>
-                          </article>
-                          ${kid.taskTemplates && kid.taskTemplates.length ? `
-                          <article class="reward-card settings-tile single-settings-tile task-template-list-tile">
-                            ${renderTileBubbles()}
-                            <p class="eyebrow">Task templates</p>
-                            <div class="template-list">
+                          
+                            ${kid.taskTemplates && kid.taskTemplates.length ? `
+                            <article class="reward-card settings-tile single-settings-tile task-template-list-tile" style="margin-top:14px;">
+                              ${renderTileBubbles()}
+                              <p class="eyebrow">Task templates</p>
                               ${kid.taskTemplates.map(tmpl => `
                                 <div class="template-row">
                                   <div class="template-row-info">
@@ -2602,10 +2490,9 @@ function renderKidPage(kidId) {
                                     <button class="action-button secondary small-action-button" type="button" data-edit-task-template="${escapeHtml(tmpl.id)}">Edit</button>
                                     <button class="action-button danger small-action-button" type="button" data-delete-task-template="${escapeHtml(tmpl.id)}">Delete</button>
                                   </div>
-                                </div>
-                              `).join("")}
-                            </div>
-                          </article>` : ""}
+                                </div>`).join("")}
+                            </article>` : ""}
+                          </article>
                         `
                         : ""
                     }
@@ -2661,32 +2548,6 @@ function renderKidPage(kidId) {
                                           : ""
                                       }
                                       ${
-                                        currentFamilyControlsSection === "manage-rewards"
-                                          ? `
-                                            <section class="settings-mini-section manage-rewards-section family-controls-page">
-                                              <p class="eyebrow">Manage rewards</p>
-                                              ${getFamilyKids().some(c => c.rewards && c.rewards.length) ? `
-                                                ${getFamilyKids().filter(c => c.rewards && c.rewards.length).map(child => `
-                                                  <p class="eyebrow" style="margin-top:12px;font-size:0.68rem;">${escapeHtml(child.name)}</p>
-                                                  ${child.rewards.map(reward => `
-                                                    <div class="template-row">
-                                                      <div class="template-row-info">
-                                                        <span class="template-row-title">${escapeHtml(reward.title)}</span>
-                                                        <span class="template-row-meta">${escapeHtml(reward.cost)} pts</span>
-                                                      </div>
-                                                      <div class="template-row-actions">
-                                                        <button class="action-button secondary small-action-button" type="button" data-edit-reward="${escapeHtml(reward.id)}" data-reward-kid="${escapeHtml(child.id)}">Edit</button>
-                                                        <button class="action-button danger small-action-button" type="button" data-delete-reward="${escapeHtml(reward.id)}" data-reward-kid="${escapeHtml(child.id)}">Delete</button>
-                                                      </div>
-                                                    </div>
-                                                  `).join("")}
-                                                `).join("")}
-                                              ` : `<p class="empty">No rewards added yet.</p>`}
-                                            </section>
-                                          `
-                                          : ""
-                                      }
-                                      ${
                                         currentFamilyControlsSection === "dollar-rate"
                                           ? `
                                             <section class="settings-mini-section dollar-section family-controls-page">
@@ -2727,13 +2588,7 @@ function renderKidPage(kidId) {
                                                 <div>
                                                   <p class="eyebrow" style="margin-bottom:8px;">Pick a colour</p>
                                                   <div class="colour-swatch-row" id="add-child-colour-row">
-                                                    ${KID_COLOUR_PALETTE.map((col, i) => `
-                                                      <button type="button" class="colour-swatch ${i === 0 ? "colour-swatch--selected" : ""}"
-                                                        style="background:${col.accent};"
-                                                        data-new-child-colour-accent="${col.accent}"
-                                                        data-new-child-colour-deep="${col.deep}"
-                                                        aria-label="Pick colour ${i+1}"></button>
-                                                    `).join("")}
+                                                    ${KID_COLOUR_PALETTE.map((col, i) => `<button type="button" class="colour-swatch ${i === 0 ? "colour-swatch--selected" : ""}" style="background:${col.accent};" data-new-child-colour-accent="${col.accent}" data-new-child-colour-deep="${col.deep}" aria-label="Colour ${i+1}"></button>`).join("")}
                                                   </div>
                                                   <input type="hidden" name="childColourAccent" value="${KID_COLOUR_PALETTE[0].accent}" />
                                                   <input type="hidden" name="childColourDeep" value="${KID_COLOUR_PALETTE[0].deep}" />
@@ -2777,11 +2632,59 @@ function renderKidPage(kidId) {
                                           : ""
                                       }
                                       ${
+                                        currentFamilyControlsSection === "manage-rewards"
+                                          ? `
+                                            <section class="settings-mini-section family-controls-page">
+                                              <p class="eyebrow">Manage rewards</p>
+                                              ${getFamilyKids().some(c => c.rewards && c.rewards.length) ? `
+                                                ${getFamilyKids().filter(c => c.rewards && c.rewards.length).map(child => `
+                                                  <p class="eyebrow" style="margin-top:12px;font-size:0.68rem;">${escapeHtml(child.name)}</p>
+                                                  ${child.rewards.map(reward => `
+                                                    <div class="template-row">
+                                                      <div class="template-row-info">
+                                                        <span class="template-row-title">${escapeHtml(reward.title)}</span>
+                                                        <span class="template-row-meta">${escapeHtml(reward.cost)} pts</span>
+                                                      </div>
+                                                      <div class="template-row-actions">
+                                                        <button class="action-button secondary small-action-button" type="button" data-edit-reward="${escapeHtml(reward.id)}" data-reward-kid="${escapeHtml(child.id)}">Edit</button>
+                                                        <button class="action-button danger small-action-button" type="button" data-delete-reward="${escapeHtml(reward.id)}" data-reward-kid="${escapeHtml(child.id)}">Delete</button>
+                                                      </div>
+                                                    </div>
+                                                  `).join("")}
+                                                `).join("")}
+                                              ` : `<p class="empty">No rewards added yet.</p>`}
+                                            </section>
+                                          `
+                                          : ""
+                                      }
+                                      ${
+                                        currentFamilyControlsSection === "kid-colours"
+                                          ? `
+                                            <section class="settings-mini-section family-controls-page">
+                                              <p class="eyebrow">Edit kid colours</p>
+                                              ${getFamilyKids().map(child => `
+                                                <p class="eyebrow" style="margin-top:14px;font-size:0.68rem;">${escapeHtml(child.name)}</p>
+                                                <div class="colour-swatch-row">
+                                                  ${KID_COLOUR_PALETTE.map((col, i) => `
+                                                    <button type="button" class="colour-swatch ${child.accentColour === col.accent ? "colour-swatch--selected" : ""}"
+                                                      style="background:${col.accent};"
+                                                      data-colour-kid="${escapeHtml(child.id)}"
+                                                      data-colour-accent="${col.accent}"
+                                                      data-colour-deep="${col.deep}"
+                                                      aria-label="Colour ${i+1}"></button>
+                                                  `).join("")}
+                                                </div>
+                                              `).join("")}
+                                            </section>
+                                          `
+                                          : ""
+                                      }
+                                      ${
                                         currentFamilyControlsSection === "delete-kid"
                                           ? `
                                             <section class="settings-mini-section family-controls-page">
                                               <p class="eyebrow">Remove child</p>
-                                              <p style="font-size:0.85rem;color:var(--muted);margin-bottom:14px;">Removing a child permanently deletes all their tasks, points, and rewards.</p>
+                                              <p style="font-size:0.85rem;color:var(--muted);margin-bottom:14px;">Permanently deletes all their tasks, points, and rewards.</p>
                                               ${getFamilyKids().length ? getFamilyKids().map(child => `
                                                 <div class="template-row">
                                                   <div class="template-row-info">
@@ -2803,29 +2706,6 @@ function renderKidPage(kidId) {
                                               <div class="button-row">
                                                 <button class="action-button danger" type="button" data-delete-family="true">Delete this family</button>
                                               </div>
-                                            </section>
-                                          `
-                                          : ""
-                                      }
-                                      ${
-                                        currentFamilyControlsSection === "kid-colours"
-                                          ? `
-                                            <section class="settings-mini-section family-controls-page">
-                                              <p class="eyebrow">Kid colours</p>
-                                              ${getFamilyKids().map(child => `
-                                                <p class="eyebrow" style="margin-top:14px;font-size:0.68rem;">${escapeHtml(child.name)}</p>
-                                                <div class="colour-swatch-row">
-                                                  ${KID_COLOUR_PALETTE.map((col, i) => `
-                                                    <button type="button" class="colour-swatch ${child.accentColour === col.accent ? "colour-swatch--selected" : ""}"
-                                                      style="background:${col.accent};"
-                                                      data-colour-kid="${escapeHtml(child.id)}"
-                                                      data-colour-accent="${col.accent}"
-                                                      data-colour-deep="${col.deep}"
-                                                      title="Colour ${i+1}"
-                                                      aria-label="Pick colour ${i+1} for ${escapeHtml(child.name)}"></button>
-                                                  `).join("")}
-                                                </div>
-                                              `).join("")}
                                             </section>
                                           `
                                           : ""
@@ -2941,88 +2821,40 @@ function triggerPointsBurst(pointsCard) {
   window.setTimeout(() => pointsCard.classList.remove("is-bursting"), 900);
 }
 
-
-// ── CUSTOM MODALS ──────────────────────────────────────
 function buildModalBubbles() {
-  return `
-    <span style="position:absolute;width:40px;height:40px;border-radius:50%;top:-12px;right:24px;
-      background:linear-gradient(145deg,var(--kid-accent),var(--kid-accent-deep));
-      opacity:0.55;animation:bubble-bounce 3s ease-in-out infinite;pointer-events:none;"></span>
-    <span style="position:absolute;width:22px;height:22px;border-radius:50%;bottom:18px;left:14px;
-      background:linear-gradient(145deg,#ffd77a,#b99cff);
-      opacity:0.45;animation:bubble-bounce 3.4s ease-in-out 0.8s infinite;pointer-events:none;"></span>
-  `;
+  return '<span style="position:absolute;width:40px;height:40px;border-radius:50%;top:-12px;right:24px;background:linear-gradient(145deg,var(--kid-accent),var(--kid-accent-deep));opacity:0.55;animation:bubble-bounce 3s ease-in-out infinite;pointer-events:none;"></span><span style="position:absolute;width:22px;height:22px;border-radius:50%;bottom:18px;left:14px;background:linear-gradient(145deg,#ffd77a,#b99cff);opacity:0.45;animation:bubble-bounce 3.4s ease-in-out 0.8s infinite;pointer-events:none;"></span>';
 }
 
-function showAppConfirm(eyebrow, title, body, confirmLabel = "Confirm", isDanger = false) {
-  return new Promise((resolve) => {
+function showAppConfirm(eyebrow, title, body, confirmLabel, isDanger) {
+  if (confirmLabel === undefined) confirmLabel = "Confirm";
+  if (isDanger === undefined) isDanger = false;
+  return new Promise(function(resolve) {
     const modal = document.createElement("div");
     modal.className = "pin-modal";
-    modal.innerHTML = `
-      <div class="pin-card" style="text-align:left;max-width:380px;">
-        ${buildModalBubbles()}
-        <p class="eyebrow" style="position:relative;z-index:2;">${escapeHtml(eyebrow)}</p>
-        <h2 style="font-size:1.5rem;margin:0 0 8px;position:relative;z-index:2;">${escapeHtml(title)}</h2>
-        <p style="font-size:0.88rem;color:rgba(46,44,58,0.76);margin:0 0 20px;line-height:1.5;position:relative;z-index:2;">${escapeHtml(body)}</p>
-        <div class="button-row pin-actions" style="justify-content:flex-end;position:relative;z-index:2;">
-          <button class="action-button secondary" type="button" data-modal-cancel="true">Cancel</button>
-          <button class="action-button ${isDanger ? "danger" : "primary"}" type="button" data-modal-confirm="true">${escapeHtml(confirmLabel)}</button>
-        </div>
-      </div>
-    `;
+    modal.innerHTML = '<div class="pin-card" style="text-align:left;max-width:380px;">' + buildModalBubbles() + '<p class="eyebrow" style="position:relative;z-index:2;">' + escapeHtml(eyebrow) + '</p><h2 style="font-size:1.5rem;margin:0 0 8px;position:relative;z-index:2;">' + escapeHtml(title) + '</h2><p style="font-size:0.88rem;color:rgba(46,44,58,0.76);margin:0 0 20px;line-height:1.5;position:relative;z-index:2;">' + escapeHtml(body) + '</p><div class="button-row pin-actions" style="justify-content:flex-end;position:relative;z-index:2;"><button class="action-button secondary" type="button" data-modal-cancel="true">Cancel</button><button class="action-button ' + (isDanger ? "danger" : "primary") + '" type="button" data-modal-confirm="true">' + escapeHtml(confirmLabel) + '</button></div></div>';
     document.body.appendChild(modal);
-    const cleanup = (val) => {
-      modal.classList.add("is-closing");
-      setTimeout(() => modal.remove(), 200);
-      resolve(val);
-    };
-    modal.querySelector("[data-modal-confirm]").onclick = () => cleanup(true);
-    modal.querySelector("[data-modal-cancel]").onclick  = () => cleanup(false);
-    modal.addEventListener("click", (e) => { if (e.target === modal) cleanup(false); });
+    const cleanup = function(val) { modal.classList.add("is-closing"); setTimeout(function() { modal.remove(); }, 200); resolve(val); };
+    modal.querySelector("[data-modal-confirm]").onclick = function() { cleanup(true); };
+    modal.querySelector("[data-modal-cancel]").onclick = function() { cleanup(false); };
+    modal.addEventListener("click", function(e) { if (e.target === modal) cleanup(false); });
   });
 }
 
-function showAppEdit(eyebrow, title, fields, confirmLabel = "Save") {
-  return new Promise((resolve) => {
+function showAppEdit(eyebrow, title, fields, confirmLabel) {
+  if (confirmLabel === undefined) confirmLabel = "Save";
+  return new Promise(function(resolve) {
     const modal = document.createElement("div");
     modal.className = "pin-modal";
-    const fieldsHtml = fields.map(f => `
-      <div style="margin-bottom:12px;position:relative;z-index:2;">
-        <p class="eyebrow" style="margin-bottom:4px;">${escapeHtml(f.label)}</p>
-        <input class="pin-input" style="font-size:1rem;letter-spacing:0;text-align:left;min-height:48px;"
-          type="${f.type || "text"}" name="${f.name}" value="${escapeHtml(String(f.value || ""))}"
-          placeholder="${escapeHtml(f.placeholder || "")}" ${f.min !== undefined ? `min="${f.min}"` : ""} />
-      </div>
-    `).join("");
-    modal.innerHTML = `
-      <div class="pin-card" style="text-align:left;max-width:380px;">
-        ${buildModalBubbles()}
-        <p class="eyebrow" style="position:relative;z-index:2;">${escapeHtml(eyebrow)}</p>
-        <h2 style="font-size:1.5rem;margin:0 0 16px;position:relative;z-index:2;">${escapeHtml(title)}</h2>
-        <form id="app-edit-form">
-          ${fieldsHtml}
-          <div class="button-row pin-actions" style="justify-content:flex-end;position:relative;z-index:2;margin-top:8px;">
-            <button class="action-button secondary" type="button" data-modal-cancel="true">Cancel</button>
-            <button class="action-button primary" type="submit">${escapeHtml(confirmLabel)}</button>
-          </div>
-        </form>
-      </div>
-    `;
+    const fieldsHtml = fields.map(function(f) {
+      return '<div style="margin-bottom:12px;position:relative;z-index:2;"><p class="eyebrow" style="margin-bottom:4px;">' + escapeHtml(f.label) + '</p><input class="pin-input" style="font-size:1rem;letter-spacing:0;text-align:left;min-height:48px;" type="' + (f.type || "text") + '" name="' + f.name + '" value="' + escapeHtml(String(f.value || "")) + '" placeholder="' + escapeHtml(f.placeholder || "") + '" ' + (f.min !== undefined ? 'min="' + f.min + '"' : "") + ' /></div>';
+    }).join("");
+    modal.innerHTML = '<div class="pin-card" style="text-align:left;max-width:380px;">' + buildModalBubbles() + '<p class="eyebrow" style="position:relative;z-index:2;">' + escapeHtml(eyebrow) + '</p><h2 style="font-size:1.5rem;margin:0 0 16px;position:relative;z-index:2;">' + escapeHtml(title) + '</h2><form id="app-edit-form">' + fieldsHtml + '<div class="button-row pin-actions" style="justify-content:flex-end;position:relative;z-index:2;margin-top:8px;"><button class="action-button secondary" type="button" data-modal-cancel="true">Cancel</button><button class="action-button primary" type="submit">' + escapeHtml(confirmLabel) + '</button></div></form></div>';
     document.body.appendChild(modal);
-    const cleanup = (val) => {
-      modal.classList.add("is-closing");
-      setTimeout(() => modal.remove(), 200);
-      resolve(val);
-    };
-    modal.querySelector("[data-modal-cancel]").onclick = () => cleanup(null);
-    modal.querySelector("#app-edit-form").onsubmit = (e) => {
-      e.preventDefault();
-      const data = {};
-      fields.forEach(f => { data[f.name] = modal.querySelector(`[name="${f.name}"]`).value; });
-      cleanup(data);
-    };
-    modal.addEventListener("click", (e) => { if (e.target === modal) cleanup(null); });
-    setTimeout(() => modal.querySelector("input")?.focus(), 50);
+    const cleanup = function(val) { modal.classList.add("is-closing"); setTimeout(function() { modal.remove(); }, 200); resolve(val); };
+    modal.querySelector("[data-modal-cancel]").onclick = function() { cleanup(null); };
+    modal.querySelector("#app-edit-form").onsubmit = function(e) { e.preventDefault(); const data = {}; fields.forEach(function(f) { data[f.name] = modal.querySelector('[name="' + f.name + '"]').value; }); cleanup(data); };
+    modal.addEventListener("click", function(e) { if (e.target === modal) cleanup(null); });
+    setTimeout(function() { modal.querySelector("input") && modal.querySelector("input").focus(); }, 50);
   });
 }
 
@@ -3143,54 +2975,16 @@ document.body.addEventListener("click", async (event) => {
 
   const resetTasksButton = event.target.closest("[data-reset-tasks]");
   if (resetTasksButton && isParentSession()) {
-    const confirmed = await showAppConfirm(
-      "Reset all tasks",
-      "Are you sure?",
-      "This permanently deletes all task templates and clears today’s tasks for every child. Points are not affected.",
-      "Reset tasks",
-      true
-    );
+    const confirmed = await showAppConfirm("Reset all tasks", "Are you sure?", "This permanently deletes all task templates and clears today\u2019s tasks for every child. Points are not affected.", "Reset tasks", true);
     if (!confirmed) return;
-    resetAllTasks();
-    saveState();
-    renderKidPage(currentKidId);
-    showToast("All tasks reset.");
-    return;
+    resetAllTasks(); saveState(); renderKidPage(currentKidId); showToast("All tasks reset."); return;
   }
 
   const resetPointsButton = event.target.closest("[data-reset-points]");
   if (resetPointsButton && isParentSession()) {
-    const confirmed = await showAppConfirm(
-      "Reset all points",
-      "Are you sure?",
-      "This sets every child’s points to zero and clears their points history. Tasks are not affected.",
-      "Reset points",
-      true
-    );
+    const confirmed = await showAppConfirm("Reset all points", "Are you sure?", "This sets every child\u2019s points to zero and clears their points history. Tasks are not affected.", "Reset points", true);
     if (!confirmed) return;
-    resetAllPoints();
-    saveState();
-    renderKidPage(currentKidId);
-    showToast("All points reset.");
-    return;
-  }
-
-  const deleteKidButton = event.target.closest("[data-delete-kid]");
-  if (deleteKidButton && isParentSession()) {
-    const kidId = deleteKidButton.dataset.deleteKid;
-    const kid = getKid(kidId);
-    if (!kid) return;
-    const confirmed = await showAppConfirm("Remove child", `Remove ${kid.name}?`, `This permanently deletes all of ${kid.name}’s tasks, points, rewards, and history. This cannot be undone.`, "Remove", true);
-    if (!confirmed) return;
-    const kidName = deleteKid(kidId);
-    // If we were viewing this kid, go back to family home
-    if (currentKidId === kidId) {
-      currentKidId = getFamilyKids()[0]?.id || null;
-    }
-    saveState();
-    showToast(`${kidName} has been removed.`);
-    renderKidPage(currentKidId || getFamilyKids()[0]?.id);
-    return;
+    resetAllPoints(); saveState(); renderKidPage(currentKidId); showToast("All points reset."); return;
   }
 
   const deleteFamilyButton = event.target.closest("[data-delete-family]");
@@ -3204,7 +2998,6 @@ document.body.addEventListener("click", async (event) => {
     return;
   }
 
-  // \u2500\u2500 EDIT TASK TEMPLATE \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
   const editTaskBtn = event.target.closest("[data-edit-task-template]");
   if (editTaskBtn && isParentSession() && currentKidId) {
     const templateId = editTaskBtn.dataset.editTaskTemplate;
@@ -3212,111 +3005,88 @@ document.body.addEventListener("click", async (event) => {
     const tmpl = kid?.taskTemplates.find(t => t.id === templateId);
     if (!tmpl) return;
     const data = await showAppEdit("Edit task", tmpl.title, [
-      { name: "title",  label: "Title",  value: tmpl.title,  placeholder: "Task title" },
-      { name: "points", label: "Points", value: tmpl.points, type: "number", min: 1, placeholder: "Points" },
-      { name: "time",   label: "Time",   value: tmpl.time,   placeholder: "e.g. 8:00 AM" },
+      { name: "title", label: "Title", value: tmpl.title, placeholder: "Task title" },
+      { name: "points", label: "Points", value: tmpl.points, type: "number", min: 1 },
+      { name: "time", label: "Time", value: tmpl.time, placeholder: "e.g. 8:00 AM" },
     ]);
     if (!data) return;
     editTask(currentKidId, templateId, data.title, data.points, data.time);
-    saveState();
-    renderKidPage(currentKidId);
-    showToast("Task updated.");
-    return;
+    saveState(); renderKidPage(currentKidId); showToast("Task updated."); return;
   }
 
-  // \u2500\u2500 DELETE TASK TEMPLATE \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
   const deleteTaskBtn = event.target.closest("[data-delete-task-template]");
   if (deleteTaskBtn && isParentSession() && currentKidId) {
     const templateId = deleteTaskBtn.dataset.deleteTaskTemplate;
     const kid = getKid(currentKidId);
     const tmpl = kid?.taskTemplates.find(t => t.id === templateId);
     if (!tmpl) return;
-    const confirmed = await showAppConfirm("Delete task", tmpl.title, "This removes the task and today’s instance. This cannot be undone.", "Delete", true);
+    const confirmed = await showAppConfirm("Delete task", tmpl.title, "This removes the task and today\u2019s instance. This cannot be undone.", "Delete", true);
     if (!confirmed) return;
-    deleteTask(currentKidId, templateId);
-    saveState();
-    renderKidPage(currentKidId);
-    showToast("Task deleted.");
-    return;
+    deleteTask(currentKidId, templateId); saveState(); renderKidPage(currentKidId); showToast("Task deleted."); return;
   }
 
-  // \u2500\u2500 EDIT REWARD \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
   const editRewardBtn = event.target.closest("[data-edit-reward]");
   if (editRewardBtn && isParentSession()) {
     const rewardId = editRewardBtn.dataset.editReward;
-    const kidId    = editRewardBtn.dataset.rewardKid;
+    const kidId = editRewardBtn.dataset.rewardKid;
     const kid = getKid(kidId);
     const reward = kid?.rewards.find(r => r.id === rewardId);
     if (!reward) return;
     const data = await showAppEdit("Edit reward", reward.title, [
-      { name: "title", label: "Title",       value: reward.title, placeholder: "Reward title" },
-      { name: "cost",  label: "Points cost", value: reward.cost,  type: "number", min: 1, placeholder: "Points" },
+      { name: "title", label: "Title", value: reward.title, placeholder: "Reward title" },
+      { name: "cost", label: "Points cost", value: reward.cost, type: "number", min: 1 },
     ]);
     if (!data) return;
     editReward(kidId, rewardId, data.title, data.cost);
-    saveState();
-    renderKidPage(currentKidId || getFamilyKids()[0]?.id);
-    showToast("Reward updated.");
-    return;
+    saveState(); renderKidPage(currentKidId || getFamilyKids()[0]?.id); showToast("Reward updated."); return;
   }
 
-  // \u2500\u2500 DELETE REWARD \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
   const deleteRewardBtn = event.target.closest("[data-delete-reward]");
   if (deleteRewardBtn && isParentSession()) {
     const rewardId = deleteRewardBtn.dataset.deleteReward;
-    const kidId    = deleteRewardBtn.dataset.rewardKid;
+    const kidId = deleteRewardBtn.dataset.rewardKid;
     const kid = getKid(kidId);
     const reward = kid?.rewards.find(r => r.id === rewardId);
     if (!reward) return;
     const confirmed = await showAppConfirm("Delete reward", reward.title, "This reward will be removed permanently.", "Delete", true);
     if (!confirmed) return;
-    deleteReward(kidId, rewardId);
-    saveState();
-    renderKidPage(currentKidId || getFamilyKids()[0]?.id);
-    showToast("Reward deleted.");
-    return;
+    deleteReward(kidId, rewardId); saveState(); renderKidPage(currentKidId || getFamilyKids()[0]?.id); showToast("Reward deleted."); return;
   }
 
-  // \u2500\u2500 KID COLOUR SWATCH (existing kid) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+  const deleteKidButton = event.target.closest("[data-delete-kid]");
+  if (deleteKidButton && isParentSession()) {
+    const kidId = deleteKidButton.dataset.deleteKid;
+    const kid = getKid(kidId);
+    if (!kid) return;
+    const confirmed = await showAppConfirm("Remove child", "Remove " + kid.name + "?", "This permanently deletes all of " + kid.name + "\u2019s tasks, points, rewards, and history.", "Remove", true);
+    if (!confirmed) return;
+    const kidName = deleteKid(kidId);
+    if (currentKidId === kidId) { currentKidId = getFamilyKids()[0]?.id || null; }
+    saveState(); showToast(kidName + " has been removed."); renderKidPage(currentKidId || getFamilyKids()[0]?.id); return;
+  }
+
   const colourSwatch = event.target.closest("[data-colour-kid]");
   if (colourSwatch && isParentSession()) {
-    const kidId  = colourSwatch.dataset.colourKid;
-    const accent = colourSwatch.dataset.colourAccent;
-    const deep   = colourSwatch.dataset.colourDeep;
-    updateKidColour(kidId, accent, deep);
-    saveState();
-    renderKidPage(currentKidId || getFamilyKids()[0]?.id);
+    updateKidColour(colourSwatch.dataset.colourKid, colourSwatch.dataset.colourAccent, colourSwatch.dataset.colourDeep);
+    saveState(); renderKidPage(currentKidId || getFamilyKids()[0]?.id); return;
+  }
+
+  const newChildSwatch = event.target.closest("[data-new-child-colour-accent]");
+  if (newChildSwatch) {
+    const accent = newChildSwatch.dataset.newChildColourAccent;
+    const deep = newChildSwatch.dataset.newChildColourDeep;
+    const form = newChildSwatch.closest("form");
+    if (form) { form.querySelector("[name=childColourAccent]").value = accent; form.querySelector("[name=childColourDeep]").value = deep; }
+    document.querySelectorAll("[data-new-child-colour-accent]").forEach(s => { s.classList.toggle("colour-swatch--selected", s.dataset.newChildColourAccent === accent); });
     return;
   }
 
-  // \u2500\u2500 CREATE ACCOUNT KID COLOUR SWATCH \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
   const createKidColourSwatch = event.target.closest("[data-create-kid-colour]");
   if (createKidColourSwatch && !state.session) {
     const kidNumber = Number(createKidColourSwatch.dataset.createKidColour);
     const colourIndex = Number(createKidColourSwatch.dataset.createColourIndex);
-    createAccountDraft[`kidColour${kidNumber}`] = colourIndex;
-    // Update selected state without full re-render
-    document.querySelectorAll(`[data-create-kid-colour="${kidNumber}"]`).forEach(s => {
-      s.classList.toggle("colour-swatch--selected", Number(s.dataset.createColourIndex) === colourIndex);
-    });
-    return;
-  }
-
-  // \u2500\u2500 NEW CHILD COLOUR SWATCH \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
-  const newChildSwatch = event.target.closest("[data-new-child-colour-accent]");
-  if (newChildSwatch) {
-    const accent = newChildSwatch.dataset.newChildColourAccent;
-    const deep   = newChildSwatch.dataset.newChildColourDeep;
-    // Update hidden inputs
-    const form = newChildSwatch.closest("form");
-    if (form) {
-      form.querySelector('[name="childColourAccent"]').value = accent;
-      form.querySelector('[name="childColourDeep"]').value   = deep;
-    }
-    // Update selected state
-    document.querySelectorAll("[data-new-child-colour-accent]").forEach(s => {
-      s.classList.toggle("colour-swatch--selected", s.dataset.newChildColourAccent === accent);
-    });
+    createAccountDraft["kidColour" + kidNumber] = colourIndex;
+    document.querySelectorAll("[data-create-kid-colour=\"" + kidNumber + "\"]").forEach(s => { s.classList.toggle("colour-swatch--selected", Number(s.dataset.createColourIndex) === colourIndex); });
     return;
   }
 
@@ -3720,21 +3490,11 @@ document.body.addEventListener("submit", async (event) => {
     if (!family) { showToast("Incorrect login."); return; }
     const pinOk = await verifyPin(pin, family.parentPin);
     if (!pinOk) { showToast("Incorrect login."); return; }
-    // Migrate plain PIN to hash on first successful login
-    if (family.parentPin && !/^[0-9a-f]{64}$/.test(family.parentPin)) {
-      family.parentPin = await hashPin(pin);
-    }
-    authStage = "login";
-    authView = "parent";
-    authAccountJustCreated = false;
+    if (family.parentPin && !/^[0-9a-f]{64}$/.test(family.parentPin)) { family.parentPin = await hashPin(pin); saveState(); }
+    authStage = "login"; authView = "parent"; authAccountJustCreated = false;
     state.session = { familyId: family.id, role: "parent" };
-    currentKidId = null;
-    currentKidView = "dashboard";
-    currentFamilyMode = false;
-    currentAssignedKids = [];
-    saveState();
-    renderApp();
-    return;
+    currentKidId = null; currentKidView = "dashboard"; currentFamilyMode = false; currentAssignedKids = [];
+    saveState(); renderApp(); return;
   }
 
   const resetPasscodeForm = event.target.closest("#reset-passcode-form");
@@ -3783,16 +3543,10 @@ document.body.addEventListener("submit", async (event) => {
     const family = state.families.find((entry) => entry.parentEmailLower === email);
     const kidCandidate = family?.kids.find((entry) => entry.name.trim().toLowerCase() === kidName);
     const kidPinOk = kidCandidate ? await verifyPin(kidPin, kidCandidate.kidPin) : false;
-    if (!family || !kidCandidate || !kidPinOk) {
-      showToast("Incorrect kid login.");
-      return;
-    }
-    // Migrate plain PIN to hash
-    if (kidCandidate.kidPin && !/^[0-9a-f]{64}$/.test(kidCandidate.kidPin)) {
-      kidCandidate.kidPin = await hashPin(kidPin);
-      saveState();
-    }
+    if (!family || !kidCandidate || !kidPinOk) { showToast("Incorrect kid login."); return; }
+    if (kidCandidate.kidPin && !/^[0-9a-f]{64}$/.test(kidCandidate.kidPin)) { kidCandidate.kidPin = await hashPin(kidPin); saveState(); }
     const kid = kidCandidate;
+
     state.session = { familyId: family.id, role: "kid", kidId: kid.id };
     authStage = "login";
     authAccountJustCreated = false;
@@ -3851,7 +3605,7 @@ document.body.addEventListener("submit", async (event) => {
     const childPin = String(formData.get("childPin") || "").trim();
     const childColourAccent = String(formData.get("childColourAccent") || "").trim();
     const childColourDeep = String(formData.get("childColourDeep") || "").trim();
-    if (!childName) { showFieldError(addChildForm, "Please enter the child’s name."); return; }
+    if (!childName) { showFieldError(addChildForm, "Please enter the child's name."); return; }
     if (!childPin) { showFieldError(addChildForm, "Please enter a 4-digit PIN."); return; }
     if (!isValidKidPin(childPin)) { showFieldError(addChildForm, "PIN must be exactly 4 digits (numbers only)."); return; }
     addChild(childName, childPin, "", childColourAccent, childColourDeep);
@@ -3887,9 +3641,9 @@ document.body.addEventListener("submit", async (event) => {
     const assignedKids = currentAssignedKids.length ? currentAssignedKids : [currentKidId];
 
     if (!title) { showFieldError(taskForm, "Please enter a task title."); return; }
-    if (!timeValue) { showFieldError(taskForm, "Please pick a time for this task."); return; }
+    if (!timeValue) { showFieldError(taskForm, "Please pick a time."); return; }
     if (!Number.isFinite(points) || points < 1) { showFieldError(taskForm, "Points must be at least 1."); return; }
-    if (!assignedKids.length) { showFieldError(taskForm, "Select at least one child to assign this task to."); return; }
+    if (!assignedKids.length) { showFieldError(taskForm, "Select at least one child."); return; }
     if (recurring === "custom-date" && !customDate) {
       showToast("Choose the custom date for this task.");
       return;
@@ -3915,7 +3669,7 @@ document.body.addEventListener("submit", async (event) => {
 
     if (!adjustmentKidIds.length) { showFieldError(bonusPenaltySaveForm, "Select at least one child."); return; }
     if (!reason) { showFieldError(bonusPenaltySaveForm, "Please enter a reason."); return; }
-    if (!Number.isFinite(value) || value < 1) { showFieldError(bonusPenaltySaveForm, "Points value must be at least 1."); return; }
+    if (!Number.isFinite(value) || value < 1) { showFieldError(bonusPenaltySaveForm, "Points must be at least 1."); return; }
     addReason(adjustmentKidIds, label, reason);
     addAdjustment(adjustmentKidIds, label, label === "penalty" ? -Math.abs(value) : Math.abs(value), reason);
     saveState();
@@ -3935,3 +3689,22 @@ if ("serviceWorker" in navigator) {
 
 renderApp();
 void bootstrapCloudSessionIfAvailable();
+
+(function initOfflineIndicator() {
+  let banner = null;
+  function showOfflineBanner() {
+    if (banner) return;
+    banner = document.createElement("div");
+    banner.className = "offline-banner";
+    banner.textContent = "You\u2019re offline \u2014 changes are saved on this device";
+    document.body.appendChild(banner);
+  }
+  function hideOfflineBanner() {
+    if (!banner) return;
+    banner.classList.add("offline-banner--hide");
+    setTimeout(function() { if (banner) { banner.remove(); banner = null; } }, 400);
+  }
+  if (!navigator.onLine) showOfflineBanner();
+  window.addEventListener("offline", showOfflineBanner);
+  window.addEventListener("online", function() { hideOfflineBanner(); showToast("Back online \u2713"); });
+})();

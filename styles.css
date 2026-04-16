@@ -5391,6 +5391,26 @@ button {
   filter: saturate(1.06);
 }
 
+/* Unify non-home pill geometry to the softer capsule silhouette */
+.kid-shell .action-button,
+.kid-shell .sub-view-button,
+.kid-shell .back-button:not(.home-logout-button),
+.settings-switch-button,
+.family-controls-switch-button,
+.family-controls-current-button,
+.family-controls-back-button,
+.view-button,
+.sub-view-button,
+.assign-option,
+.report-watch .watch-pill,
+.kid-view[data-panel="rewards"] .favor-pill,
+.auth-panel .action-button,
+.pin-actions .action-button,
+.task-action-pill,
+.auth-card .view-button {
+  border-radius: 999px;
+}
+
 /* Rainbow magic pass for app-wide pills, excluding the home family dashboard pills */
 .kid-shell .action-button,
 .kid-shell .sub-view-button,

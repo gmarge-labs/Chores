@@ -719,6 +719,21 @@ function getShellClass(name, familyMode) {
   return familyMode ? "family" : "kid";
 }
 
+function showFieldError(form, message) {
+  if (!form) { showToast(message); return; }
+  // Remove any existing error
+  form.querySelector(".form-error-msg")?.remove();
+  const err = document.createElement("p");
+  err.className = "form-error-msg";
+  err.textContent = message;
+  form.appendChild(err);
+  setTimeout(() => err?.remove(), 3200);
+}
+
+function clearFieldError(form) {
+  form?.querySelector(".form-error-msg")?.remove();
+}
+
 function showToast(message) {
   const notice = document.createElement("div");
   notice.className = "pin-toast";
@@ -3759,10 +3774,9 @@ document.body.addEventListener("submit", async (event) => {
     const cost = Number(formData.get("cost"));
     const targetKids = formData.getAll("rewardAssignedKids").map((value) => String(value)).filter(Boolean);
 
-    if (!title || !Number.isFinite(cost) || cost < 1 || !targetKids.length) {
-      if (!targetKids.length) showToast("Select at least one kid for this reward.");
-      return;
-    }
+    if (!title) { showFieldError(rewardForm, "Please enter a reward title."); return; }
+    if (!Number.isFinite(cost) || cost < 1) { showFieldError(rewardForm, "Points cost must be at least 1."); return; }
+    if (!targetKids.length) { showFieldError(rewardForm, "Select at least one child for this reward."); return; }
     addReward(targetKids, title, cost);
     currentRewardAssignedKids = [];
     saveState();
@@ -3779,7 +3793,9 @@ document.body.addEventListener("submit", async (event) => {
     const points = Number(formData.get("points"));
     const dollars = Number(formData.get("dollars"));
 
-    if (!kidId || !Number.isFinite(points) || points < 1 || !Number.isFinite(dollars) || dollars < 1) return;
+    if (!kidId) return;
+    if (!Number.isFinite(points) || points < 1) { showFieldError(dollarForm, "Points must be at least 1."); return; }
+    if (!Number.isFinite(dollars) || dollars < 1) { showFieldError(dollarForm, "Dollar value must be at least 1."); return; }
     updateDollarConversion(kidId, points, dollars);
     saveState();
     renderKidPage(currentKidId || getFamilyKids()[0]?.id);
@@ -3794,11 +3810,9 @@ document.body.addEventListener("submit", async (event) => {
     const childPin = String(formData.get("childPin") || "").trim();
     const childColourAccent = String(formData.get("childColourAccent") || "").trim();
     const childColourDeep = String(formData.get("childColourDeep") || "").trim();
-    if (!childName || !childPin) return;
-    if (!isValidKidPin(childPin)) {
-      showToast("Child PIN must be exactly 4 digits.");
-      return;
-    }
+    if (!childName) { showFieldError(addChildForm, "Please enter the child’s name."); return; }
+    if (!childPin) { showFieldError(addChildForm, "Please enter a 4-digit PIN."); return; }
+    if (!isValidKidPin(childPin)) { showFieldError(addChildForm, "PIN must be exactly 4 digits (numbers only)."); return; }
     addChild(childName, childPin, "", childColourAccent, childColourDeep);
     saveState();
     renderKidPage(currentKidId || getFamilyKids()[0]?.id);
@@ -3812,7 +3826,8 @@ document.body.addEventListener("submit", async (event) => {
     const formData = new FormData(thresholdForm);
     const threshold = Number(formData.get("threshold"));
     const thresholdKidIds = currentThresholdAssignedKids.length ? currentThresholdAssignedKids : [currentKidId].filter(Boolean);
-    if (!thresholdKidIds.length || !Number.isFinite(threshold) || threshold < 1) return;
+    if (!thresholdKidIds.length) { showFieldError(thresholdForm, "Select at least one child."); return; }
+    if (!Number.isFinite(threshold) || threshold < 1) { showFieldError(thresholdForm, "Points target must be at least 1."); return; }
     updateCelebrationThreshold(thresholdKidIds, threshold);
     saveState();
     renderKidPage(currentKidId || getFamilyKids()[0]?.id);
@@ -3830,7 +3845,10 @@ document.body.addEventListener("submit", async (event) => {
     const customDate = String(formData.get("customDate") || "").trim();
     const assignedKids = currentAssignedKids.length ? currentAssignedKids : [currentKidId];
 
-    if (!title || !Number.isFinite(points) || points < 1 || !timeValue || !assignedKids.length) return;
+    if (!title) { showFieldError(taskForm, "Please enter a task title."); return; }
+    if (!timeValue) { showFieldError(taskForm, "Please pick a time for this task."); return; }
+    if (!Number.isFinite(points) || points < 1) { showFieldError(taskForm, "Points must be at least 1."); return; }
+    if (!assignedKids.length) { showFieldError(taskForm, "Select at least one child to assign this task to."); return; }
     if (recurring === "custom-date" && !customDate) {
       showToast("Choose the custom date for this task.");
       return;
@@ -3854,7 +3872,9 @@ document.body.addEventListener("submit", async (event) => {
     const reason = String(formData.get("reason") || "").trim();
     const adjustmentKidIds = currentAssignedKids.length ? currentAssignedKids : [currentKidId];
 
-    if (!reason || !Number.isFinite(value) || !adjustmentKidIds.length) return;
+    if (!adjustmentKidIds.length) { showFieldError(bonusPenaltySaveForm, "Select at least one child."); return; }
+    if (!reason) { showFieldError(bonusPenaltySaveForm, "Please enter a reason."); return; }
+    if (!Number.isFinite(value) || value < 1) { showFieldError(bonusPenaltySaveForm, "Points value must be at least 1."); return; }
     addReason(adjustmentKidIds, label, reason);
     addAdjustment(adjustmentKidIds, label, label === "penalty" ? -Math.abs(value) : Math.abs(value), reason);
     saveState();

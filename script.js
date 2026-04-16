@@ -66,6 +66,7 @@ function createKid(name, kidPin, avatar = "") {
     due: [],
     awaiting: [],
     completed: [],
+    taskTemplates: [],
     rewards: [],
     bonusPenalty: [
       { type: "bonus", title: "+0 points", value: "+0 points", reason: "", dateKey: null, createdAt: null },
@@ -75,6 +76,7 @@ function createKid(name, kidPin, avatar = "") {
     penaltyReasons: [],
     missedDaysInARow: 0,
     lastMissedCheckDate: null,
+    lastTaskRefreshDate: getTodayDateKey(),
   };
 }
 
@@ -97,6 +99,12 @@ function cloneEmptyState() {
 }
 
 function normalizeKid(kid) {
+  const normalizedTaskTemplates = Array.isArray(kid.taskTemplates)
+    ? kid.taskTemplates
+        .map((task) => normalizeTaskTemplate(task))
+        .filter(Boolean)
+    : buildTaskTemplatesFromLegacyKid(kid);
+
   return {
     id: kid.id || createId("kid"),
     name: kid.name || "Kid",
@@ -107,9 +115,10 @@ function normalizeKid(kid) {
     dollarRewardValue: Number.isFinite(Number(kid.dollarRewardValue)) ? Number(kid.dollarRewardValue) : 20,
     celebrationThreshold: Number.isFinite(Number(kid.celebrationThreshold)) ? Number(kid.celebrationThreshold) : 100,
     lastCelebratedThreshold: Number.isFinite(Number(kid.lastCelebratedThreshold)) ? Number(kid.lastCelebratedThreshold) : 0,
-    due: Array.isArray(kid.due) ? kid.due : [],
-    awaiting: Array.isArray(kid.awaiting) ? kid.awaiting : [],
-    completed: Array.isArray(kid.completed) ? kid.completed : [],
+    due: normalizeTaskInstances(kid.due),
+    awaiting: normalizeTaskInstances(kid.awaiting),
+    completed: normalizeTaskInstances(kid.completed),
+    taskTemplates: normalizedTaskTemplates,
     rewards: Array.isArray(kid.rewards) ? kid.rewards : [],
     bonusPenalty: Array.isArray(kid.bonusPenalty) && kid.bonusPenalty.length
       ? kid.bonusPenalty.map((entry) => ({
@@ -128,6 +137,7 @@ function normalizeKid(kid) {
     penaltyReasons: Array.isArray(kid.penaltyReasons) ? kid.penaltyReasons : [],
     missedDaysInARow: Number.isFinite(Number(kid.missedDaysInARow)) ? Number(kid.missedDaysInARow) : 0,
     lastMissedCheckDate: kid.lastMissedCheckDate || null,
+    lastTaskRefreshDate: kid.lastTaskRefreshDate || getTodayDateKey(),
   };
 }
 
@@ -161,6 +171,7 @@ function loadState() {
 }
 
 const state = loadState();
+refreshAllTasksForToday();
 
 function saveState(options = {}) {
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
@@ -169,28 +180,6 @@ function saveState(options = {}) {
     void queueCloudSync();
   }
 }
-
-function getTodayKey() {
-  return new Date().toISOString().slice(0, 10);
-}
-
-function updateMissedStreaksForToday() {
-  const todayKey = getTodayKey();
-  let didUpdate = false;
-
-  state.families.forEach((family) => {
-    family.kids.forEach((kid) => {
-      if (kid.lastMissedCheckDate === todayKey) return;
-      kid.missedDaysInARow = kid.due.length ? (Number(kid.missedDaysInARow) || 0) + 1 : 0;
-      kid.lastMissedCheckDate = todayKey;
-      didUpdate = true;
-    });
-  });
-
-  if (didUpdate) saveState();
-}
-
-updateMissedStreaksForToday();
 
 let authStage = "intro";
 let authView = "";
@@ -768,6 +757,205 @@ function getTodayDateKey() {
   return `${year}-${month}-${day}`;
 }
 
+function parseDateKey(dateKey) {
+  const parsed = new Date(`${dateKey}T00:00:00`);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function getDateKeyOffset(dateKey, offsetDays) {
+  const parsed = parseDateKey(dateKey);
+  if (!parsed) return dateKey;
+  parsed.setDate(parsed.getDate() + offsetDays);
+  const year = parsed.getFullYear();
+  const month = String(parsed.getMonth() + 1).padStart(2, "0");
+  const day = String(parsed.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function getDateDiffInDays(fromDateKey, toDateKey) {
+  const from = parseDateKey(fromDateKey);
+  const to = parseDateKey(toDateKey);
+  if (!from || !to) return 0;
+  const MS_PER_DAY = 24 * 60 * 60 * 1000;
+  return Math.floor((to - from) / MS_PER_DAY);
+}
+
+function buildTaskTemplate(task = {}, fallbackDateKey = getTodayDateKey()) {
+  const recurring = String(task.recurring || "daily").trim().toLowerCase();
+  const customDate = String(task.customDate || "").trim();
+  const startDateKey = recurring === "custom-date"
+    ? (customDate || fallbackDateKey)
+    : String(task.startDateKey || task.instanceDateKey || fallbackDateKey);
+
+  return {
+    id: task.templateId || task.id || createId("task-template"),
+    title: String(task.title || "").trim(),
+    points: Number(task.points) || 0,
+    recurring,
+    time: String(task.time || "").trim(),
+    customDate,
+    startDateKey,
+  };
+}
+
+function normalizeTaskTemplate(task = {}) {
+  if (!task || !String(task.title || "").trim()) return null;
+  return buildTaskTemplate(task, getTodayDateKey());
+}
+
+function normalizeTaskInstances(taskList) {
+  return Array.isArray(taskList)
+    ? taskList
+        .map((task) => ({
+          id: task.id || createId("task"),
+          templateId: task.templateId || task.id || createId("task-template-link"),
+          title: String(task.title || "").trim(),
+          detail: String(task.detail || "").trim(),
+          points: Number(task.points) || 0,
+          recurring: String(task.recurring || "daily").trim().toLowerCase(),
+          time: String(task.time || "").trim(),
+          customDate: String(task.customDate || "").trim(),
+          instanceDateKey: task.instanceDateKey || getTodayDateKey(),
+        }))
+        .filter((task) => task.title)
+    : [];
+}
+
+function buildTaskTemplatesFromLegacyKid(kid = {}) {
+  const seedTasks = [
+    ...(Array.isArray(kid.due) ? kid.due : []),
+    ...(Array.isArray(kid.awaiting) ? kid.awaiting : []),
+    ...(Array.isArray(kid.completed) ? kid.completed : []),
+  ];
+
+  const seen = new Set();
+  return seedTasks
+    .map((task) => buildTaskTemplate(task, getTodayDateKey()))
+    .filter((task) => {
+      if (!task.title) return false;
+      const key = [task.title, task.points, task.recurring, task.time, task.customDate, task.startDateKey].join("|");
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+}
+
+function buildTaskInstanceFromTemplate(template, dateKey) {
+  return {
+    id: createId("task"),
+    templateId: template.id,
+    title: template.title,
+    detail: buildTaskDetail(template.recurring, template.time, template.customDate ? formatCustomDate(template.customDate) : ""),
+    points: Number(template.points) || 0,
+    recurring: template.recurring,
+    time: template.time,
+    customDate: template.customDate,
+    instanceDateKey: dateKey,
+  };
+}
+
+function taskOccursOnDate(template, dateKey) {
+  const startKey = template.recurring === "custom-date"
+    ? (template.customDate || template.startDateKey)
+    : (template.startDateKey || dateKey);
+  const diffDays = getDateDiffInDays(startKey, dateKey);
+  if (diffDays < 0) return false;
+
+  switch (template.recurring) {
+    case "daily":
+      return true;
+    case "every-other-day":
+      return diffDays % 2 === 0;
+    case "weekly": {
+      const startDate = parseDateKey(startKey);
+      const currentDate = parseDateKey(dateKey);
+      return Boolean(startDate && currentDate && startDate.getDay() === currentDate.getDay());
+    }
+    case "monthly": {
+      const startDate = parseDateKey(startKey);
+      const currentDate = parseDateKey(dateKey);
+      return Boolean(startDate && currentDate && startDate.getDate() === currentDate.getDate());
+    }
+    case "custom-date":
+      return dateKey === (template.customDate || startKey);
+    default:
+      return dateKey === startKey;
+  }
+}
+
+function updateMissedCycle(missedDaysInARow, hadMissedTasks) {
+  if (!hadMissedTasks) return 0;
+  const current = Number(missedDaysInARow) || 0;
+  return current >= 3 ? 1 : current + 1;
+}
+
+function refreshKidTasksForToday(kid, todayKey = getTodayDateKey()) {
+  if (!kid) return false;
+
+  let didUpdate = false;
+  if (!Array.isArray(kid.taskTemplates)) {
+    kid.taskTemplates = buildTaskTemplatesFromLegacyKid(kid);
+    didUpdate = true;
+  }
+
+  const lastRefreshDate = kid.lastTaskRefreshDate || todayKey;
+  if (lastRefreshDate !== todayKey) {
+    const dayDiff = Math.max(0, getDateDiffInDays(lastRefreshDate, todayKey));
+    for (let step = 0; step < dayDiff; step += 1) {
+      const cycleDate = getDateKeyOffset(lastRefreshDate, step);
+      const dueForDate = kid.due.filter((task) => task.instanceDateKey === cycleDate);
+      const awaitingForDate = kid.awaiting.filter((task) => task.instanceDateKey === cycleDate);
+      const completedForDate = kid.completed.filter((task) => task.instanceDateKey === cycleDate);
+      const scheduledTemplates = kid.taskTemplates.filter((task) => taskOccursOnDate(task, cycleDate));
+      const hadMissedTasks = Boolean(dueForDate.length || awaitingForDate.length || (scheduledTemplates.length && !completedForDate.length));
+      kid.missedDaysInARow = updateMissedCycle(kid.missedDaysInARow, hadMissedTasks);
+      kid.lastMissedCheckDate = cycleDate;
+    }
+
+    kid.due = [];
+    kid.awaiting = [];
+    kid.completed = [];
+    kid.lastTaskRefreshDate = todayKey;
+    didUpdate = true;
+  }
+
+  const todayInstances = [
+    ...kid.due.filter((task) => task.instanceDateKey === todayKey),
+    ...kid.awaiting.filter((task) => task.instanceDateKey === todayKey),
+    ...kid.completed.filter((task) => task.instanceDateKey === todayKey),
+  ];
+  const existingTemplateIds = new Set(todayInstances.map((task) => task.templateId));
+
+  kid.taskTemplates.forEach((template) => {
+    if (!taskOccursOnDate(template, todayKey)) return;
+    if (existingTemplateIds.has(template.id)) return;
+    kid.due.push(buildTaskInstanceFromTemplate(template, todayKey));
+    didUpdate = true;
+  });
+
+  kid.due = kid.due.filter((task) => task.instanceDateKey === todayKey);
+  kid.awaiting = kid.awaiting.filter((task) => task.instanceDateKey === todayKey);
+  kid.completed = kid.completed.filter((task) => task.instanceDateKey === todayKey);
+
+  if (kid.lastMissedCheckDate == null) {
+    kid.lastMissedCheckDate = todayKey;
+    didUpdate = true;
+  }
+
+  return didUpdate;
+}
+
+function refreshAllTasksForToday() {
+  const todayKey = getTodayDateKey();
+  let didUpdate = false;
+  state.families.forEach((family) => {
+    family.kids.forEach((kid) => {
+      if (refreshKidTasksForToday(kid, todayKey)) didUpdate = true;
+    });
+  });
+  if (didUpdate) saveState();
+}
+
 function formatTaskTimeValue(timeValue) {
   const [hoursRaw, minutesRaw] = String(timeValue || "").split(":");
   const hoursNum = Number(hoursRaw);
@@ -901,19 +1089,28 @@ function updateCelebrationThreshold(kidIds, threshold) {
 }
 
 function addTask(kidIds, title, points, recurring, time, customDate = "") {
+  const todayKey = getTodayDateKey();
   kidIds.forEach((kidId) => {
     const kid = getKid(kidId);
     if (!kid) return;
 
-    kid.due.push({
-      id: createId("task"),
+    if (!Array.isArray(kid.taskTemplates)) kid.taskTemplates = [];
+
+    const template = buildTaskTemplate({
+      id: createId("task-template"),
       title,
-      detail: buildTaskDetail(recurring, time, customDate ? formatCustomDate(customDate) : ""),
       points,
       recurring,
       time,
       customDate,
-    });
+      startDateKey: todayKey,
+    }, todayKey);
+
+    kid.taskTemplates.push(template);
+
+    if (taskOccursOnDate(template, todayKey)) {
+      kid.due.push(buildTaskInstanceFromTemplate(template, todayKey));
+    }
   });
 }
 
@@ -997,9 +1194,11 @@ function resetAllTasksAndPoints() {
     kid.due = [];
     kid.awaiting = [];
     kid.completed = [];
+    kid.taskTemplates = [];
     kid.lastCelebratedThreshold = 0;
     kid.missedDaysInARow = 0;
-    kid.lastMissedCheckDate = getTodayKey();
+    kid.lastMissedCheckDate = getTodayDateKey();
+    kid.lastTaskRefreshDate = getTodayDateKey();
   });
 }
 
@@ -1709,6 +1908,7 @@ function renderAuthHome() {
 }
 
 function renderParentHome() {
+  refreshAllTasksForToday();
   const family = getCurrentFamily();
   const kids = getFamilyKids();
 
@@ -1771,6 +1971,7 @@ function renderParentHome() {
 }
 
 function renderKidPage(kidId) {
+  refreshAllTasksForToday();
   const family = getCurrentFamily();
   const kid = getKid(kidId);
   if (!family || !kid) return;
@@ -2345,6 +2546,8 @@ function renderApp() {
     renderAuthHome();
     return;
   }
+
+  refreshAllTasksForToday();
 
   if (isParentSession()) {
     if (!currentKidId && !currentFamilyMode) {

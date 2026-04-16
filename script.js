@@ -559,6 +559,32 @@ function updateAboutTopicDisplay(nextTopic) {
     button.classList.toggle("active", button.dataset.aboutTopic === aboutTopic);
   });
 }
+let tpHour = 8;
+let tpMin = 0;
+let tpAmPm = "AM";
+
+function tpPad(n) { return String(n).padStart(2, "0"); }
+
+function tpUpdate() {
+  const hourEl = document.getElementById("tp-hour-display");
+  const minEl  = document.getElementById("tp-min-display");
+  const hidden = document.getElementById("tp-hidden-value");
+  if (!hourEl || !minEl || !hidden) return;
+  hourEl.textContent = tpHour;
+  minEl.textContent  = tpPad(tpMin);
+  const h24 = tpAmPm === "AM" ? (tpHour === 12 ? 0 : tpHour) : (tpHour === 12 ? 12 : tpHour + 12);
+  hidden.value = tpPad(h24) + ":" + tpPad(tpMin);
+  document.querySelectorAll("[data-tp-ampm]").forEach(function(btn) {
+    btn.classList.toggle("active", btn.dataset.tpAmpm === tpAmPm);
+  });
+  // also update the schedule preview
+  updateTaskSchedulePreview(document.querySelector("#task-form"));
+}
+
+function tpReset() {
+  tpHour = 8; tpMin = 0; tpAmPm = "AM";
+}
+
 let currentKidId = null;
 let currentKidView = "dashboard";
 let currentFamilyMode = false;
@@ -1082,7 +1108,7 @@ function updateTaskSchedulePreview(taskForm) {
   const preview = taskForm.querySelector("[data-task-schedule-preview]");
   const customDateInput = taskForm.querySelector('input[name="customDate"]');
   const recurringInput = taskForm.querySelector('input[name="recurring"]:checked');
-  const timeInput = taskForm.querySelector('input[name="time"]');
+  const timeInput = taskForm.querySelector('input[name="time"]') || taskForm.querySelector('#tp-hidden-value');
   const scheduleBlock = taskForm.querySelector(".task-schedule-block");
   if (!preview || !customDateInput || !timeInput || !scheduleBlock) return;
 
@@ -1888,10 +1914,24 @@ function renderTaskRecurringBlock() {
       </div>
       <div class="task-time-row">
         <input class="custom-date-field is-hidden" type="date" name="customDate" aria-label="Custom date" />
-        <label class="time-field task-time-capsule" aria-label="Task time">
-          <span class="task-time-icon" aria-hidden="true">\u25D4</span>
-          <input type="time" name="time" required />
-        </label>
+        <div class="time-picker-wrap">
+          <div class="tp-spinner">
+            <button type="button" class="tp-arrow" data-tp-hour="+1">\u25B2</button>
+            <div class="tp-val" id="tp-hour-display">8</div>
+            <button type="button" class="tp-arrow" data-tp-hour="-1">\u25BC</button>
+          </div>
+          <div class="tp-sep">:</div>
+          <div class="tp-spinner">
+            <button type="button" class="tp-arrow" data-tp-min="+1">\u25B2</button>
+            <div class="tp-val" id="tp-min-display">00</div>
+            <button type="button" class="tp-arrow" data-tp-min="-1">\u25BC</button>
+          </div>
+          <div class="tp-ampm-group">
+            <button type="button" class="tp-ampm-btn active" data-tp-ampm="AM">AM</button>
+            <button type="button" class="tp-ampm-btn" data-tp-ampm="PM">PM</button>
+          </div>
+          <input type="hidden" name="time" id="tp-hidden-value" value="08:00" />
+        </div>
       </div>
       <p class="task-schedule-preview" data-task-schedule-preview="true">Choose a repeat style and time to preview the schedule.</p>
     </div>
@@ -2780,6 +2820,7 @@ function renderKidPage(kidId) {
 
   showPage("page-kid");
   updateTaskSchedulePreview(document.querySelector("#task-form"));
+  tpUpdate();
 }
 
 function renderApp() {
@@ -2859,6 +2900,25 @@ function showAppEdit(eyebrow, title, fields, confirmLabel) {
 }
 
 document.body.addEventListener("click", async (event) => {
+  // ── TIME PICKER ─────────────────────────────────────────────
+  const tpHourBtn = event.target.closest("[data-tp-hour]");
+  if (tpHourBtn) {
+    const dir = Number(tpHourBtn.dataset.tpHour);
+    tpHour = ((tpHour - 1 + dir + 12) % 12) + 1;
+    tpUpdate(); return;
+  }
+  const tpMinBtn = event.target.closest("[data-tp-min]");
+  if (tpMinBtn) {
+    const dir = Number(tpMinBtn.dataset.tpMin);
+    tpMin = (tpMin + dir * 15 + 60) % 60;
+    tpUpdate(); return;
+  }
+  const tpAmPmBtn = event.target.closest("[data-tp-ampm]");
+  if (tpAmPmBtn) {
+    tpAmPm = tpAmPmBtn.dataset.tpAmpm;
+    tpUpdate(); return;
+  }
+
   const authButton = event.target.closest("[data-auth-view]");
   if (authButton && !state.session) {
     const nextView = authButton.dataset.authView || "create";
@@ -3654,6 +3714,7 @@ document.body.addEventListener("submit", async (event) => {
     addTask(assignedKids, title, points, recurring, displayTime, customDate);
     saveState();
     currentAssignedKids = [];
+    tpReset();
     renderKidPage(currentKidId || getFamilyKids()[0]?.id);
     return;
   }

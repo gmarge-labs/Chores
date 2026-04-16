@@ -2358,6 +2358,31 @@ function renderKidPage(kidId) {
                 <span class="score-sparkles" aria-hidden="true"></span>
                 <span>Buy favors with your points</span>
               </button>
+
+              ${Array.isArray(kid.pointsHistory) && kid.pointsHistory.length ? `
+                <div class="points-history-block">
+                  <p class="eyebrow" style="margin-bottom:10px;">Points history</p>
+                  <div class="history-list">
+                    ${kid.pointsHistory.slice().reverse().slice(0, 20).map(h => {
+                      const isPos = (h.pointsDelta || 0) >= 0;
+                      const dotClass = h.changeType === "task" ? "history-dot--task"
+                        : h.changeType === "bonus" ? "history-dot--bonus"
+                        : h.changeType === "penalty" ? "history-dot--penalty"
+                        : "history-dot--reward_claim";
+                      const deltaLabel = isPos ? \`+\${h.pointsDelta}\` : \`\${h.pointsDelta}\`;
+                      const timeLabel = h.createdAt ? new Date(h.createdAt).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : "";
+                      return \`
+                        <div class="history-entry">
+                          <span class="history-dot \${dotClass}"></span>
+                          <span class="history-desc">\${escapeHtml(h.description || h.changeType)}</span>
+                          <span class="history-delta \${isPos ? "history-delta--pos" : "history-delta--neg"}">\${escapeHtml(deltaLabel)}</span>
+                          <span class="history-time">\${escapeHtml(timeLabel)}</span>
+                        </div>
+                      \`;
+                    }).join("")}
+                  </div>
+                </div>
+              ` : ""}
             </section>
           </div>
         </article>

@@ -43,18 +43,20 @@ async function hashPin(pin) {
 }
 
 async function verifyPin(plain, stored) {
-  // Support legacy plain-text PINs (length <= 10) — migrate on verify
-  if (stored && stored.length <= 10) return plain === stored;
+  if (!stored) return false;
+  // Legacy plain-text PIN: not a 64-char hex hash
+  const isHashed = /^[0-9a-f]{64}$/.test(stored);
+  if (!isHashed) return plain === stored;
   try { return (await hashPin(plain)) === stored; } catch { return false; }
 }
 
 async function migrateKidPin(kid) {
-  if (!kid.kidPin || kid.kidPin.length > 10) return; // already hashed
+  if (!kid.kidPin || /^[0-9a-f]{64}$/.test(kid.kidPin)) return;
   kid.kidPin = await hashPin(kid.kidPin);
 }
 
 async function migrateParentPin(family) {
-  if (!family.parentPin || family.parentPin.length > 10) return;
+  if (!family.parentPin || /^[0-9a-f]{64}$/.test(family.parentPin)) return;
   family.parentPin = await hashPin(family.parentPin);
 }
 
@@ -293,10 +295,11 @@ function renderSettingsSwitcher(activeSection = "") {
 function renderFamilyControlsSwitcher(activeSection = "") {
   const controlButtons = [
     { key: "add-rewards", label: "Add Rewards" },
+    { key: "manage-rewards", label: "Manage Rewards" },
     { key: "dollar-rate", label: "Dollar Rate" },
     { key: "add-child", label: "Add Child" },
     { key: "celebration-threshold", label: "Celebration Threshold" },
-    { key: "kid-colours", label: "Kid Colours" },
+    { key: "kid-colours", label: "Edit Kid Colours" },
     { key: "delete-family", label: "Delete Family" },
   ];
 
@@ -322,10 +325,11 @@ function renderFamilyControlsSwitcher(activeSection = "") {
 function getFamilyControlsLabel(sectionKey = "") {
   const labels = {
     "add-rewards": "Add Rewards",
+    "manage-rewards": "Manage Rewards",
     "dollar-rate": "Dollar Rate",
     "add-child": "Add Child",
     "celebration-threshold": "Celebration Threshold",
-    "kid-colours": "Kid Colours",
+    "kid-colours": "Edit Kid Colours",
     "delete-family": "Delete Family",
   };
 
@@ -1204,10 +1208,16 @@ function addReason(kidIds, type, reason) {
   });
 }
 
-function addChild(name, kidPin, avatar = "") {
+function addChild(name, kidPin, avatar = "", accentColour = "", accentColourDeep = "") {
   const family = getCurrentFamily();
   if (!family) return;
-  family.kids.push(createKid(name, kidPin, avatar));
+  const colourIndex = family.kids.length;
+  const kid = createKid(name, kidPin, avatar, colourIndex);
+  if (accentColour) {
+    kid.accentColour = accentColour;
+    kid.accentColourDeep = accentColourDeep || accentColour;
+  }
+  family.kids.push(kid);
 }
 
 function updateDollarConversion(kidId, points, dollars) {
@@ -2488,7 +2498,6 @@ function renderKidPage(kidId) {
                                 <button class="action-button danger" type="button" data-reset-tasks="true">Reset tasks & points</button>
                               </div>
                             </form>
-                            ${renderTaskTemplateList(kid)}
                           </article>
                           ${kid.taskTemplates && kid.taskTemplates.length ? `
                           <article class="reward-card settings-tile single-settings-tile task-template-list-tile">
@@ -2559,11 +2568,18 @@ function renderKidPage(kidId) {
                                                   <button class="action-button primary reward-submit-button" type="submit" ${currentRewardAssignedKids.length ? "" : "disabled"}>Add rewards</button>
                                                 </div>
                                               </form>
+                                            </section>
+                                          `
+                                          : ""
+                                      }
+                                      ${
+                                        currentFamilyControlsSection === "manage-rewards"
+                                          ? `
+                                            <section class="settings-mini-section manage-rewards-section family-controls-page">
+                                              <p class="eyebrow">Manage rewards</p>
                                               ${getFamilyKids().some(c => c.rewards && c.rewards.length) ? `
-                                              <div class="manage-rewards-list">
-                                                <p class="eyebrow" style="margin-top:16px;">Manage rewards</p>
                                                 ${getFamilyKids().filter(c => c.rewards && c.rewards.length).map(child => `
-                                                  <p class="eyebrow" style="margin-top:10px;font-size:0.68rem;">${escapeHtml(child.name)}</p>
+                                                  <p class="eyebrow" style="margin-top:12px;font-size:0.68rem;">${escapeHtml(child.name)}</p>
                                                   ${child.rewards.map(reward => `
                                                     <div class="template-row">
                                                       <div class="template-row-info">
@@ -2577,7 +2593,7 @@ function renderKidPage(kidId) {
                                                     </div>
                                                   `).join("")}
                                                 `).join("")}
-                                              </div>` : ""}
+                                              ` : `<p class="empty">No rewards added yet.</p>`}
                                             </section>
                                           `
                                           : ""
@@ -2620,6 +2636,20 @@ function renderKidPage(kidId) {
                                               <form class="reward-form" id="add-child-form">
                                                 <input type="text" name="childName" placeholder="Child name" required />
                                                 <input type="password" name="childPin" placeholder="4-digit child PIN" inputmode="numeric" pattern="\\d{4}" maxlength="4" required />
+                                                <div>
+                                                  <p class="eyebrow" style="margin-bottom:8px;">Pick a colour</p>
+                                                  <div class="colour-swatch-row" id="add-child-colour-row">
+                                                    ${KID_COLOUR_PALETTE.map((col, i) => `
+                                                      <button type="button" class="colour-swatch ${i === 0 ? "colour-swatch--selected" : ""}"
+                                                        style="background:${col.accent};"
+                                                        data-new-child-colour-accent="${col.accent}"
+                                                        data-new-child-colour-deep="${col.deep}"
+                                                        aria-label="Pick colour ${i+1}"></button>
+                                                    `).join("")}
+                                                  </div>
+                                                  <input type="hidden" name="childColourAccent" value="${KID_COLOUR_PALETTE[0].accent}" />
+                                                  <input type="hidden" name="childColourDeep" value="${KID_COLOUR_PALETTE[0].deep}" />
+                                                </div>
                                                 <div class="button-row">
                                                   <button class="action-button primary" type="submit">Add child</button>
                                                 </div>
@@ -3011,7 +3041,7 @@ document.body.addEventListener("click", async (event) => {
     return;
   }
 
-  // ── KID COLOUR SWATCH ─────────────────────────────────────────
+  // ── KID COLOUR SWATCH (existing kid) ─────────────────────────
   const colourSwatch = event.target.closest("[data-colour-kid]");
   if (colourSwatch && isParentSession()) {
     const kidId  = colourSwatch.dataset.colourKid;
@@ -3020,6 +3050,24 @@ document.body.addEventListener("click", async (event) => {
     updateKidColour(kidId, accent, deep);
     saveState();
     renderKidPage(currentKidId || getFamilyKids()[0]?.id);
+    return;
+  }
+
+  // ── NEW CHILD COLOUR SWATCH ────────────────────────────────────
+  const newChildSwatch = event.target.closest("[data-new-child-colour-accent]");
+  if (newChildSwatch) {
+    const accent = newChildSwatch.dataset.newChildColourAccent;
+    const deep   = newChildSwatch.dataset.newChildColourDeep;
+    // Update hidden inputs
+    const form = newChildSwatch.closest("form");
+    if (form) {
+      form.querySelector('[name="childColourAccent"]').value = accent;
+      form.querySelector('[name="childColourDeep"]').value   = deep;
+    }
+    // Update selected state
+    document.querySelectorAll("[data-new-child-colour-accent]").forEach(s => {
+      s.classList.toggle("colour-swatch--selected", s.dataset.newChildColourAccent === accent);
+    });
     return;
   }
 
@@ -3424,7 +3472,7 @@ document.body.addEventListener("submit", async (event) => {
     const pinOk = await verifyPin(pin, family.parentPin);
     if (!pinOk) { showToast("Incorrect login."); return; }
     // Migrate plain PIN to hash on first successful login
-    if (family.parentPin && family.parentPin.length <= 10) {
+    if (family.parentPin && !/^[0-9a-f]{64}$/.test(family.parentPin)) {
       family.parentPin = await hashPin(pin);
     }
     authStage = "login";
@@ -3491,7 +3539,7 @@ document.body.addEventListener("submit", async (event) => {
       return;
     }
     // Migrate plain PIN to hash
-    if (kidCandidate.kidPin && kidCandidate.kidPin.length <= 10) {
+    if (kidCandidate.kidPin && !/^[0-9a-f]{64}$/.test(kidCandidate.kidPin)) {
       kidCandidate.kidPin = await hashPin(kidPin);
       saveState();
     }
@@ -3551,12 +3599,14 @@ document.body.addEventListener("submit", async (event) => {
     const formData = new FormData(addChildForm);
     const childName = String(formData.get("childName") || "").trim();
     const childPin = String(formData.get("childPin") || "").trim();
+    const childColourAccent = String(formData.get("childColourAccent") || "").trim();
+    const childColourDeep = String(formData.get("childColourDeep") || "").trim();
     if (!childName || !childPin) return;
     if (!isValidKidPin(childPin)) {
       showToast("Child PIN must be exactly 4 digits.");
       return;
     }
-    addChild(childName, childPin);
+    addChild(childName, childPin, "", childColourAccent, childColourDeep);
     saveState();
     renderKidPage(currentKidId || getFamilyKids()[0]?.id);
     showToast("Child added.");

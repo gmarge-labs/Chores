@@ -2784,12 +2784,12 @@ button {
   letter-spacing: 0.01em;
   background:
     radial-gradient(circle at 18% 18%, rgba(255, 255, 255, 0.82), transparent 18%),
-    linear-gradient(180deg, #6f8fe9 0%, #7a95eb 32%, #8da0ea 62%, #a694d8 100%);
+    linear-gradient(180deg, #6ea8ff 0%, #78adff 24%, #879eff 48%, #9d8fff 68%, #b382f3 84%, #e78fd7 100%);
   box-shadow:
-    0 18px 34px rgba(72, 80, 150, 0.18),
+    0 18px 34px rgba(98, 112, 210, 0.2),
     inset 0 3px 0 rgba(255, 255, 255, 0.74),
-    inset 0 -10px 18px rgba(20, 70, 130, 0.1);
-  text-shadow: 0 3px 0 rgba(53, 61, 129, 0.24);
+    inset 0 -10px 18px rgba(86, 79, 170, 0.14);
+  text-shadow: 0 3px 0 rgba(83, 70, 158, 0.24);
   transition: transform 700ms ease, box-shadow 700ms ease, filter 700ms ease, opacity 700ms ease;
 }
 
@@ -2798,9 +2798,9 @@ button {
 .settings-switch-button.active {
   transform: translateY(-1px);
   box-shadow:
-    0 22px 38px rgba(72, 80, 150, 0.24),
+    0 22px 38px rgba(98, 112, 210, 0.26),
     inset 0 3px 0 rgba(255, 255, 255, 0.8),
-    inset 0 -12px 20px rgba(20, 70, 130, 0.12);
+    inset 0 -12px 20px rgba(86, 79, 170, 0.16);
   filter: saturate(1.05);
 }
 
@@ -2867,12 +2867,12 @@ button {
   font-weight: 900;
   background:
     radial-gradient(circle at 18% 18%, rgba(255, 255, 255, 0.78), transparent 18%),
-    linear-gradient(180deg, #6f8fe9 0%, #7a95eb 32%, #8da0ea 62%, #a694d8 100%);
+    linear-gradient(180deg, #6ea8ff 0%, #78adff 24%, #879eff 48%, #9d8fff 68%, #b382f3 84%, #e78fd7 100%);
   box-shadow:
-    0 12px 24px rgba(72, 80, 150, 0.18),
+    0 12px 24px rgba(98, 112, 210, 0.18),
     inset 0 3px 0 rgba(255, 255, 255, 0.72),
-    inset 0 -8px 16px rgba(20, 70, 130, 0.1);
-  text-shadow: 0 3px 0 rgba(53, 61, 129, 0.24);
+    inset 0 -8px 16px rgba(86, 79, 170, 0.12);
+  text-shadow: 0 3px 0 rgba(83, 70, 158, 0.24);
   transition: transform 700ms ease, box-shadow 700ms ease, filter 700ms ease, opacity 700ms ease;
 }
 
@@ -2882,9 +2882,9 @@ button {
   transform: translateY(-0.5px);
   filter: saturate(1.05);
   box-shadow:
-    0 16px 28px rgba(72, 80, 150, 0.24),
+    0 16px 28px rgba(98, 112, 210, 0.24),
     inset 0 3px 0 rgba(255, 255, 255, 0.78),
-    inset 0 -10px 18px rgba(20, 70, 130, 0.12);
+    inset 0 -10px 18px rgba(86, 79, 170, 0.15);
 }
 
 .family-controls-subpage {

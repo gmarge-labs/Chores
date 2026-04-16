@@ -99,6 +99,7 @@ function cloneEmptyState() {
 }
 
 function normalizeKid(kid) {
+  const fallbackDateKey = kid.lastTaskRefreshDate || getTodayDateKey();
   const normalizedTaskTemplates = Array.isArray(kid.taskTemplates)
     ? kid.taskTemplates
         .map((task) => normalizeTaskTemplate(task))
@@ -115,9 +116,9 @@ function normalizeKid(kid) {
     dollarRewardValue: Number.isFinite(Number(kid.dollarRewardValue)) ? Number(kid.dollarRewardValue) : 20,
     celebrationThreshold: Number.isFinite(Number(kid.celebrationThreshold)) ? Number(kid.celebrationThreshold) : 100,
     lastCelebratedThreshold: Number.isFinite(Number(kid.lastCelebratedThreshold)) ? Number(kid.lastCelebratedThreshold) : 0,
-    due: normalizeTaskInstances(kid.due),
-    awaiting: normalizeTaskInstances(kid.awaiting),
-    completed: normalizeTaskInstances(kid.completed),
+    due: normalizeTaskInstances(kid.due, fallbackDateKey),
+    awaiting: normalizeTaskInstances(kid.awaiting, fallbackDateKey),
+    completed: normalizeTaskInstances(kid.completed, fallbackDateKey),
     taskTemplates: normalizedTaskTemplates,
     rewards: Array.isArray(kid.rewards) ? kid.rewards : [],
     bonusPenalty: Array.isArray(kid.bonusPenalty) && kid.bonusPenalty.length
@@ -803,7 +804,7 @@ function normalizeTaskTemplate(task = {}) {
   return buildTaskTemplate(task, getTodayDateKey());
 }
 
-function normalizeTaskInstances(taskList) {
+function normalizeTaskInstances(taskList, fallbackDateKey = getTodayDateKey()) {
   return Array.isArray(taskList)
     ? taskList
         .map((task) => ({
@@ -815,7 +816,7 @@ function normalizeTaskInstances(taskList) {
           recurring: String(task.recurring || "daily").trim().toLowerCase(),
           time: String(task.time || "").trim(),
           customDate: String(task.customDate || "").trim(),
-          instanceDateKey: task.instanceDateKey || getTodayDateKey(),
+          instanceDateKey: task.instanceDateKey || fallbackDateKey,
         }))
         .filter((task) => task.title)
     : [];

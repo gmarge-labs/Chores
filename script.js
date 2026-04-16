@@ -1995,11 +1995,6 @@ function renderKidPage(kidId) {
     <div class="kid-shell ${escapeHtml(shellClass)}">
       <header class="kid-header">
         <div class="kid-profile-pill">
-          ${
-            parentFocusedNav
-              ? ""
-              : `<span class="profile-avatar-display avatar">${renderAvatar(kid)}</span>`
-          }
           <h1>${escapeHtml(pageTitle)}</h1>
         </div>
         <div class="view-switcher">

@@ -782,12 +782,12 @@ async function handleCreateFamilyAccount() {
   // Cloud signup (non-blocking — local account already works)
   if (cloudAuthEnabled && cloudModeEnabled) {
     cloudSignUp(familyName, parentName, parentEmail, parentPin, family.kids).then(function(cloudFamilyId) {
-      // Update local family id to match cloud
       family.id = cloudFamilyId;
       saveState({ skipCloud: true });
+      showToast("Account synced to cloud ✓");
     }).catch(function(err) {
-      console.warn("Cloud signup deferred:", err.message);
-      showToast("Account saved locally. Cloud sync will connect on next login.");
+      console.error("Cloud signup error:", err);
+      showToast("Cloud error: " + (err.message || "unknown error"));
     });
   }
 

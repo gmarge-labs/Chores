@@ -6031,3 +6031,16 @@ button {
   background: rgba(255,255,255,0.55);
   border-color: rgba(63,43,24,0.07);
 }
+
+/* â”€â”€ INLINE FORM ERRORS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.form-error-msg {
+  margin: 8px 0 0;
+  padding: 9px 14px;
+  border-radius: var(--radius-md);
+  background: rgba(235, 124, 141, 0.14);
+  border: 1.5px solid rgba(235, 124, 141, 0.4);
+  color: #c0394e;
+  font-size: 0.84rem;
+  font-weight: 700;
+  animation: rise-in 220ms ease both;
+}

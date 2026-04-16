@@ -174,7 +174,9 @@ function normalizeKid(kid) {
     lastCelebratedThreshold: Number.isFinite(Number(kid.lastCelebratedThreshold)) ? Number(kid.lastCelebratedThreshold) : 0,
     due: normalizeTaskInstances(kid.due, fallbackDateKey),
     awaiting: normalizeTaskInstances(kid.awaiting, fallbackDateKey),
-    completed: normalizeTaskInstances(kid.completed, fallbackDateKey),
+    completed: normalizeTaskInstances(kid.completed, fallbackDateKey).filter(
+      (t) => t.instanceDateKey === (kid.lastTaskRefreshDate || getTodayDateKey())
+    ),
     taskTemplates: normalizedTaskTemplates,
     rewards: Array.isArray(kid.rewards) ? kid.rewards : [],
     bonusPenalty: Array.isArray(kid.bonusPenalty) && kid.bonusPenalty.length
@@ -2879,6 +2881,91 @@ function triggerPointsBurst(pointsCard) {
   window.setTimeout(() => pointsCard.classList.remove("is-bursting"), 900);
 }
 
+
+// ── CUSTOM MODALS ──────────────────────────────────────
+function buildModalBubbles() {
+  return `
+    <span style="position:absolute;width:40px;height:40px;border-radius:50%;top:-12px;right:24px;
+      background:linear-gradient(145deg,var(--kid-accent),var(--kid-accent-deep));
+      opacity:0.55;animation:bubble-bounce 3s ease-in-out infinite;pointer-events:none;"></span>
+    <span style="position:absolute;width:22px;height:22px;border-radius:50%;bottom:18px;left:14px;
+      background:linear-gradient(145deg,#ffd77a,#b99cff);
+      opacity:0.45;animation:bubble-bounce 3.4s ease-in-out 0.8s infinite;pointer-events:none;"></span>
+  `;
+}
+
+function showAppConfirm(eyebrow, title, body, confirmLabel = "Confirm", isDanger = false) {
+  return new Promise((resolve) => {
+    const modal = document.createElement("div");
+    modal.className = "pin-modal";
+    modal.innerHTML = `
+      <div class="pin-card" style="text-align:left;max-width:380px;">
+        ${buildModalBubbles()}
+        <p class="eyebrow" style="position:relative;z-index:2;">${escapeHtml(eyebrow)}</p>
+        <h2 style="font-size:1.5rem;margin:0 0 8px;position:relative;z-index:2;">${escapeHtml(title)}</h2>
+        <p style="font-size:0.88rem;color:rgba(46,44,58,0.76);margin:0 0 20px;line-height:1.5;position:relative;z-index:2;">${escapeHtml(body)}</p>
+        <div class="button-row pin-actions" style="justify-content:flex-end;position:relative;z-index:2;">
+          <button class="action-button secondary" type="button" data-modal-cancel="true">Cancel</button>
+          <button class="action-button ${isDanger ? "danger" : "primary"}" type="button" data-modal-confirm="true">${escapeHtml(confirmLabel)}</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+    const cleanup = (val) => {
+      modal.classList.add("is-closing");
+      setTimeout(() => modal.remove(), 200);
+      resolve(val);
+    };
+    modal.querySelector("[data-modal-confirm]").onclick = () => cleanup(true);
+    modal.querySelector("[data-modal-cancel]").onclick  = () => cleanup(false);
+    modal.addEventListener("click", (e) => { if (e.target === modal) cleanup(false); });
+  });
+}
+
+function showAppEdit(eyebrow, title, fields, confirmLabel = "Save") {
+  return new Promise((resolve) => {
+    const modal = document.createElement("div");
+    modal.className = "pin-modal";
+    const fieldsHtml = fields.map(f => `
+      <div style="margin-bottom:12px;position:relative;z-index:2;">
+        <p class="eyebrow" style="margin-bottom:4px;">${escapeHtml(f.label)}</p>
+        <input class="pin-input" style="font-size:1rem;letter-spacing:0;text-align:left;min-height:48px;"
+          type="${f.type || "text"}" name="${f.name}" value="${escapeHtml(String(f.value || ""))}"
+          placeholder="${escapeHtml(f.placeholder || "")}" ${f.min !== undefined ? `min="${f.min}"` : ""} />
+      </div>
+    `).join("");
+    modal.innerHTML = `
+      <div class="pin-card" style="text-align:left;max-width:380px;">
+        ${buildModalBubbles()}
+        <p class="eyebrow" style="position:relative;z-index:2;">${escapeHtml(eyebrow)}</p>
+        <h2 style="font-size:1.5rem;margin:0 0 16px;position:relative;z-index:2;">${escapeHtml(title)}</h2>
+        <form id="app-edit-form">
+          ${fieldsHtml}
+          <div class="button-row pin-actions" style="justify-content:flex-end;position:relative;z-index:2;margin-top:8px;">
+            <button class="action-button secondary" type="button" data-modal-cancel="true">Cancel</button>
+            <button class="action-button primary" type="submit">${escapeHtml(confirmLabel)}</button>
+          </div>
+        </form>
+      </div>
+    `;
+    document.body.appendChild(modal);
+    const cleanup = (val) => {
+      modal.classList.add("is-closing");
+      setTimeout(() => modal.remove(), 200);
+      resolve(val);
+    };
+    modal.querySelector("[data-modal-cancel]").onclick = () => cleanup(null);
+    modal.querySelector("#app-edit-form").onsubmit = (e) => {
+      e.preventDefault();
+      const data = {};
+      fields.forEach(f => { data[f.name] = modal.querySelector(`[name="${f.name}"]`).value; });
+      cleanup(data);
+    };
+    modal.addEventListener("click", (e) => { if (e.target === modal) cleanup(null); });
+    setTimeout(() => modal.querySelector("input")?.focus(), 50);
+  });
+}
+
 document.body.addEventListener("click", async (event) => {
   const authButton = event.target.closest("[data-auth-view]");
   if (authButton && !state.session) {
@@ -3008,7 +3095,7 @@ document.body.addEventListener("click", async (event) => {
     const kidId = deleteKidButton.dataset.deleteKid;
     const kid = getKid(kidId);
     if (!kid) return;
-    const confirmed = window.confirm(`Remove ${kid.name}? This permanently deletes all their tasks, points, and rewards.`);
+    const confirmed = await showAppConfirm("Remove child", `Remove ${kid.name}?`, `This permanently deletes all of ${kid.name}’s tasks, points, rewards, and history. This cannot be undone.`, "Remove", true);
     if (!confirmed) return;
     const kidName = deleteKid(kidId);
     // If we were viewing this kid, go back to family home
@@ -3023,7 +3110,7 @@ document.body.addEventListener("click", async (event) => {
 
   const deleteFamilyButton = event.target.closest("[data-delete-family]");
   if (deleteFamilyButton && isParentSession()) {
-    const confirmed = window.confirm("Delete this family from this device? This cannot be undone.");
+    const confirmed = await showAppConfirm("Delete family", "Are you sure?", "This permanently deletes your family, all kids, tasks, points, and rewards from this device. This cannot be undone.", "Delete forever", true);
     if (!confirmed) return;
     const deleted = deleteCurrentFamilyFromDevice();
     if (!deleted) return;
@@ -3039,13 +3126,13 @@ document.body.addEventListener("click", async (event) => {
     const kid = getKid(currentKidId);
     const tmpl = kid?.taskTemplates.find(t => t.id === templateId);
     if (!tmpl) return;
-    const newTitle = window.prompt("Task title:", tmpl.title);
-    if (newTitle === null) return;
-    const newPoints = window.prompt("Points:", tmpl.points);
-    if (newPoints === null) return;
-    const newTime = window.prompt("Time (e.g. 8:00 AM):", tmpl.time);
-    if (newTime === null) return;
-    editTask(currentKidId, templateId, newTitle, newPoints, newTime);
+    const data = await showAppEdit("Edit task", tmpl.title, [
+      { name: "title",  label: "Title",  value: tmpl.title,  placeholder: "Task title" },
+      { name: "points", label: "Points", value: tmpl.points, type: "number", min: 1, placeholder: "Points" },
+      { name: "time",   label: "Time",   value: tmpl.time,   placeholder: "e.g. 8:00 AM" },
+    ]);
+    if (!data) return;
+    editTask(currentKidId, templateId, data.title, data.points, data.time);
     saveState();
     renderKidPage(currentKidId);
     showToast("Task updated.");
@@ -3059,7 +3146,7 @@ document.body.addEventListener("click", async (event) => {
     const kid = getKid(currentKidId);
     const tmpl = kid?.taskTemplates.find(t => t.id === templateId);
     if (!tmpl) return;
-    const confirmed = window.confirm(`Delete task "${tmpl.title}"? This removes it and today's instance.`);
+    const confirmed = await showAppConfirm("Delete task", tmpl.title, "This removes the task and today’s instance. This cannot be undone.", "Delete", true);
     if (!confirmed) return;
     deleteTask(currentKidId, templateId);
     saveState();
@@ -3076,11 +3163,12 @@ document.body.addEventListener("click", async (event) => {
     const kid = getKid(kidId);
     const reward = kid?.rewards.find(r => r.id === rewardId);
     if (!reward) return;
-    const newTitle = window.prompt("Reward title:", reward.title);
-    if (newTitle === null) return;
-    const newCost = window.prompt("Points cost:", reward.cost);
-    if (newCost === null) return;
-    editReward(kidId, rewardId, newTitle, newCost);
+    const data = await showAppEdit("Edit reward", reward.title, [
+      { name: "title", label: "Title",       value: reward.title, placeholder: "Reward title" },
+      { name: "cost",  label: "Points cost", value: reward.cost,  type: "number", min: 1, placeholder: "Points" },
+    ]);
+    if (!data) return;
+    editReward(kidId, rewardId, data.title, data.cost);
     saveState();
     renderKidPage(currentKidId || getFamilyKids()[0]?.id);
     showToast("Reward updated.");
@@ -3095,7 +3183,7 @@ document.body.addEventListener("click", async (event) => {
     const kid = getKid(kidId);
     const reward = kid?.rewards.find(r => r.id === rewardId);
     if (!reward) return;
-    const confirmed = window.confirm(`Delete reward "${reward.title}"?`);
+    const confirmed = await showAppConfirm("Delete reward", reward.title, "This reward will be removed permanently.", "Delete", true);
     if (!confirmed) return;
     deleteReward(kidId, rewardId);
     saveState();

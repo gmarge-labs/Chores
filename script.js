@@ -294,6 +294,7 @@ function renderFamilyControlsSwitcher(activeSection = "") {
     { key: "dollar-rate", label: "Dollar Rate" },
     { key: "celebration-threshold", label: "Celebration Threshold" },
     { key: "kid-colours", label: "Edit Kid Colours" },
+    { key: "delete-kid", label: "Remove Child" },
     { key: "delete-family", label: "Delete Family" },
   ];
 
@@ -324,6 +325,7 @@ function getFamilyControlsLabel(sectionKey = "") {
     "add-child": "Add Child",
     "celebration-threshold": "Celebration Threshold",
     "kid-colours": "Edit Kid Colours",
+    "delete-kid": "Remove Child",
     "delete-family": "Delete Family",
   };
 
@@ -1366,6 +1368,17 @@ function resetAllTasksAndPoints() {
     kid.lastMissedCheckDate = getTodayDateKey();
     kid.lastTaskRefreshDate = getTodayDateKey();
   });
+}
+
+function deleteKid(kidId) {
+  const family = getCurrentFamily();
+  if (!family) return false;
+  const kid = family.kids.find(k => k.id === kidId);
+  if (!kid) return false;
+  family.kids = family.kids.filter(k => k.id !== kidId);
+  // Clean up favour claims for this kid
+  family.favorClaims = (family.favorClaims || []).filter(c => c.kidId !== kidId);
+  return kid.name;
 }
 
 function deleteCurrentFamilyFromDevice() {
@@ -2702,6 +2715,25 @@ function renderKidPage(kidId) {
                                           : ""
                                       }
                                       ${
+                                        currentFamilyControlsSection === "delete-kid"
+                                          ? `
+                                            <section class="settings-mini-section family-controls-page">
+                                              <p class="eyebrow">Remove child</p>
+                                              <p style="font-size:0.85rem;color:var(--muted);margin-bottom:14px;">Removing a child permanently deletes all their tasks, points, and rewards.</p>
+                                              ${getFamilyKids().length ? getFamilyKids().map(child => `
+                                                <div class="template-row">
+                                                  <div class="template-row-info">
+                                                    <span class="template-row-title">${escapeHtml(child.name)}</span>
+                                                    <span class="template-row-meta">${escapeHtml(child.points)} points</span>
+                                                  </div>
+                                                  <button class="action-button danger small-action-button" type="button" data-delete-kid="${escapeHtml(child.id)}">Remove</button>
+                                                </div>
+                                              `).join("") : `<p class="empty">No children added yet.</p>`}
+                                            </section>
+                                          `
+                                          : ""
+                                      }
+                                      ${
                                         currentFamilyControlsSection === "delete-family"
                                           ? `
                                             <section class="settings-mini-section threshold-section family-controls-page">
@@ -2968,6 +3000,24 @@ document.body.addEventListener("click", async (event) => {
     saveState();
     renderKidPage(currentKidId);
     showToast("Tasks and points reset.");
+    return;
+  }
+
+  const deleteKidButton = event.target.closest("[data-delete-kid]");
+  if (deleteKidButton && isParentSession()) {
+    const kidId = deleteKidButton.dataset.deleteKid;
+    const kid = getKid(kidId);
+    if (!kid) return;
+    const confirmed = window.confirm(`Remove ${kid.name}? This permanently deletes all their tasks, points, and rewards.`);
+    if (!confirmed) return;
+    const kidName = deleteKid(kidId);
+    // If we were viewing this kid, go back to family home
+    if (currentKidId === kidId) {
+      currentKidId = getFamilyKids()[0]?.id || null;
+    }
+    saveState();
+    showToast(`${kidName} has been removed.`);
+    renderKidPage(currentKidId || getFamilyKids()[0]?.id);
     return;
   }
 

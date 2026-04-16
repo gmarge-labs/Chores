@@ -1,7 +1,7 @@
 const STORAGE_KEY = "chores-multi-family-state-v1";
 const cloudConfig = window.CHORES_SUPABASE_CONFIG || {};
 const cloudModeEnabled = Boolean(cloudConfig.enabled && cloudConfig.url && cloudConfig.anonKey);
-const cloudAuthEnabled = false;
+const cloudAuthEnabled = true;
 const supabaseClient = cloudModeEnabled && window.supabase?.createClient
   ? window.supabase.createClient(cloudConfig.url, cloudConfig.anonKey, {
       auth: {
@@ -765,6 +765,7 @@ async function handleCreateFamilyAccount() {
   const hashedParentPin = await hashPin(parentPin);
   for (const kid of kids) { kid.kidPin = await hashPin(kid.kidPin); }
   const family = createFamily({ familyName, parentName, parentEmail, parentPin: hashedParentPin, kids });
+  family.id = createId("family"); // ensure stable local id before cloud
   state.families.push(family);
   authAccountReady = true;
   authAccountJustCreated = true;
@@ -776,7 +777,20 @@ async function handleCreateFamilyAccount() {
   currentKidView = "dashboard";
   currentFamilyMode = false;
   currentAssignedKids = [];
-  saveState();
+  saveState({ skipCloud: true });
+
+  // Cloud signup (non-blocking — local account already works)
+  if (cloudAuthEnabled && cloudModeEnabled) {
+    cloudSignUp(familyName, parentName, parentEmail, parentPin, family.kids).then(function(cloudFamilyId) {
+      // Update local family id to match cloud
+      family.id = cloudFamilyId;
+      saveState({ skipCloud: true });
+    }).catch(function(err) {
+      console.warn("Cloud signup deferred:", err.message);
+      showToast("Account saved locally. Cloud sync will connect on next login.");
+    });
+  }
+
   showToast("Account created. Log in as parent to continue.");
   renderAuthHome();
 }
@@ -2651,7 +2665,7 @@ document.body.addEventListener("click", async (event) => {
       toStatus,
       Number(taskMoveButton.dataset.taskIndex)
     );
-    saveState();
+    saveState({ kidId: currentKidId });
     renderKidPage(currentKidId);
     return;
   }
@@ -2670,7 +2684,7 @@ document.body.addEventListener("click", async (event) => {
       return;
     }
     showToast(`${result.kidName} successfully claimed ${result.rewardTitle}.`);
-    saveState();
+    saveState({ kidId: currentKidId });
     renderKidPage(currentKidId);
     return;
   }
@@ -2904,20 +2918,37 @@ document.body.addEventListener("submit", async (event) => {
     const email = String(formData.get("parentEmail") || "").trim().toLowerCase();
     const pin = String(formData.get("parentPin") || "").trim();
 
-    const family = state.families.find((entry) => entry.parentEmailLower === email && entry.parentPin === pin);
-    if (!family) {
-      showToast("Incorrect parent login.");
-      return;
+    // Try cloud login first, fall back to local
+    if (cloudAuthEnabled && cloudModeEnabled) {
+      try {
+        showToast("Signing in…");
+        const cloudFamily = await cloudLogin(email, pin);
+        if (cloudFamily) {
+          upsertFamilyInState(cloudFamily);
+          authStage = "login"; authView = "parent"; authAccountJustCreated = false;
+          state.session = { familyId: cloudFamily.id, role: "parent" };
+          currentKidId = null; currentKidView = "dashboard"; currentFamilyMode = false; currentAssignedKids = [];
+          saveState({ skipCloud: true });
+          renderApp();
+          return;
+        }
+      } catch (cloudErr) {
+        console.warn("Cloud login failed, trying local:", cloudErr.message);
+      }
     }
-
+    // Local fallback
+    const family = state.families.find((entry) => entry.parentEmailLower === email);
+    if (!family) { showToast("Incorrect login."); return; }
+    const pinOk = await verifyPin(pin, family.parentPin);
+    if (!pinOk) { showToast("Incorrect login."); return; }
+    if (family.parentPin && !/^[0-9a-f]{64}$/.test(family.parentPin)) {
+      family.parentPin = await hashPin(pin);
+      saveState({ skipCloud: true });
+    }
+    authStage = "login"; authView = "parent"; authAccountJustCreated = false;
     state.session = { familyId: family.id, role: "parent" };
-    authStage = "login";
-    authAccountJustCreated = false;
-    currentKidId = null;
-    currentKidView = "dashboard";
-    currentFamilyMode = false;
-    currentAssignedKids = [];
-    saveState();
+    currentKidId = null; currentKidView = "dashboard"; currentFamilyMode = false; currentAssignedKids = [];
+    saveState({ skipCloud: true });
     renderApp();
     return;
   }
@@ -2929,15 +2960,35 @@ document.body.addEventListener("submit", async (event) => {
     const email = String(formData.get("username") || "").trim().toLowerCase();
     const pin = String(formData.get("password") || "").trim();
 
+    // Try cloud login first, fall back to local
+    if (cloudAuthEnabled && cloudModeEnabled) {
+      try {
+        showToast("Signing in…");
+        const cloudFamily = await cloudLogin(email, pin);
+        if (cloudFamily) {
+          upsertFamilyInState(cloudFamily);
+          authStage = "login"; authView = "parent"; authAccountJustCreated = false;
+          state.session = { familyId: cloudFamily.id, role: "parent" };
+          currentKidId = null; currentKidView = "dashboard"; currentFamilyMode = false; currentAssignedKids = [];
+          saveState({ skipCloud: true });
+          renderApp();
+          return;
+        }
+      } catch (cloudErr) {
+        // Cloud failed - try local fallback
+        console.warn("Cloud login failed, trying local:", cloudErr.message);
+      }
+    }
+    // Local fallback
     const family = state.families.find((entry) => entry.parentEmailLower === email);
     if (!family) { showToast("Incorrect login."); return; }
     const pinOk = await verifyPin(pin, family.parentPin);
     if (!pinOk) { showToast("Incorrect login."); return; }
-    if (family.parentPin && !/^[0-9a-f]{64}$/.test(family.parentPin)) { family.parentPin = await hashPin(pin); saveState(); }
+    if (family.parentPin && !/^[0-9a-f]{64}$/.test(family.parentPin)) { family.parentPin = await hashPin(pin); saveState({ skipCloud: true }); }
     authStage = "login"; authView = "parent"; authAccountJustCreated = false;
     state.session = { familyId: family.id, role: "parent" };
     currentKidId = null; currentKidView = "dashboard"; currentFamilyMode = false; currentAssignedKids = [];
-    saveState(); renderApp(); return;
+    saveState({ skipCloud: true }); renderApp(); return;
   }
 
   const resetPasscodeForm = event.target.closest("#reset-passcode-form");
@@ -3151,3 +3202,370 @@ renderApp();
   window.addEventListener("offline", showOfflineBanner);
   window.addEventListener("online", function() { hideOfflineBanner(); showToast("Back online \u2713"); });
 })();
+
+// ============================================================
+// CLOUD SYNC LAYER
+// Supabase is source of truth. localStorage is cache.
+// ============================================================
+
+// ── WRITE QUEUE ───────────────────────────────────────────────
+// Serialises all cloud writes so concurrent saves don't race
+let _writeQueue = Promise.resolve();
+function enqueueWrite(fn) {
+  _writeQueue = _writeQueue.then(fn).catch(function(err) {
+    console.warn("Cloud write failed (will retry on next save):", err.message || err);
+  });
+  return _writeQueue;
+}
+
+// ── HELPERS ───────────────────────────────────────────────────
+function todayIso() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function kidToRow(kid, familyId) {
+  return {
+    id: kid.id,
+    family_id: familyId,
+    name: kid.name,
+    avatar: kid.avatar || "",
+    accent_colour: kid.accentColour || "#6dafff",
+    accent_colour_deep: kid.accentColourDeep || "#3f84db",
+    kid_pin_hash: kid.kidPin || "",
+    points: Number(kid.points) || 0,
+    points_per_dollar_reward: Number(kid.pointsPerDollarReward) || 100,
+    dollar_reward_value: Number(kid.dollarRewardValue) || 20,
+    celebration_threshold: Number(kid.celebrationThreshold) || 100,
+    last_celebrated_threshold: Number(kid.lastCelebratedThreshold) || 0,
+    missed_days_in_a_row: Number(kid.missedDaysInARow) || 0,
+    last_missed_check_date: kid.lastMissedCheckDate || null,
+    last_task_refresh_date: kid.lastTaskRefreshDate || todayIso(),
+  };
+}
+
+function rowToKid(row, taskRows, rewardRows, adjustmentRows, reasonRows, templateRows, historyRows) {
+  var tasks = (taskRows || []).filter(function(t) { return t.kid_id === row.id; });
+  var templates = (templateRows || []).filter(function(t) { return t.kid_id === row.id; });
+  var rewards = (rewardRows || []).filter(function(r) { return r.kid_id === row.id; });
+  var adjustments = (adjustmentRows || []).filter(function(a) { return a.kid_id === row.id; });
+  var reasons = (reasonRows || []).filter(function(r) { return r.kid_id === row.id; });
+  var history = (historyRows || []).filter(function(h) { return h.kid_id === row.id; });
+  var today = getTodayDateKey();
+
+  return normalizeKid({
+    id: row.id,
+    name: row.name,
+    kidPin: row.kid_pin_hash || "",
+    avatar: row.avatar || "",
+    accentColour: row.accent_colour || "#6dafff",
+    accentColourDeep: row.accent_colour_deep || "#3f84db",
+    points: row.points || 0,
+    pointsPerDollarReward: row.points_per_dollar_reward || 100,
+    dollarRewardValue: row.dollar_reward_value || 20,
+    celebrationThreshold: row.celebration_threshold || 100,
+    lastCelebratedThreshold: row.last_celebrated_threshold || 0,
+    missedDaysInARow: row.missed_days_in_a_row || 0,
+    lastMissedCheckDate: row.last_missed_check_date || null,
+    lastTaskRefreshDate: row.last_task_refresh_date || today,
+    due: tasks.filter(function(t) { return t.status === "due" && t.instance_date === today; }).map(taskRowToInstance),
+    awaiting: tasks.filter(function(t) { return t.status === "awaiting" && t.instance_date === today; }).map(taskRowToInstance),
+    completed: tasks.filter(function(t) { return t.status === "completed" && t.instance_date === today; }).map(taskRowToInstance),
+    taskTemplates: templates.map(templateRowToTemplate),
+    rewards: rewards.map(function(r) { return { id: r.id, title: r.title, cost: r.cost }; }),
+    bonusPenalty: buildBonusPenaltyFromAdjustments(adjustments),
+    bonusReasons: reasons.filter(function(r) { return r.reason_type === "bonus"; }).map(function(r) { return r.reason; }),
+    penaltyReasons: reasons.filter(function(r) { return r.reason_type === "penalty"; }).map(function(r) { return r.reason; }),
+    pointsHistory: history.slice(-500).map(function(h) {
+      return { id: h.id, changeType: h.change_type, pointsDelta: h.points_delta, pointsAfter: h.points_after, description: h.description, createdAt: h.created_at };
+    }),
+  });
+}
+
+function taskRowToInstance(row) {
+  return {
+    id: row.id,
+    templateId: row.template_id || null,
+    title: row.title,
+    detail: row.detail || "",
+    points: row.points || 0,
+    recurring: row.recurring || "daily",
+    time: row.time_label || "",
+    customDate: row.custom_date || "",
+    instanceDateKey: row.instance_date || getTodayDateKey(),
+  };
+}
+
+function templateRowToTemplate(row) {
+  return {
+    id: row.id,
+    title: row.title,
+    points: row.points || 0,
+    recurring: row.recurring || "daily",
+    time: row.time_label || "",
+    customDate: row.custom_date || "",
+    startDateKey: row.start_date_key || getTodayDateKey(),
+    isActive: row.is_active !== false,
+  };
+}
+
+function buildBonusPenaltyFromAdjustments(adjustments) {
+  var today = getTodayDateKey();
+  var bonus = adjustments.filter(function(a) { return a.adjustment_type === "bonus" && a.date_key === today; }).pop();
+  var penalty = adjustments.filter(function(a) { return a.adjustment_type === "penalty" && a.date_key === today; }).pop();
+  return [
+    { type: "bonus", title: bonus ? bonus.display_value : "+0 points", value: bonus ? bonus.display_value : "+0 points", reason: bonus ? (bonus.reason || "") : "", dateKey: bonus ? today : null, createdAt: bonus ? bonus.created_at : null },
+    { type: "penalty", title: penalty ? penalty.display_value : "-0 points", value: penalty ? penalty.display_value : "-0 points", reason: penalty ? (penalty.reason || "") : "", dateKey: penalty ? today : null, createdAt: penalty ? penalty.created_at : null },
+  ];
+}
+
+// ── PULL: fetch entire family from Supabase ───────────────────
+async function pullFamilyFromCloud(familyId) {
+  if (!supabaseClient) throw new Error("Supabase not configured");
+
+  var [familyRes, kidsRes, settingsRes] = await Promise.all([
+    supabaseClient.from("families").select("*").eq("id", familyId).single(),
+    supabaseClient.from("kids").select("*").eq("family_id", familyId).order("created_at"),
+    supabaseClient.from("family_settings").select("*").eq("family_id", familyId).maybeSingle(),
+  ]);
+
+  if (familyRes.error) throw familyRes.error;
+  if (kidsRes.error) throw kidsRes.error;
+
+  var kidIds = (kidsRes.data || []).map(function(k) { return k.id; });
+  var taskRows = [], templateRows = [], rewardRows = [], adjustmentRows = [], reasonRows = [], historyRows = [], claimRows = [];
+
+  if (kidIds.length) {
+    var today = getTodayDateKey();
+    var results = await Promise.all([
+      supabaseClient.from("tasks").select("*").in("kid_id", kidIds).eq("instance_date", today),
+      supabaseClient.from("task_templates").select("*").in("kid_id", kidIds).eq("is_active", true),
+      supabaseClient.from("rewards").select("*").in("kid_id", kidIds),
+      supabaseClient.from("adjustments").select("*").in("kid_id", kidIds).eq("date_key", today),
+      supabaseClient.from("reason_lists").select("*").in("kid_id", kidIds),
+      supabaseClient.from("points_history").select("*").in("kid_id", kidIds).order("created_at").limit(500),
+    ]);
+    taskRows       = results[0].data || [];
+    templateRows   = results[1].data || [];
+    rewardRows     = results[2].data || [];
+    adjustmentRows = results[3].data || [];
+    reasonRows     = results[4].data || [];
+    historyRows    = results[5].data || [];
+  }
+
+  var claimsRes = await supabaseClient.from("favour_claims").select("*").eq("family_id", familyId).order("claimed_at", { ascending: false }).limit(20);
+  claimRows = claimsRes.data || [];
+
+  var family = normalizeFamily({
+    id: familyRes.data.id,
+    familyName: familyRes.data.family_name,
+    parentName: (settingsRes.data && settingsRes.data.parent_name) || "Parent",
+    parentEmail: state.families.find(function(f) { return f.id === familyId; })?.parentEmail || "",
+    parentEmailLower: state.families.find(function(f) { return f.id === familyId; })?.parentEmailLower || "",
+    parentPin: (settingsRes.data && settingsRes.data.parent_pin_hash) || "",
+    createdAt: familyRes.data.created_at,
+    kids: (kidsRes.data || []).map(function(row) {
+      return rowToKid(row, taskRows, rewardRows, adjustmentRows, reasonRows, templateRows, historyRows);
+    }),
+    favorClaims: claimRows.map(function(c) {
+      return { id: c.id, kidId: c.kid_id, kidName: c.kid_name, rewardId: c.reward_id, rewardTitle: c.reward_title, cost: c.cost, claimedAt: c.claimed_at };
+    }),
+  });
+
+  return family;
+}
+
+// ── PUSH: write entire family state to Supabase ───────────────
+async function pushFamilyToCloud(family) {
+  if (!supabaseClient) return;
+
+  // 1. Upsert family row
+  await supabaseClient.from("families").upsert({ id: family.id, family_name: family.familyName });
+
+  // 2. Upsert family settings (pin hash, parent name)
+  await supabaseClient.from("family_settings").upsert({
+    family_id: family.id,
+    parent_pin_hash: family.parentPin || "",
+    parent_name: family.parentName || "Parent",
+  }, { onConflict: "family_id" });
+
+  // 3. Upsert kids
+  if (family.kids.length) {
+    await supabaseClient.from("kids").upsert(
+      family.kids.map(function(k) { return kidToRow(k, family.id); }),
+      { onConflict: "id" }
+    );
+  }
+
+  // 4. Delete kids removed locally
+  var remoteKidsRes = await supabaseClient.from("kids").select("id").eq("family_id", family.id);
+  var remoteIds = (remoteKidsRes.data || []).map(function(r) { return r.id; });
+  var localIds = family.kids.map(function(k) { return k.id; });
+  var toDelete = remoteIds.filter(function(id) { return !localIds.includes(id); });
+  if (toDelete.length) {
+    await supabaseClient.from("kids").delete().in("id", toDelete);
+  }
+
+  // 5. For each kid — upsert templates, today's tasks, rewards
+  var today = getTodayDateKey();
+  for (var i = 0; i < family.kids.length; i++) {
+    var kid = family.kids[i];
+
+    // Task templates
+    if (kid.taskTemplates.length) {
+      await supabaseClient.from("task_templates").upsert(
+        kid.taskTemplates.map(function(t) {
+          return { id: t.id, kid_id: kid.id, title: t.title, points: t.points, recurring: t.recurring, time_label: t.time, custom_date: t.customDate || null, start_date_key: t.startDateKey || today, is_active: true };
+        }),
+        { onConflict: "id" }
+      );
+    }
+
+    // Delete removed templates
+    var remoteTplRes = await supabaseClient.from("task_templates").select("id").eq("kid_id", kid.id);
+    var remoteTplIds = (remoteTplRes.data || []).map(function(r) { return r.id; });
+    var localTplIds  = kid.taskTemplates.map(function(t) { return t.id; });
+    var tplToDelete  = remoteTplIds.filter(function(id) { return !localTplIds.includes(id); });
+    if (tplToDelete.length) {
+      await supabaseClient.from("task_templates").delete().in("id", tplToDelete);
+    }
+
+    // Today's task instances — delete and re-insert
+    await supabaseClient.from("tasks").delete().eq("kid_id", kid.id).eq("instance_date", today);
+    var allTasks = [
+      ...kid.due.map(function(t) { return Object.assign({}, t, { status: "due" }); }),
+      ...kid.awaiting.map(function(t) { return Object.assign({}, t, { status: "awaiting" }); }),
+      ...kid.completed.map(function(t) { return Object.assign({}, t, { status: "completed" }); }),
+    ];
+    if (allTasks.length) {
+      await supabaseClient.from("tasks").insert(
+        allTasks.map(function(t) {
+          return { id: t.id, kid_id: kid.id, template_id: t.templateId || null, title: t.title, detail: t.detail || "", points: t.points, recurring: t.recurring || "daily", time_label: t.time || "", custom_date: t.customDate || null, instance_date: today, status: t.status };
+        })
+      );
+    }
+
+    // Rewards
+    if (kid.rewards.length) {
+      await supabaseClient.from("rewards").upsert(
+        kid.rewards.map(function(r) { return { id: r.id, kid_id: kid.id, title: r.title, cost: r.cost }; }),
+        { onConflict: "id" }
+      );
+    }
+    var remoteRewRes = await supabaseClient.from("rewards").select("id").eq("kid_id", kid.id);
+    var remoteRewIds = (remoteRewRes.data || []).map(function(r) { return r.id; });
+    var localRewIds  = kid.rewards.map(function(r) { return r.id; });
+    var rewToDelete  = remoteRewIds.filter(function(id) { return !localRewIds.includes(id); });
+    if (rewToDelete.length) {
+      await supabaseClient.from("rewards").delete().in("id", rewToDelete);
+    }
+  }
+}
+
+// ── PUSH SINGLE KID: fast path for task moves & points ────────
+async function pushKidToCloud(familyId, kid) {
+  if (!supabaseClient) return;
+  var today = getTodayDateKey();
+
+  // Update kid row
+  await supabaseClient.from("kids").upsert(kidToRow(kid, familyId), { onConflict: "id" });
+
+  // Replace today's tasks
+  await supabaseClient.from("tasks").delete().eq("kid_id", kid.id).eq("instance_date", today);
+  var allTasks = [
+    ...kid.due.map(function(t) { return Object.assign({}, t, { status: "due" }); }),
+    ...kid.awaiting.map(function(t) { return Object.assign({}, t, { status: "awaiting" }); }),
+    ...kid.completed.map(function(t) { return Object.assign({}, t, { status: "completed" }); }),
+  ];
+  if (allTasks.length) {
+    await supabaseClient.from("tasks").insert(
+      allTasks.map(function(t) {
+        return { id: t.id, kid_id: kid.id, template_id: t.templateId || null, title: t.title, detail: t.detail || "", points: t.points, recurring: t.recurring || "daily", time_label: t.time || "", custom_date: t.customDate || null, instance_date: today, status: t.status };
+      })
+    );
+  }
+
+  // Append any new points history entries (just insert, don't delete old)
+  var recentHistory = (kid.pointsHistory || []).slice(-5);
+  if (recentHistory.length) {
+    await supabaseClient.from("points_history").upsert(
+      recentHistory.map(function(h) {
+        return { id: h.id, kid_id: kid.id, change_type: h.changeType, points_delta: h.pointsDelta, points_after: h.pointsAfter, description: h.description || "", created_at: h.createdAt };
+      }),
+      { onConflict: "id", ignoreDuplicates: true }
+    );
+  }
+}
+
+// ── CLOUD SAVE: called after every state mutation ─────────────
+function cloudSave(kidId) {
+  if (!cloudAuthEnabled || !cloudModeEnabled || !supabaseClient) return;
+  var family = getCurrentFamily();
+  if (!family) return;
+
+  if (kidId) {
+    var kid = getKid(kidId);
+    if (kid) {
+      enqueueWrite(function() { return pushKidToCloud(family.id, kid); });
+      return;
+    }
+  }
+  enqueueWrite(function() { return pushFamilyToCloud(family); });
+}
+
+// ── CLOUD SIGNUP: create account in Supabase ─────────────────
+async function cloudSignUp(familyName, parentName, parentEmail, parentPin, kids) {
+  if (!supabaseClient) throw new Error("Supabase not configured");
+
+  var authPwd = "chores::" + parentEmail.toLowerCase().trim() + "::" + parentPin + "::v2";
+  var signUpRes = await supabaseClient.auth.signUp({
+    email: parentEmail,
+    password: authPwd,
+    options: { data: { parent_name: parentName, family_name: familyName } },
+  });
+
+  if (signUpRes.error) throw signUpRes.error;
+
+  var user = signUpRes.data.session ? signUpRes.data.session.user : null;
+  if (!user) {
+    // Email confirmation required - sign in instead
+    var signInRes = await supabaseClient.auth.signInWithPassword({ email: parentEmail, password: authPwd });
+    if (signInRes.error) throw new Error("Account created but needs email confirmation. Please confirm your email then log in.");
+    user = signInRes.data.user;
+  }
+
+  // Create family row
+  var familyRes = await supabaseClient.from("families").insert({ family_name: familyName }).select("id").single();
+  if (familyRes.error) throw familyRes.error;
+  var familyId = familyRes.data.id;
+
+  // Create membership
+  await supabaseClient.from("parent_memberships").insert({ family_id: familyId, user_id: user.id, parent_name: parentName });
+
+  // Store pin hash in settings
+  await supabaseClient.from("family_settings").insert({ family_id: familyId, parent_pin_hash: parentPin, parent_name: parentName });
+
+  // Create kids
+  if (kids.length) {
+    await supabaseClient.from("kids").insert(kids.map(function(k, i) { return kidToRow(k, familyId); }));
+  }
+
+  return familyId;
+}
+
+// ── CLOUD LOGIN: sign in and pull family ──────────────────────
+async function cloudLogin(parentEmail, parentPin) {
+  if (!supabaseClient) throw new Error("Supabase not configured");
+
+  var authPwd = "chores::" + parentEmail.toLowerCase().trim() + "::" + parentPin + "::v2";
+  var signInRes = await supabaseClient.auth.signInWithPassword({ email: parentEmail, password: authPwd });
+  if (signInRes.error) throw signInRes.error;
+
+  var userId = signInRes.data.user.id;
+
+  // Get family_id from memberships
+  var membershipRes = await supabaseClient.from("parent_memberships").select("family_id").eq("user_id", userId).single();
+  if (membershipRes.error) throw membershipRes.error;
+
+  var familyId = membershipRes.data.family_id;
+  return await pullFamilyFromCloud(familyId);
+}

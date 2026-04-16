@@ -786,8 +786,15 @@ async function handleCreateFamilyAccount() {
       saveState({ skipCloud: true });
       showToast("Account synced to cloud ✓");
     }).catch(function(err) {
-      console.error("Cloud signup error:", err);
-      showToast("Cloud error: " + (err.message || "unknown error"));
+      console.error("Cloud signup full error:", JSON.stringify(err), err.message, err.status, err.code);
+      // Show longer-lasting error
+      var msg = "Cloud sync failed: " + (err.message || JSON.stringify(err) || "unknown");
+      var el = document.createElement("div");
+      el.className = "pin-toast";
+      el.style.cssText = "position:fixed;bottom:80px;left:50%;transform:translateX(-50%);z-index:999;background:#333;color:#fff;padding:12px 20px;border-radius:12px;font-size:0.85rem;max-width:90vw;text-align:center;";
+      el.textContent = msg;
+      document.body.appendChild(el);
+      setTimeout(function() { el.remove(); }, 8000);
     });
   }
 

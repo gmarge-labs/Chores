@@ -31,7 +31,7 @@ function createId(prefix) {
   return `${prefix}-${Math.random().toString(36).slice(2, 10)}-${Date.now().toString(36)}`;
 }
 
-// ── PIN HASHING (PBKDF2) ──────────────────────────────────────
+// \u2500\u2500 PIN HASHING (PBKDF2) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 async function hashPin(pin) {
   const enc = new TextEncoder();
   const keyMaterial = await crypto.subtle.importKey("raw", enc.encode(pin), "PBKDF2", false, ["deriveBits"]);
@@ -810,8 +810,8 @@ function showThresholdCelebration(kid, threshold) {
   celebration.innerHTML = `
     <div class="celebration-card">
       <div class="celebration-emojis" aria-hidden="true">
-        <span>🎉</span><span>⭐</span><span>✨</span><span>🏆</span><span>💫</span><span>🌟</span>
-        <span>🎊</span><span>⭐</span><span>✨</span><span>🏅</span><span>💥</span><span>🌈</span>
+        <span>\uD83C\uDF89</span><span>\u2B50</span><span>\u2728</span><span>\uD83C\uDFC6</span><span>\uD83D\uDCAB</span><span>\uD83C\uDF1F</span>
+        <span>\uD83C\uDF8A</span><span>\u2B50</span><span>\u2728</span><span>\uD83C\uDFC5</span><span>\uD83D\uDCA5</span><span>\uD83C\uDF08</span>
       </div>
       <p class="eyebrow">Threshold reached</p>
       <h2>${escapeHtml(kid.name)} hit ${escapeHtml(threshold)} points!</h2>
@@ -1107,10 +1107,10 @@ function buildTaskDetail(recurring, time, customDateLabel = "") {
     "custom-date": customDateLabel || "Custom date",
   };
 
-  return `${labels[recurring] || "Daily"} • ${time}`;
+  return `${labels[recurring] || "Daily"} \u2022 ${time}`;
 }
 
-// ── POINTS HISTORY ───────────────────────────────────────────
+// \u2500\u2500 POINTS HISTORY \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 function addPointsHistory(kid, changeType, pointsDelta, description) {
   if (!Array.isArray(kid.pointsHistory)) kid.pointsHistory = [];
   kid.pointsHistory.push({
@@ -1124,7 +1124,7 @@ function addPointsHistory(kid, changeType, pointsDelta, description) {
   if (kid.pointsHistory.length > 500) kid.pointsHistory = kid.pointsHistory.slice(-500);
 }
 
-// ── TASK EDIT / DELETE ────────────────────────────────────────
+// \u2500\u2500 TASK EDIT / DELETE \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 function editTask(kidId, templateId, newTitle, newPoints, newTime) {
   const kid = getKid(kidId);
   if (!kid) return;
@@ -1152,7 +1152,7 @@ function deleteTask(kidId, templateId) {
   kid.awaiting = kid.awaiting.filter(t => t.templateId !== templateId);
 }
 
-// ── REWARD EDIT / DELETE ──────────────────────────────────────
+// \u2500\u2500 REWARD EDIT / DELETE \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 function editReward(kidId, rewardId, newTitle, newCost) {
   const kid = getKid(kidId);
   if (!kid) return;
@@ -1168,7 +1168,7 @@ function deleteReward(kidId, rewardId) {
   kid.rewards = kid.rewards.filter(r => r.id !== rewardId);
 }
 
-// ── KID COLOUR UPDATE ─────────────────────────────────────────
+// \u2500\u2500 KID COLOUR UPDATE \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 function updateKidColour(kidId, accent, deep) {
   const kid = getKid(kidId);
   if (!kid) return;
@@ -1918,7 +1918,7 @@ function renderTaskRecurringBlock() {
       <div class="task-time-row">
         <input class="custom-date-field is-hidden" type="date" name="customDate" aria-label="Custom date" />
         <label class="time-field task-time-capsule" aria-label="Task time">
-          <span class="task-time-icon" aria-hidden="true">◔</span>
+          <span class="task-time-icon" aria-hidden="true">\u25D4</span>
           <input type="time" name="time" required />
         </label>
       </div>
@@ -1941,14 +1941,14 @@ function renderAuthHome() {
       <header class="home-header">
         <p class="eyebrow">Family task tracker</p>
         <h1 class="rainbow-title" aria-label="CHORES">
-          <span class="title-star" aria-hidden="true">✦</span>
+          <span class="title-star" aria-hidden="true">\u2726</span>
           <span aria-hidden="true">C</span>
           <span aria-hidden="true">H</span>
           <span aria-hidden="true">O</span>
           <span aria-hidden="true">R</span>
           <span aria-hidden="true">E</span>
           <span aria-hidden="true">S</span>
-          <span class="title-star" aria-hidden="true">✦</span>
+          <span class="title-star" aria-hidden="true">\u2726</span>
         </h1>
       </header>
 
@@ -2097,14 +2097,14 @@ function renderParentHome() {
         <button class="back-button home-logout-button" type="button" data-logout="true">Log out</button>
         <p class="eyebrow">${escapeHtml(family.familyName)} family</p>
         <h1 class="rainbow-title" aria-label="CHORES">
-          <span class="title-star" aria-hidden="true">✦</span>
+          <span class="title-star" aria-hidden="true">\u2726</span>
           <span aria-hidden="true">C</span>
           <span aria-hidden="true">H</span>
           <span aria-hidden="true">O</span>
           <span aria-hidden="true">R</span>
           <span aria-hidden="true">E</span>
           <span aria-hidden="true">S</span>
-          <span class="title-star" aria-hidden="true">✦</span>
+          <span class="title-star" aria-hidden="true">\u2726</span>
         </h1>
       </header>
 
@@ -2195,7 +2195,7 @@ function renderKidPage(kidId) {
               : ""
           }
         </div>
-        <button class="back-button" type="button" id="back-home">${isParentSession() ? "← Back to family" : "Log out"}</button>
+        <button class="back-button" type="button" id="back-home">${isParentSession() ? "\u2190 Back to family" : "Log out"}</button>
       </header>
 
       <section class="kid-layout">
@@ -2279,10 +2279,10 @@ function renderKidPage(kidId) {
             hasReachedThreshold
               ? `
                 <span class="rewards-celebration-cloud" aria-hidden="true">
-                  <span>🥳</span><span>😄</span><span>😁</span><span>🤩</span><span>😆</span><span>🎉</span>
-                  <span>😄</span><span>🥳</span><span>😁</span><span>🤩</span><span>😆</span><span>🎊</span>
-                  <span>🥳</span><span>😄</span><span>😁</span><span>🤩</span><span>😆</span><span>🎉</span>
-                  <span>😄</span><span>🥳</span><span>😁</span><span>🤩</span><span>😆</span><span>🎊</span>
+                  <span>\uD83E\uDD73</span><span>\uD83D\uDE04</span><span>\uD83D\uDE01</span><span>\uD83E\uDD29</span><span>\uD83D\uDE06</span><span>\uD83C\uDF89</span>
+                  <span>\uD83D\uDE04</span><span>\uD83E\uDD73</span><span>\uD83D\uDE01</span><span>\uD83E\uDD29</span><span>\uD83D\uDE06</span><span>\uD83C\uDF8A</span>
+                  <span>\uD83E\uDD73</span><span>\uD83D\uDE04</span><span>\uD83D\uDE01</span><span>\uD83E\uDD29</span><span>\uD83D\uDE06</span><span>\uD83C\uDF89</span>
+                  <span>\uD83D\uDE04</span><span>\uD83E\uDD73</span><span>\uD83D\uDE01</span><span>\uD83E\uDD29</span><span>\uD83D\uDE06</span><span>\uD83C\uDF8A</span>
                 </span>
               `
               : ""
@@ -2302,8 +2302,8 @@ function renderKidPage(kidId) {
                   hasReachedThreshold
                     ? `
                       <span class="points-celebration-cloud" aria-hidden="true">
-                        <span>🥳</span><span>😄</span><span>😁</span><span>🤩</span><span>😆</span><span>🎉</span>
-                        <span>😄</span><span>🥳</span><span>😁</span><span>🤩</span><span>😆</span><span>🎊</span>
+                        <span>\uD83E\uDD73</span><span>\uD83D\uDE04</span><span>\uD83D\uDE01</span><span>\uD83E\uDD29</span><span>\uD83D\uDE06</span><span>\uD83C\uDF89</span>
+                        <span>\uD83D\uDE04</span><span>\uD83E\uDD73</span><span>\uD83D\uDE01</span><span>\uD83E\uDD29</span><span>\uD83D\uDE06</span><span>\uD83C\uDF8A</span>
                       </span>
                     `
                     : ""
@@ -2417,7 +2417,7 @@ function renderKidPage(kidId) {
                           <article class="task-card report-task">
                             <h4>${escapeHtml(task.title)}</h4>
                             <p class="meta">${escapeHtml(task.detail)}</p>
-                            <p class="meta">Not done yet • ${escapeHtml(task.points)} points</p>
+                            <p class="meta">Not done yet \u2022 ${escapeHtml(task.points)} points</p>
                           </article>
                         `,
                         "All caught up."
@@ -2534,7 +2534,7 @@ function renderKidPage(kidId) {
                                 <div class="template-row">
                                   <div class="template-row-info">
                                     <span class="template-row-title">${escapeHtml(tmpl.title)}</span>
-                                    <span class="template-row-meta">${escapeHtml(tmpl.recurring)} · ${escapeHtml(tmpl.time)} · ${escapeHtml(tmpl.points)} pts</span>
+                                    <span class="template-row-meta">${escapeHtml(tmpl.recurring)} \u00B7 ${escapeHtml(tmpl.time)} \u00B7 ${escapeHtml(tmpl.points)} pts</span>
                                   </div>
                                   <div class="template-row-actions">
                                     <button class="action-button secondary small-action-button" type="button" data-edit-task-template="${escapeHtml(tmpl.id)}">Edit</button>
@@ -3032,7 +3032,7 @@ document.body.addEventListener("click", async (event) => {
     return;
   }
 
-  // ── EDIT TASK TEMPLATE ──────────────────────────────────────
+  // \u2500\u2500 EDIT TASK TEMPLATE \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
   const editTaskBtn = event.target.closest("[data-edit-task-template]");
   if (editTaskBtn && isParentSession() && currentKidId) {
     const templateId = editTaskBtn.dataset.editTaskTemplate;
@@ -3052,7 +3052,7 @@ document.body.addEventListener("click", async (event) => {
     return;
   }
 
-  // ── DELETE TASK TEMPLATE ─────────────────────────────────────
+  // \u2500\u2500 DELETE TASK TEMPLATE \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
   const deleteTaskBtn = event.target.closest("[data-delete-task-template]");
   if (deleteTaskBtn && isParentSession() && currentKidId) {
     const templateId = deleteTaskBtn.dataset.deleteTaskTemplate;
@@ -3068,7 +3068,7 @@ document.body.addEventListener("click", async (event) => {
     return;
   }
 
-  // ── EDIT REWARD ───────────────────────────────────────────────
+  // \u2500\u2500 EDIT REWARD \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
   const editRewardBtn = event.target.closest("[data-edit-reward]");
   if (editRewardBtn && isParentSession()) {
     const rewardId = editRewardBtn.dataset.editReward;
@@ -3087,7 +3087,7 @@ document.body.addEventListener("click", async (event) => {
     return;
   }
 
-  // ── DELETE REWARD ─────────────────────────────────────────────
+  // \u2500\u2500 DELETE REWARD \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
   const deleteRewardBtn = event.target.closest("[data-delete-reward]");
   if (deleteRewardBtn && isParentSession()) {
     const rewardId = deleteRewardBtn.dataset.deleteReward;
@@ -3104,7 +3104,7 @@ document.body.addEventListener("click", async (event) => {
     return;
   }
 
-  // ── KID COLOUR SWATCH (existing kid) ─────────────────────────
+  // \u2500\u2500 KID COLOUR SWATCH (existing kid) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
   const colourSwatch = event.target.closest("[data-colour-kid]");
   if (colourSwatch && isParentSession()) {
     const kidId  = colourSwatch.dataset.colourKid;
@@ -3116,7 +3116,7 @@ document.body.addEventListener("click", async (event) => {
     return;
   }
 
-  // ── CREATE ACCOUNT KID COLOUR SWATCH ─────────────────────────
+  // \u2500\u2500 CREATE ACCOUNT KID COLOUR SWATCH \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
   const createKidColourSwatch = event.target.closest("[data-create-kid-colour]");
   if (createKidColourSwatch && !state.session) {
     const kidNumber = Number(createKidColourSwatch.dataset.createKidColour);
@@ -3129,7 +3129,7 @@ document.body.addEventListener("click", async (event) => {
     return;
   }
 
-  // ── NEW CHILD COLOUR SWATCH ────────────────────────────────────
+  // \u2500\u2500 NEW CHILD COLOUR SWATCH \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
   const newChildSwatch = event.target.closest("[data-new-child-colour-accent]");
   if (newChildSwatch) {
     const accent = newChildSwatch.dataset.newChildColourAccent;

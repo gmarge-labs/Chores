@@ -27,17 +27,6 @@ const BASE_CREATE_FIELDS = [
   { name: "parentPin", placeholder: "Parent PIN", type: "password" },
   { name: "confirmParentPin", placeholder: "Confirm parent PIN", type: "password" },
 ];
-const AVATAR_LIBRARY = [
-  { id: "sun-lion", emoji: "🦁", label: "Sunny Lion" },
-  { id: "dream-bunny", emoji: "🐰", label: "Dream Bunny" },
-  { id: "rocket-bear", emoji: "🐻", label: "Rocket Bear" },
-  { id: "sparkle-cat", emoji: "🐱", label: "Sparkle Cat" },
-  { id: "giggle-fox", emoji: "🦊", label: "Giggle Fox" },
-  { id: "happy-koala", emoji: "🐨", label: "Happy Koala" },
-  { id: "party-panda", emoji: "🐼", label: "Party Panda" },
-  { id: "star-tiger", emoji: "🐯", label: "Star Tiger" },
-];
-
 function createId(prefix) {
   return `${prefix}-${Math.random().toString(36).slice(2, 10)}-${Date.now().toString(36)}`;
 }
@@ -63,13 +52,7 @@ function createEmptyCreateAccountDraft() {
   return draft;
 }
 
-function getDefaultAvatarPreset(name = "") {
-  const clean = String(name || "").trim().toLowerCase();
-  const seed = Array.from(clean).reduce((total, char) => total + char.charCodeAt(0), 0);
-  return `preset:${AVATAR_LIBRARY[seed % AVATAR_LIBRARY.length].id}`;
-}
-
-function createKid(name, kidPin, avatar = getDefaultAvatarPreset(name)) {
+function createKid(name, kidPin, avatar = "") {
   return {
     id: createId("kid"),
     name,
@@ -114,15 +97,11 @@ function cloneEmptyState() {
 }
 
 function normalizeKid(kid) {
-  const avatarValue = typeof kid.avatar === "string" ? kid.avatar : "";
-  const normalizedAvatar = avatarValue.startsWith("data:image") || avatarValue.startsWith("preset:")
-    ? avatarValue
-    : getDefaultAvatarPreset(kid.name || "Kid");
   return {
     id: kid.id || createId("kid"),
     name: kid.name || "Kid",
     kidPin: kid.kidPin || "",
-    avatar: normalizedAvatar,
+    avatar: typeof kid.avatar === "string" ? kid.avatar : "",
     points: Number.isFinite(Number(kid.points)) ? Number(kid.points) : 0,
     pointsPerDollarReward: Number.isFinite(Number(kid.pointsPerDollarReward)) ? Number(kid.pointsPerDollarReward) : 100,
     dollarRewardValue: Number.isFinite(Number(kid.dollarRewardValue)) ? Number(kid.dollarRewardValue) : 20,
@@ -226,12 +205,6 @@ let createAccountKidCompleteMode = false;
 let pendingCloudFamilyDraft = null;
 let currentSettingsSection = "";
 let currentFamilyControlsSection = "";
-let currentChildAvatarPreset = AVATAR_LIBRARY[0].id;
-let currentAvatarEditKidId = "";
-let currentAvatarLibrarySelection = AVATAR_LIBRARY[0].id;
-let currentProfileAvatarPickerOpen = false;
-let currentProfileAvatarSelection = AVATAR_LIBRARY[0].id;
-
 function resetCreateAccountDraft() {
   createAccountStep = 1;
   createAccountDraft = createEmptyCreateAccountDraft();
@@ -612,42 +585,9 @@ function getDollarEquivalent(kid) {
   return Math.floor((Number(kid.points) / pointUnit) * dollarUnit);
 }
 
-function getAvatarPreset(avatarValue) {
-  const presetId = String(avatarValue || "").replace(/^preset:/, "");
-  return AVATAR_LIBRARY.find((entry) => entry.id === presetId) || AVATAR_LIBRARY[0];
-}
-
 function renderAvatar(kid) {
-  if (typeof kid.avatar === "string" && kid.avatar.startsWith("data:image")) {
-    return `<img src="${kid.avatar}" alt="${escapeHtml(kid.name)} avatar" class="avatar-image" />`;
-  }
-
-  const preset = getAvatarPreset(kid.avatar);
-  return `
-    <span class="avatar-window">
-      <span class="avatar-peeker" aria-hidden="true">${preset.emoji}</span>
-      <span class="avatar-sill" aria-hidden="true"></span>
-    </span>
-  `;
-}
-
-function renderAvatarLibraryOptions({ inputName, selectedValue }) {
-  return `
-    <div class="avatar-library-grid">
-      ${AVATAR_LIBRARY.map((avatar) => `
-        <label class="avatar-library-option ${selectedValue === avatar.id ? "active" : ""}">
-          <input type="radio" name="${escapeHtml(inputName)}" value="${escapeHtml(avatar.id)}" ${selectedValue === avatar.id ? "checked" : ""} />
-          <span class="avatar-library-preview" aria-hidden="true">
-            <span class="avatar-window">
-              <span class="avatar-peeker">${avatar.emoji}</span>
-              <span class="avatar-sill"></span>
-            </span>
-          </span>
-          <span class="avatar-library-label">${escapeHtml(avatar.label)}</span>
-        </label>
-      `).join("")}
-    </div>
-  `;
+  const initial = String(kid.name || "K").trim().charAt(0).toUpperCase() || "K";
+  return `<span class="avatar-initial" aria-hidden="true">${escapeHtml(initial)}</span>`;
 }
 
 function renderTileBubbles() {
@@ -937,7 +877,7 @@ function addReason(kidIds, type, reason) {
   });
 }
 
-function addChild(name, kidPin, avatar = getDefaultAvatarPreset(name)) {
+function addChild(name, kidPin, avatar = "") {
   const family = getCurrentFamily();
   if (!family) return;
   family.kids.push(createKid(name, kidPin, avatar));
@@ -1850,25 +1790,11 @@ function renderKidPage(kidId) {
   const todayBonus = getKidAdjustmentForToday(kid, "bonus");
   const todayPenalty = getKidAdjustmentForToday(kid, "penalty");
   const parentFocusedNav = (currentKidView === "settings" || currentKidView === "report") && isParentSession();
-  const canEditProfileAvatar = !familyMode;
-  if (!currentProfileAvatarSelection) {
-    currentProfileAvatarSelection = getAvatarPreset(kid.avatar).id;
-  }
-
   document.getElementById("page-kid").innerHTML = `
     <div class="kid-shell ${escapeHtml(shellClass)}">
       <header class="kid-header">
         <div class="kid-profile-pill">
-          ${
-            canEditProfileAvatar
-              ? `
-                <button class="profile-avatar-button" type="button" data-open-profile-avatar="true" aria-label="Change avatar for ${escapeHtml(kid.name)}">
-                  <span class="avatar">${renderAvatar(kid)}</span>
-                  <span class="profile-avatar-hint">Change avatar</span>
-                </button>
-              `
-              : `<span class="profile-avatar-display avatar">${renderAvatar(kid)}</span>`
-          }
+          <span class="profile-avatar-display avatar">${renderAvatar(kid)}</span>
           <h1>${escapeHtml(pageTitle)}</h1>
         </div>
         <div class="view-switcher">
@@ -1891,23 +1817,6 @@ function renderKidPage(kidId) {
         </div>
         <button class="back-button" type="button" id="back-home">${isParentSession() ? "← Back to family" : "Log out"}</button>
       </header>
-
-      ${
-        canEditProfileAvatar && currentProfileAvatarPickerOpen
-          ? `
-            <section class="profile-avatar-panel">
-              <div class="profile-avatar-panel-head">
-                <p class="eyebrow">Choose a cartoon avatar</p>
-                <button class="action-button secondary" type="button" data-close-profile-avatar="true">Close</button>
-              </div>
-              ${renderAvatarLibraryOptions({ inputName: "profileAvatarSelection", selectedValue: currentProfileAvatarSelection })}
-              <div class="button-row">
-                <button class="action-button primary" type="button" data-save-profile-avatar="true">Save avatar</button>
-              </div>
-            </section>
-          `
-          : ""
-      }
 
       <section class="kid-layout">
         <article class="section-card primary kid-view ${currentKidView === "dashboard" ? "active" : ""}" data-panel="dashboard">
@@ -2306,39 +2215,10 @@ function renderKidPage(kidId) {
                                               <form class="reward-form" id="add-child-form">
                                                 <input type="text" name="childName" placeholder="Child name" required />
                                                 <input type="password" name="childPin" placeholder="4-digit child PIN" inputmode="numeric" pattern="\\d{4}" maxlength="4" required />
-                                                <div class="avatar-picker-block">
-                                                  <p class="assign-summary">Choose cartoon avatar</p>
-                                                  ${renderAvatarLibraryOptions({ inputName: "childAvatarPreset", selectedValue: currentChildAvatarPreset })}
-                                                </div>
                                                 <div class="button-row">
                                                   <button class="action-button primary" type="submit">Add child</button>
                                                 </div>
                                               </form>
-                                              ${
-                                                getFamilyKids().length
-                                                  ? `
-                                                    <div class="avatar-manager-block">
-                                                      <p class="assign-summary">Change avatar for a kid</p>
-                                                      <div class="assign-grid reward-assign-grid">
-                                                        ${getFamilyKids()
-                                                          .map(
-                                                            (child) => `
-                                                              <label class="assign-option">
-                                                                <input type="radio" name="avatarTargetKid" value="${escapeHtml(child.id)}" ${currentAvatarEditKidId === child.id ? "checked" : ""} />
-                                                                <span>${escapeHtml(child.name)}</span>
-                                                              </label>
-                                                            `
-                                                          )
-                                                          .join("")}
-                                                      </div>
-                                                      ${renderAvatarLibraryOptions({ inputName: "avatarLibrarySelection", selectedValue: currentAvatarLibrarySelection })}
-                                                      <div class="button-row">
-                                                        <button class="action-button primary" type="button" data-save-avatar-library="true" ${currentAvatarEditKidId ? "" : "disabled"}>Save avatar</button>
-                                                      </div>
-                                                    </div>
-                                                  `
-                                                  : ""
-                                              }
                                             </section>
                                           `
                                           : ""
@@ -2603,34 +2483,6 @@ document.body.addEventListener("click", (event) => {
     return;
   }
 
-  const openProfileAvatarButton = event.target.closest("[data-open-profile-avatar]");
-  if (openProfileAvatarButton && currentKidId) {
-    const activeKid = getKid(currentKidId);
-    currentProfileAvatarSelection = getAvatarPreset(activeKid?.avatar).id;
-    currentProfileAvatarPickerOpen = true;
-    renderKidPage(currentKidId);
-    return;
-  }
-
-  const closeProfileAvatarButton = event.target.closest("[data-close-profile-avatar]");
-  if (closeProfileAvatarButton && currentKidId) {
-    currentProfileAvatarPickerOpen = false;
-    renderKidPage(currentKidId);
-    return;
-  }
-
-  const saveProfileAvatarButton = event.target.closest("[data-save-profile-avatar]");
-  if (saveProfileAvatarButton && currentKidId) {
-    const activeKid = getKid(currentKidId);
-    if (!activeKid) return;
-    activeKid.avatar = `preset:${currentProfileAvatarSelection}`;
-    currentProfileAvatarPickerOpen = false;
-    saveState();
-    renderKidPage(currentKidId);
-    showToast("Avatar updated.");
-    return;
-  }
-
   const pointsCard = event.target.closest("[data-points-card]");
   if (pointsCard) {
     triggerPointsBurst(pointsCard);
@@ -2758,26 +2610,6 @@ document.body.addEventListener("click", (event) => {
     currentFamilyControlsSection = "";
     currentProfileAvatarPickerOpen = false;
     renderKidPage(currentKidId);
-    return;
-  }
-
-  const saveAvatarLibraryButton = event.target.closest("[data-save-avatar-library]");
-  if (saveAvatarLibraryButton && currentKidView === "settings" && currentSettingsSection === "family-controls" && currentFamilyControlsSection === "add-child" && isParentSession()) {
-    if (!currentAvatarEditKidId) {
-      showToast("Select a kid first.");
-      return;
-    }
-
-    const targetKid = getKid(currentAvatarEditKidId);
-    if (!targetKid) {
-      showToast("That kid could not be found.");
-      return;
-    }
-
-    targetKid.avatar = `preset:${currentAvatarLibrarySelection}`;
-    saveState();
-    renderKidPage(currentKidId || getFamilyKids()[0]?.id);
-    showToast("Avatar updated.");
     return;
   }
 
@@ -3203,8 +3035,7 @@ document.body.addEventListener("submit", async (event) => {
       showToast("Child PIN must be exactly 4 digits.");
       return;
     }
-    addChild(childName, childPin, `preset:${currentChildAvatarPreset}`);
-    currentChildAvatarPreset = AVATAR_LIBRARY[0].id;
+    addChild(childName, childPin);
     saveState();
     renderKidPage(currentKidId || getFamilyKids()[0]?.id);
     showToast("Child added.");
@@ -3267,35 +3098,6 @@ document.body.addEventListener("submit", async (event) => {
     return;
   }
 
-  const childAvatarRadio = event.target.closest?.('input[name="childAvatarPreset"]');
-  if (childAvatarRadio) {
-    currentChildAvatarPreset = childAvatarRadio.value;
-    renderKidPage(currentKidId || getFamilyKids()[0]?.id);
-    return;
-  }
-
-  const avatarTargetKidRadio = event.target.closest?.('input[name="avatarTargetKid"]');
-  if (avatarTargetKidRadio) {
-    currentAvatarEditKidId = avatarTargetKidRadio.value;
-    const targetKid = getKid(currentAvatarEditKidId);
-    currentAvatarLibrarySelection = getAvatarPreset(targetKid?.avatar).id;
-    renderKidPage(currentKidId || getFamilyKids()[0]?.id);
-    return;
-  }
-
-  const avatarLibrarySelectionRadio = event.target.closest?.('input[name="avatarLibrarySelection"]');
-  if (avatarLibrarySelectionRadio) {
-    currentAvatarLibrarySelection = avatarLibrarySelectionRadio.value;
-    renderKidPage(currentKidId || getFamilyKids()[0]?.id);
-    return;
-  }
-
-  const profileAvatarSelectionRadio = event.target.closest?.('input[name="profileAvatarSelection"]');
-  if (profileAvatarSelectionRadio) {
-    currentProfileAvatarSelection = profileAvatarSelectionRadio.value;
-    renderKidPage(currentKidId || getFamilyKids()[0]?.id);
-    return;
-  }
 });
 
 if ("serviceWorker" in navigator) {

@@ -5420,6 +5420,22 @@ button {
   text-shadow: 0 3px 0 rgba(62, 55, 122, 0.24);
 }
 
+.settings-hub .settings-switch-button,
+.settings-switch-button.active,
+.family-controls-hub .family-controls-switch-button,
+.family-controls-switch-button.active,
+.family-controls-current-button {
+  background:
+    radial-gradient(circle at 18% 18%, rgba(255, 255, 255, 0.82), transparent 18%),
+    linear-gradient(135deg, #6ea8ff 0%, #7eb8ff 22%, #87a4ff 44%, #9c90ff 64%, #b17ff5 82%, #ee93d8 100%);
+  box-shadow:
+    0 16px 30px rgba(109, 135, 229, 0.24),
+    0 0 0 6px rgba(255, 255, 255, 0.08),
+    inset 0 3px 0 rgba(255, 255, 255, 0.74),
+    inset 0 -10px 18px rgba(94, 88, 184, 0.16);
+  text-shadow: 0 3px 0 rgba(74, 63, 150, 0.26);
+}
+
 .kid-shell .action-button::before,
 .kid-shell .sub-view-button::before,
 .kid-shell .back-button:not(.home-logout-button)::before,

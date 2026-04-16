@@ -1400,18 +1400,33 @@ function claimReward(kidId, rewardId) {
   };
 }
 
-function resetAllTasksAndPoints() {
+function resetAllTasks() {
   getFamilyKids().forEach((kid) => {
-    kid.points = 0;
     kid.due = [];
     kid.awaiting = [];
     kid.completed = [];
     kid.taskTemplates = [];
-    kid.lastCelebratedThreshold = 0;
     kid.missedDaysInARow = 0;
     kid.lastMissedCheckDate = getTodayDateKey();
     kid.lastTaskRefreshDate = getTodayDateKey();
   });
+}
+
+function resetAllPoints() {
+  getFamilyKids().forEach((kid) => {
+    kid.points = 0;
+    kid.lastCelebratedThreshold = 0;
+    kid.pointsHistory = [];
+    kid.bonusPenalty = [
+      { type: "bonus", title: "+0 points", value: "+0 points", reason: "", dateKey: null, createdAt: null },
+      { type: "penalty", title: "-0 points", value: "-0 points", reason: "", dateKey: null, createdAt: null },
+    ];
+  });
+}
+
+function resetAllTasksAndPoints() {
+  resetAllTasks();
+  resetAllPoints();
 }
 
 function deleteKid(kidId) {
@@ -2567,7 +2582,8 @@ function renderKidPage(kidId) {
                               <input type="number" name="points" placeholder="Points" min="1" required />
                               <div class="button-row">
                                 <button class="action-button primary" type="submit">Add task</button>
-                                <button class="action-button danger" type="button" data-reset-tasks="true">Reset tasks & points</button>
+                                <button class="action-button danger" type="button" data-reset-tasks="true">Reset tasks</button>
+                                <button class="action-button danger" type="button" data-reset-points="true">Reset points</button>
                               </div>
                             </form>
                           </article>
@@ -3127,10 +3143,35 @@ document.body.addEventListener("click", async (event) => {
 
   const resetTasksButton = event.target.closest("[data-reset-tasks]");
   if (resetTasksButton && isParentSession()) {
-    resetAllTasksAndPoints();
+    const confirmed = await showAppConfirm(
+      "Reset all tasks",
+      "Are you sure?",
+      "This permanently deletes all task templates and clears today’s tasks for every child. Points are not affected.",
+      "Reset tasks",
+      true
+    );
+    if (!confirmed) return;
+    resetAllTasks();
     saveState();
     renderKidPage(currentKidId);
-    showToast("Tasks and points reset.");
+    showToast("All tasks reset.");
+    return;
+  }
+
+  const resetPointsButton = event.target.closest("[data-reset-points]");
+  if (resetPointsButton && isParentSession()) {
+    const confirmed = await showAppConfirm(
+      "Reset all points",
+      "Are you sure?",
+      "This sets every child’s points to zero and clears their points history. Tasks are not affected.",
+      "Reset points",
+      true
+    );
+    if (!confirmed) return;
+    resetAllPoints();
+    saveState();
+    renderKidPage(currentKidId);
+    showToast("All points reset.");
     return;
   }
 

@@ -3517,36 +3517,51 @@ async function cloudSignUp(familyName, parentName, parentEmail, parentPin, kids)
   if (!supabaseClient) throw new Error("Supabase not configured");
 
   var authPwd = "chores::" + parentEmail.toLowerCase().trim() + "::" + parentPin + "::v2";
+
+  // Sign up
   var signUpRes = await supabaseClient.auth.signUp({
     email: parentEmail,
     password: authPwd,
     options: { data: { parent_name: parentName, family_name: familyName } },
   });
-
   if (signUpRes.error) throw signUpRes.error;
 
-  var user = signUpRes.data.session ? signUpRes.data.session.user : null;
+  // Get authenticated session - sign in if signup didn't return one
+  var session = signUpRes.data.session;
+  var user = session ? session.user : null;
   if (!user) {
-    // Email confirmation required - sign in instead
     var signInRes = await supabaseClient.auth.signInWithPassword({ email: parentEmail, password: authPwd });
-    if (signInRes.error) throw new Error("Account created but needs email confirmation. Please confirm your email then log in.");
+    if (signInRes.error) throw new Error("Signup worked but sign-in failed: " + signInRes.error.message);
+    session = signInRes.data.session;
     user = signInRes.data.user;
   }
+  if (!user) throw new Error("Could not get authenticated user after signup.");
 
-  // Create family row
+  // Use authenticated client session for all inserts
+  // Insert family (policy: insert with check (true) - open to authenticated users)
   var familyRes = await supabaseClient.from("families").insert({ family_name: familyName }).select("id").single();
-  if (familyRes.error) throw familyRes.error;
+  if (familyRes.error) throw new Error("Could not create family: " + familyRes.error.message);
   var familyId = familyRes.data.id;
 
-  // Create membership
-  await supabaseClient.from("parent_memberships").insert({ family_id: familyId, user_id: user.id, parent_name: parentName });
+  // Insert membership BEFORE family_settings (get_user_family_id() needs this)
+  var membershipRes = await supabaseClient.from("parent_memberships").insert({
+    family_id: familyId,
+    user_id: user.id,
+    parent_name: parentName,
+  });
+  if (membershipRes.error) throw new Error("Could not create membership: " + membershipRes.error.message);
 
-  // Store pin hash in settings
-  await supabaseClient.from("family_settings").insert({ family_id: familyId, parent_pin_hash: parentPin, parent_name: parentName });
+  // Now family settings (RLS now works because membership exists)
+  await supabaseClient.from("family_settings").insert({
+    family_id: familyId,
+    parent_pin_hash: parentPin,
+    parent_name: parentName,
+  });
 
-  // Create kids
+  // Insert kids
   if (kids.length) {
-    await supabaseClient.from("kids").insert(kids.map(function(k, i) { return kidToRow(k, familyId); }));
+    var kidsRes = await supabaseClient.from("kids").insert(kids.map(function(k) { return kidToRow(k, familyId); }));
+    if (kidsRes.error) throw new Error("Could not create kids: " + kidsRes.error.message);
   }
 
   return familyId;

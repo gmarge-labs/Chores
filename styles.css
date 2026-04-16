@@ -461,6 +461,17 @@ button {
     linear-gradient(145deg, #6dafff, #b99cff 48%, #ff9d57);
 }
 
+:root {
+  --pill-bubble-sprite:
+    radial-gradient(
+      circle at 34% 28%,
+      rgba(255, 255, 255, 0.78) 0 14%,
+      rgba(255, 255, 255, 0.16) 15% 36%,
+      rgba(255, 255, 255, 0.56) 37% 48%,
+      transparent 50%
+    );
+}
+
 .kid-card,
 .section-card,
 .task-card,
@@ -4555,6 +4566,45 @@ button {
   }
 }
 
+@keyframes pill-bubble-drift {
+  0%,
+  100% {
+    background-position:
+      12% 76%,
+      84% 22%,
+      70% 78%,
+      26% 34%,
+      52% 56%;
+  }
+
+  25% {
+    background-position:
+      16% 54%,
+      78% 12%,
+      76% 62%,
+      22% 48%,
+      48% 42%;
+  }
+
+  50% {
+    background-position:
+      14% 34%,
+      82% 30%,
+      66% 44%,
+      28% 66%,
+      56% 30%;
+  }
+
+  75% {
+    background-position:
+      10% 58%,
+      88% 18%,
+      72% 70%,
+      24% 40%,
+      50% 62%;
+  }
+}
+
 @keyframes celebration-fade {
   0% {
     opacity: 0;
@@ -5607,6 +5657,56 @@ button {
 .create-guidance-pill--success {
   background: linear-gradient(135deg, rgba(139, 240, 207, 0.94), rgba(116, 215, 255, 0.92));
   color: #15364a;
+}
+
+.report-shortcut,
+.settings-shortcut,
+.view-button,
+.sub-view-button,
+.task-recurring-pill span,
+.assign-option,
+.action-button,
+.settings-switch-button,
+.family-controls-switch-button,
+.family-controls-current-button,
+.report-watch .watch-pill,
+.task-action-pill,
+.kid-profile-pill,
+.auth-card .view-button,
+.create-guidance-pill {
+  position: relative;
+  isolation: isolate;
+}
+
+.report-shortcut::after,
+.settings-shortcut::after,
+.view-button::after,
+.sub-view-button::after,
+.task-recurring-pill span::after,
+.assign-option::after,
+.action-button::after,
+.settings-switch-button::after,
+.family-controls-switch-button::after,
+.family-controls-current-button::after,
+.report-watch .watch-pill::after,
+.task-action-pill::after,
+.kid-profile-pill::after,
+.auth-card .view-button::after,
+.create-guidance-pill::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0.58;
+  mix-blend-mode: screen;
+  background:
+    var(--pill-bubble-sprite) 12% 76% / 20px 20px no-repeat,
+    var(--pill-bubble-sprite) 84% 22% / 24px 24px no-repeat,
+    var(--pill-bubble-sprite) 70% 78% / 28px 28px no-repeat,
+    var(--pill-bubble-sprite) 26% 34% / 16px 16px no-repeat,
+    var(--pill-bubble-sprite) 52% 56% / 14px 14px no-repeat;
+  animation: pill-bubble-drift 5.2s ease-in-out infinite;
 }
 
 .create-complete-card {

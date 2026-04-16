@@ -31,6 +31,33 @@ function createId(prefix) {
   return `${prefix}-${Math.random().toString(36).slice(2, 10)}-${Date.now().toString(36)}`;
 }
 
+// ── PIN HASHING (PBKDF2) ──────────────────────────────────────
+async function hashPin(pin) {
+  const enc = new TextEncoder();
+  const keyMaterial = await crypto.subtle.importKey("raw", enc.encode(pin), "PBKDF2", false, ["deriveBits"]);
+  const bits = await crypto.subtle.deriveBits(
+    { name: "PBKDF2", salt: enc.encode("chores-pin-salt-v1"), iterations: 100000, hash: "SHA-256" },
+    keyMaterial, 256
+  );
+  return Array.from(new Uint8Array(bits)).map(b => b.toString(16).padStart(2, "0")).join("");
+}
+
+async function verifyPin(plain, stored) {
+  // Support legacy plain-text PINs (length <= 10) — migrate on verify
+  if (stored && stored.length <= 10) return plain === stored;
+  try { return (await hashPin(plain)) === stored; } catch { return false; }
+}
+
+async function migrateKidPin(kid) {
+  if (!kid.kidPin || kid.kidPin.length > 10) return; // already hashed
+  kid.kidPin = await hashPin(kid.kidPin);
+}
+
+async function migrateParentPin(family) {
+  if (!family.parentPin || family.parentPin.length > 10) return;
+  family.parentPin = await hashPin(family.parentPin);
+}
+
 function buildCloudAuthPassword(parentEmail, parentPin) {
   return `chores::${String(parentEmail || "").trim().toLowerCase()}::${String(parentPin || "").trim()}::family-auth`;
 }
@@ -52,12 +79,44 @@ function createEmptyCreateAccountDraft() {
   return draft;
 }
 
-function createKid(name, kidPin, avatar = "") {
+const KID_COLOUR_PALETTE = [
+  { accent: "#ff9d57", deep: "#f07a45" },
+  { accent: "#4fc7b5", deep: "#2f9f8f" },
+  { accent: "#6dafff", deep: "#3f84db" },
+  { accent: "#b99cff", deep: "#8b68f0" },
+  { accent: "#f472b6", deep: "#d946a0" },
+  { accent: "#68d8cf", deep: "#2bada5" },
+  { accent: "#ffbd6f", deep: "#e09020" },
+  { accent: "#a8e063", deep: "#74bb2a" },
+];
+
+const KID_DEFAULT_COLOURS = {
+  simra:  KID_COLOUR_PALETTE[0],
+  jinan:  KID_COLOUR_PALETTE[1],
+  rayyan: KID_COLOUR_PALETTE[2],
+};
+
+function hexToRgb(hex) {
+  const h = String(hex || "").replace("#", "");
+  if (h.length !== 6) return "109,175,255";
+  const r = parseInt(h.slice(0,2),16), g = parseInt(h.slice(2,4),16), b = parseInt(h.slice(4,6),16);
+  return `${r},${g},${b}`;
+}
+
+function getDefaultKidColour(name, index = 0) {
+  const lname = String(name || "").trim().toLowerCase();
+  return KID_DEFAULT_COLOURS[lname] || KID_COLOUR_PALETTE[index % KID_COLOUR_PALETTE.length];
+}
+
+function createKid(name, kidPin, avatar = "", colourIndex = 0) {
+  const col = getDefaultKidColour(name, colourIndex);
   return {
     id: createId("kid"),
     name,
     kidPin,
     avatar,
+    accentColour: col.accent,
+    accentColourDeep: col.deep,
     points: 0,
     pointsPerDollarReward: 100,
     dollarRewardValue: 20,
@@ -74,6 +133,7 @@ function createKid(name, kidPin, avatar = "") {
     ],
     bonusReasons: [],
     penaltyReasons: [],
+    pointsHistory: [],
     missedDaysInARow: 0,
     lastMissedCheckDate: null,
     lastTaskRefreshDate: getTodayDateKey(),
@@ -136,6 +196,9 @@ function normalizeKid(kid) {
         ],
     bonusReasons: Array.isArray(kid.bonusReasons) ? kid.bonusReasons : [],
     penaltyReasons: Array.isArray(kid.penaltyReasons) ? kid.penaltyReasons : [],
+    pointsHistory: Array.isArray(kid.pointsHistory) ? kid.pointsHistory.slice(-500) : [],
+    accentColour: kid.accentColour || getDefaultKidColour(kid.name || "").accent,
+    accentColourDeep: kid.accentColourDeep || getDefaultKidColour(kid.name || "").deep,
     missedDaysInARow: Number.isFinite(Number(kid.missedDaysInARow)) ? Number(kid.missedDaysInARow) : 0,
     lastMissedCheckDate: kid.lastMissedCheckDate || null,
     lastTaskRefreshDate: kid.lastTaskRefreshDate || getTodayDateKey(),
@@ -233,6 +296,7 @@ function renderFamilyControlsSwitcher(activeSection = "") {
     { key: "dollar-rate", label: "Dollar Rate" },
     { key: "add-child", label: "Add Child" },
     { key: "celebration-threshold", label: "Celebration Threshold" },
+    { key: "kid-colours", label: "Kid Colours" },
     { key: "delete-family", label: "Delete Family" },
   ];
 
@@ -261,6 +325,7 @@ function getFamilyControlsLabel(sectionKey = "") {
     "dollar-rate": "Dollar Rate",
     "add-child": "Add Child",
     "celebration-threshold": "Celebration Threshold",
+    "kid-colours": "Kid Colours",
     "delete-family": "Delete Family",
   };
 
@@ -696,7 +761,13 @@ async function handleCreateFamilyAccount() {
     return;
   }
 
-  const family = createFamily({ familyName, parentName, parentEmail, parentPin, kids });
+  // Hash parent PIN before storing
+  const hashedParentPin = await hashPin(parentPin);
+  // Hash kid PINs
+  for (const kid of kids) {
+    kid.kidPin = await hashPin(kid.kidPin);
+  }
+  const family = createFamily({ familyName, parentName, parentEmail, parentPin: hashedParentPin, kids });
   state.families.push(family);
   authAccountReady = true;
   authAccountJustCreated = true;
@@ -1020,6 +1091,72 @@ function buildTaskDetail(recurring, time, customDateLabel = "") {
   return `${labels[recurring] || "Daily"} • ${time}`;
 }
 
+// ── POINTS HISTORY ───────────────────────────────────────────
+function addPointsHistory(kid, changeType, pointsDelta, description) {
+  if (!Array.isArray(kid.pointsHistory)) kid.pointsHistory = [];
+  kid.pointsHistory.push({
+    id: createId("hist"),
+    changeType,
+    pointsDelta,
+    pointsAfter: kid.points,
+    description: description || changeType,
+    createdAt: new Date().toISOString(),
+  });
+  if (kid.pointsHistory.length > 500) kid.pointsHistory = kid.pointsHistory.slice(-500);
+}
+
+// ── TASK EDIT / DELETE ────────────────────────────────────────
+function editTask(kidId, templateId, newTitle, newPoints, newTime) {
+  const kid = getKid(kidId);
+  if (!kid) return;
+  const tmpl = kid.taskTemplates.find(t => t.id === templateId);
+  if (!tmpl) return;
+  tmpl.title = String(newTitle || "").trim().slice(0, 100) || tmpl.title;
+  tmpl.points = Math.max(0, Number(newPoints) || 0);
+  tmpl.time = String(newTime || "").trim();
+  // Update today's instances in due/awaiting
+  [...kid.due, ...kid.awaiting].forEach(task => {
+    if (task.templateId === templateId) {
+      task.title = tmpl.title;
+      task.points = tmpl.points;
+      task.time = tmpl.time;
+      task.detail = buildTaskDetail(task.recurring, tmpl.time, task.customDate ? formatCustomDate(task.customDate) : "");
+    }
+  });
+}
+
+function deleteTask(kidId, templateId) {
+  const kid = getKid(kidId);
+  if (!kid) return;
+  kid.taskTemplates = kid.taskTemplates.filter(t => t.id !== templateId);
+  kid.due      = kid.due.filter(t => t.templateId !== templateId);
+  kid.awaiting = kid.awaiting.filter(t => t.templateId !== templateId);
+}
+
+// ── REWARD EDIT / DELETE ──────────────────────────────────────
+function editReward(kidId, rewardId, newTitle, newCost) {
+  const kid = getKid(kidId);
+  if (!kid) return;
+  const reward = kid.rewards.find(r => r.id === rewardId);
+  if (!reward) return;
+  reward.title = String(newTitle || "").trim().slice(0, 100) || reward.title;
+  reward.cost  = Math.max(0, Number(newCost) || 0);
+}
+
+function deleteReward(kidId, rewardId) {
+  const kid = getKid(kidId);
+  if (!kid) return;
+  kid.rewards = kid.rewards.filter(r => r.id !== rewardId);
+}
+
+// ── KID COLOUR UPDATE ─────────────────────────────────────────
+function updateKidColour(kidId, accent, deep) {
+  const kid = getKid(kidId);
+  if (!kid) return;
+  kid.accentColour = accent;
+  kid.accentColourDeep = deep;
+}
+
 function addReward(kidIds, title, cost) {
   kidIds.forEach((kidId) => {
     const kid = getKid(kidId);
@@ -1052,6 +1189,7 @@ function addAdjustment(kidIds, label, value, reason = "") {
     });
 
     kid.points = Math.max(0, kid.points + value);
+    addPointsHistory(kid, type === "penalty" ? "penalty" : "bonus", value, reason || (type === "penalty" ? "Penalty" : "Bonus"));
     maybeCelebrateThreshold(kid, previousPoints);
   });
 }
@@ -1127,11 +1265,14 @@ function moveTask(kidId, fromStatus, toStatus, taskIndex) {
   kid[toStatus].push(task);
   if (toStatus === "completed" && fromStatus !== "completed") {
     kid.points += Number(task.points) || 0;
+    addPointsHistory(kid, "task", Number(task.points) || 0, `Completed: ${task.title}`);
     maybeCelebrateThreshold(kid, previousPoints);
   }
 
   if (fromStatus === "completed" && toStatus !== "completed") {
-    kid.points = Math.max(0, kid.points - (Number(task.points) || 0));
+    const delta = -(Number(task.points) || 0);
+    kid.points = Math.max(0, kid.points + delta);
+    addPointsHistory(kid, "task", delta, `Uncompleted: ${task.title}`);
   }
 }
 
@@ -1168,6 +1309,7 @@ function claimReward(kidId, rewardId) {
   }
 
   kid.points = currentPoints - cost;
+  addPointsHistory(kid, "reward_claim", -cost, `Claimed: ${reward.title}`);
   family.favorClaims = [
     {
       id: createId("favor-claim"),
@@ -1934,7 +2076,7 @@ function renderParentHome() {
         ${kids
           .map(
             (kid) => `
-              <article class="kid-card ${escapeHtml(getShellClass(kid.name, false))}" data-kid-id="${escapeHtml(kid.id)}" role="button" tabindex="0">
+              <article class="kid-card ${escapeHtml(getShellClass(kid.name, false))}" data-kid-id="${escapeHtml(kid.id)}" role="button" tabindex="0" ${kid.accentColour ? `style="--kid-accent:${kid.accentColour};--kid-accent-deep:${kid.accentColourDeep||kid.accentColour};--kid-accent-soft:rgba(${hexToRgb(kid.accentColour)},0.12);"` : ""}>
                 ${renderTileBubbles()}
                 <div class="kid-card-top">
                   <div class="avatar">${renderAvatar(kid)}</div>
@@ -1992,8 +2134,9 @@ function renderKidPage(kidId) {
   const todayBonus = getKidAdjustmentForToday(kid, "bonus");
   const todayPenalty = getKidAdjustmentForToday(kid, "penalty");
   const parentFocusedNav = (currentKidView === "settings" || currentKidView === "report") && isParentSession();
+  const kidInlineStyle = kid.accentColour ? `style="--kid-accent:${kid.accentColour};--kid-accent-deep:${kid.accentColourDeep || kid.accentColour};--kid-accent-soft:rgba(${hexToRgb(kid.accentColour)},0.12);--kid-accent-rgb:${hexToRgb(kid.accentColour)};"` : "";
   document.getElementById("page-kid").innerHTML = `
-    <div class="kid-shell ${escapeHtml(shellClass)}">
+    <div class="kid-shell ${escapeHtml(shellClass)}" ${kidInlineStyle}>
       <header class="kid-header">
         <div class="kid-profile-pill">
           <h1>${escapeHtml(pageTitle)}</h1>
@@ -2225,7 +2368,7 @@ function renderKidPage(kidId) {
             ${getFamilyKids()
               .map(
                 (child) => `
-                  <section class="report-tile ${escapeHtml(getShellClass(child.name, false))}">
+                  <section class="report-tile ${escapeHtml(getShellClass(child.name, false))}" ${child.accentColour ? `style="--kid-accent:${child.accentColour};--kid-accent-deep:${child.accentColourDeep||child.accentColour};--kid-accent-soft:rgba(${hexToRgb(child.accentColour)},0.12);"` : ""}>
                     ${renderTileBubbles()}
                     <div class="report-head">
                       <h3>${escapeHtml(child.name)}</h3>
@@ -2266,6 +2409,28 @@ function renderKidPage(kidId) {
                   `;
                 })
                 .join("")}
+            </div>
+          </div>
+
+          <div class="report-history">
+            <p class="eyebrow">Points history</p>
+            <div class="report-history-grid">
+              ${getFamilyKids().map(child => {
+                const history = Array.isArray(child.pointsHistory) ? child.pointsHistory.slice().reverse().slice(0, 15) : [];
+                if (!history.length) return "";
+                return `
+                  <section class="history-kid-block">
+                    <p class="eyebrow" style="font-size:0.68rem;margin-bottom:8px;">${escapeHtml(child.name)}</p>
+                    ${history.map(h => `
+                      <div class="history-entry history-entry--${escapeHtml(h.changeType || "task")}">
+                        <span class="history-entry-desc">${escapeHtml(h.description || h.changeType)}</span>
+                        <span class="history-entry-delta ${h.pointsDelta >= 0 ? "positive" : "negative"}">${h.pointsDelta >= 0 ? "+" : ""}${escapeHtml(h.pointsDelta)}</span>
+                        <span class="history-entry-time">${escapeHtml(formatClaimTimestamp(h.createdAt))}</span>
+                      </div>
+                    `).join("")}
+                  </section>
+                `;
+              }).join("")}
             </div>
           </div>
 
@@ -2323,7 +2488,27 @@ function renderKidPage(kidId) {
                                 <button class="action-button danger" type="button" data-reset-tasks="true">Reset tasks & points</button>
                               </div>
                             </form>
+                            ${renderTaskTemplateList(kid)}
                           </article>
+                          ${kid.taskTemplates && kid.taskTemplates.length ? `
+                          <article class="reward-card settings-tile single-settings-tile task-template-list-tile">
+                            ${renderTileBubbles()}
+                            <p class="eyebrow">Task templates</p>
+                            <div class="template-list">
+                              ${kid.taskTemplates.map(tmpl => `
+                                <div class="template-row">
+                                  <div class="template-row-info">
+                                    <span class="template-row-title">${escapeHtml(tmpl.title)}</span>
+                                    <span class="template-row-meta">${escapeHtml(tmpl.recurring)} · ${escapeHtml(tmpl.time)} · ${escapeHtml(tmpl.points)} pts</span>
+                                  </div>
+                                  <div class="template-row-actions">
+                                    <button class="action-button secondary small-action-button" type="button" data-edit-task-template="${escapeHtml(tmpl.id)}">Edit</button>
+                                    <button class="action-button danger small-action-button" type="button" data-delete-task-template="${escapeHtml(tmpl.id)}">Delete</button>
+                                  </div>
+                                </div>
+                              `).join("")}
+                            </div>
+                          </article>` : ""}
                         `
                         : ""
                     }
@@ -2374,6 +2559,25 @@ function renderKidPage(kidId) {
                                                   <button class="action-button primary reward-submit-button" type="submit" ${currentRewardAssignedKids.length ? "" : "disabled"}>Add rewards</button>
                                                 </div>
                                               </form>
+                                              ${getFamilyKids().some(c => c.rewards && c.rewards.length) ? `
+                                              <div class="manage-rewards-list">
+                                                <p class="eyebrow" style="margin-top:16px;">Manage rewards</p>
+                                                ${getFamilyKids().filter(c => c.rewards && c.rewards.length).map(child => `
+                                                  <p class="eyebrow" style="margin-top:10px;font-size:0.68rem;">${escapeHtml(child.name)}</p>
+                                                  ${child.rewards.map(reward => `
+                                                    <div class="template-row">
+                                                      <div class="template-row-info">
+                                                        <span class="template-row-title">${escapeHtml(reward.title)}</span>
+                                                        <span class="template-row-meta">${escapeHtml(reward.cost)} pts</span>
+                                                      </div>
+                                                      <div class="template-row-actions">
+                                                        <button class="action-button secondary small-action-button" type="button" data-edit-reward="${escapeHtml(reward.id)}" data-reward-kid="${escapeHtml(child.id)}">Edit</button>
+                                                        <button class="action-button danger small-action-button" type="button" data-delete-reward="${escapeHtml(reward.id)}" data-reward-kid="${escapeHtml(child.id)}">Delete</button>
+                                                      </div>
+                                                    </div>
+                                                  `).join("")}
+                                                `).join("")}
+                                              </div>` : ""}
                                             </section>
                                           `
                                           : ""
@@ -2462,6 +2666,29 @@ function renderKidPage(kidId) {
                                               <div class="button-row">
                                                 <button class="action-button danger" type="button" data-delete-family="true">Delete this family</button>
                                               </div>
+                                            </section>
+                                          `
+                                          : ""
+                                      }
+                                      ${
+                                        currentFamilyControlsSection === "kid-colours"
+                                          ? `
+                                            <section class="settings-mini-section family-controls-page">
+                                              <p class="eyebrow">Kid colours</p>
+                                              ${getFamilyKids().map(child => `
+                                                <p class="eyebrow" style="margin-top:14px;font-size:0.68rem;">${escapeHtml(child.name)}</p>
+                                                <div class="colour-swatch-row">
+                                                  ${KID_COLOUR_PALETTE.map((col, i) => `
+                                                    <button type="button" class="colour-swatch ${child.accentColour === col.accent ? "colour-swatch--selected" : ""}"
+                                                      style="background:${col.accent};"
+                                                      data-colour-kid="${escapeHtml(child.id)}"
+                                                      data-colour-accent="${col.accent}"
+                                                      data-colour-deep="${col.deep}"
+                                                      title="Colour ${i+1}"
+                                                      aria-label="Pick colour ${i+1} for ${escapeHtml(child.name)}"></button>
+                                                  `).join("")}
+                                                </div>
+                                              `).join("")}
                                             </section>
                                           `
                                           : ""
@@ -2577,7 +2804,7 @@ function triggerPointsBurst(pointsCard) {
   window.setTimeout(() => pointsCard.classList.remove("is-bursting"), 900);
 }
 
-document.body.addEventListener("click", (event) => {
+document.body.addEventListener("click", async (event) => {
   const authButton = event.target.closest("[data-auth-view]");
   if (authButton && !state.session) {
     const nextView = authButton.dataset.authView || "create";
@@ -2709,6 +2936,90 @@ document.body.addEventListener("click", (event) => {
     if (!deleted) return;
     showToast("Family deleted from this device.");
     renderApp();
+    return;
+  }
+
+  // ── EDIT TASK TEMPLATE ──────────────────────────────────────
+  const editTaskBtn = event.target.closest("[data-edit-task-template]");
+  if (editTaskBtn && isParentSession() && currentKidId) {
+    const templateId = editTaskBtn.dataset.editTaskTemplate;
+    const kid = getKid(currentKidId);
+    const tmpl = kid?.taskTemplates.find(t => t.id === templateId);
+    if (!tmpl) return;
+    const newTitle = window.prompt("Task title:", tmpl.title);
+    if (newTitle === null) return;
+    const newPoints = window.prompt("Points:", tmpl.points);
+    if (newPoints === null) return;
+    const newTime = window.prompt("Time (e.g. 8:00 AM):", tmpl.time);
+    if (newTime === null) return;
+    editTask(currentKidId, templateId, newTitle, newPoints, newTime);
+    saveState();
+    renderKidPage(currentKidId);
+    showToast("Task updated.");
+    return;
+  }
+
+  // ── DELETE TASK TEMPLATE ─────────────────────────────────────
+  const deleteTaskBtn = event.target.closest("[data-delete-task-template]");
+  if (deleteTaskBtn && isParentSession() && currentKidId) {
+    const templateId = deleteTaskBtn.dataset.deleteTaskTemplate;
+    const kid = getKid(currentKidId);
+    const tmpl = kid?.taskTemplates.find(t => t.id === templateId);
+    if (!tmpl) return;
+    const confirmed = window.confirm(`Delete task "${tmpl.title}"? This removes it and today's instance.`);
+    if (!confirmed) return;
+    deleteTask(currentKidId, templateId);
+    saveState();
+    renderKidPage(currentKidId);
+    showToast("Task deleted.");
+    return;
+  }
+
+  // ── EDIT REWARD ───────────────────────────────────────────────
+  const editRewardBtn = event.target.closest("[data-edit-reward]");
+  if (editRewardBtn && isParentSession()) {
+    const rewardId = editRewardBtn.dataset.editReward;
+    const kidId    = editRewardBtn.dataset.rewardKid;
+    const kid = getKid(kidId);
+    const reward = kid?.rewards.find(r => r.id === rewardId);
+    if (!reward) return;
+    const newTitle = window.prompt("Reward title:", reward.title);
+    if (newTitle === null) return;
+    const newCost = window.prompt("Points cost:", reward.cost);
+    if (newCost === null) return;
+    editReward(kidId, rewardId, newTitle, newCost);
+    saveState();
+    renderKidPage(currentKidId || getFamilyKids()[0]?.id);
+    showToast("Reward updated.");
+    return;
+  }
+
+  // ── DELETE REWARD ─────────────────────────────────────────────
+  const deleteRewardBtn = event.target.closest("[data-delete-reward]");
+  if (deleteRewardBtn && isParentSession()) {
+    const rewardId = deleteRewardBtn.dataset.deleteReward;
+    const kidId    = deleteRewardBtn.dataset.rewardKid;
+    const kid = getKid(kidId);
+    const reward = kid?.rewards.find(r => r.id === rewardId);
+    if (!reward) return;
+    const confirmed = window.confirm(`Delete reward "${reward.title}"?`);
+    if (!confirmed) return;
+    deleteReward(kidId, rewardId);
+    saveState();
+    renderKidPage(currentKidId || getFamilyKids()[0]?.id);
+    showToast("Reward deleted.");
+    return;
+  }
+
+  // ── KID COLOUR SWATCH ─────────────────────────────────────────
+  const colourSwatch = event.target.closest("[data-colour-kid]");
+  if (colourSwatch && isParentSession()) {
+    const kidId  = colourSwatch.dataset.colourKid;
+    const accent = colourSwatch.dataset.colourAccent;
+    const deep   = colourSwatch.dataset.colourDeep;
+    updateKidColour(kidId, accent, deep);
+    saveState();
+    renderKidPage(currentKidId || getFamilyKids()[0]?.id);
     return;
   }
 
@@ -3108,12 +3419,14 @@ document.body.addEventListener("submit", async (event) => {
       return;
     }
 
-    const family = state.families.find((entry) => entry.parentEmailLower === email && entry.parentPin === pin);
-    if (!family) {
-      showToast("Incorrect login.");
-      return;
+    const family = state.families.find((entry) => entry.parentEmailLower === email);
+    if (!family) { showToast("Incorrect login."); return; }
+    const pinOk = await verifyPin(pin, family.parentPin);
+    if (!pinOk) { showToast("Incorrect login."); return; }
+    // Migrate plain PIN to hash on first successful login
+    if (family.parentPin && family.parentPin.length <= 10) {
+      family.parentPin = await hashPin(pin);
     }
-
     authStage = "login";
     authView = "parent";
     authAccountJustCreated = false;
@@ -3171,13 +3484,18 @@ document.body.addEventListener("submit", async (event) => {
       return;
     }
     const family = state.families.find((entry) => entry.parentEmailLower === email);
-    const kid = family?.kids.find((entry) => entry.name.trim().toLowerCase() === kidName && entry.kidPin === kidPin);
-
-    if (!family || !kid) {
+    const kidCandidate = family?.kids.find((entry) => entry.name.trim().toLowerCase() === kidName);
+    const kidPinOk = kidCandidate ? await verifyPin(kidPin, kidCandidate.kidPin) : false;
+    if (!family || !kidCandidate || !kidPinOk) {
       showToast("Incorrect kid login.");
       return;
     }
-
+    // Migrate plain PIN to hash
+    if (kidCandidate.kidPin && kidCandidate.kidPin.length <= 10) {
+      kidCandidate.kidPin = await hashPin(kidPin);
+      saveState();
+    }
+    const kid = kidCandidate;
     state.session = { familyId: family.id, role: "kid", kidId: kid.id };
     authStage = "login";
     authAccountJustCreated = false;

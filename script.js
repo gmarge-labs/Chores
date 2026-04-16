@@ -294,10 +294,10 @@ function renderSettingsSwitcher(activeSection = "") {
 
 function renderFamilyControlsSwitcher(activeSection = "") {
   const controlButtons = [
+    { key: "add-child", label: "Add Child" },
     { key: "add-rewards", label: "Add Rewards" },
     { key: "manage-rewards", label: "Manage Rewards" },
     { key: "dollar-rate", label: "Dollar Rate" },
-    { key: "add-child", label: "Add Child" },
     { key: "celebration-threshold", label: "Celebration Threshold" },
     { key: "kid-colours", label: "Edit Kid Colours" },
     { key: "delete-family", label: "Delete Family" },

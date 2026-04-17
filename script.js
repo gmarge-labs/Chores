@@ -786,15 +786,13 @@ async function handleCreateFamilyAccount() {
       saveState({ skipCloud: true });
       showToast("Account synced to cloud ✓");
     }).catch(function(err) {
-      console.error("Cloud signup full error:", JSON.stringify(err), err.message, err.status, err.code);
-      // Show longer-lasting error
-      var msg = "Cloud sync failed: " + (err.message || JSON.stringify(err) || "unknown");
+      var msg = String(err.message || err || "unknown error");
+      console.error("CLOUD SIGNUP ERROR:", msg);
       var el = document.createElement("div");
-      el.className = "pin-toast";
-      el.style.cssText = "position:fixed;bottom:80px;left:50%;transform:translateX(-50%);z-index:999;background:#333;color:#fff;padding:12px 20px;border-radius:12px;font-size:0.85rem;max-width:90vw;text-align:center;";
-      el.textContent = msg;
+      el.style.cssText = "position:fixed;top:10px;left:10px;right:10px;z-index:9999;background:#c00;color:#fff;padding:14px 18px;border-radius:12px;font-size:0.82rem;line-height:1.4;";
+      el.textContent = "Cloud sync error: " + msg;
       document.body.appendChild(el);
-      setTimeout(function() { el.remove(); }, 8000);
+      setTimeout(function() { el.remove(); }, 20000);
     });
   }
 
@@ -1380,23 +1378,7 @@ async function logout() {
   saveState();
   renderApp();
 
-// DEBUG: show Supabase status on load
-(function() {
-  var dbg = document.createElement("div");
-  dbg.style.cssText = "position:fixed;top:0;left:0;right:0;z-index:9999;padding:6px 12px;font-size:0.75rem;font-weight:700;text-align:center;";
-  if (!window.supabase) {
-    dbg.style.background = "#ff4444"; dbg.style.color = "#fff";
-    dbg.textContent = "SUPABASE LIB NOT LOADED";
-  } else if (!supabaseClient) {
-    dbg.style.background = "#ff8800"; dbg.style.color = "#fff";
-    dbg.textContent = "SUPABASE CLIENT NULL - url: " + (cloudConfig.url || "none") + " key: " + (cloudConfig.anonKey ? cloudConfig.anonKey.slice(0,20) : "none");
-  } else {
-    dbg.style.background = "#22cc66"; dbg.style.color = "#fff";
-    dbg.textContent = "SUPABASE OK - " + cloudConfig.url;
-  }
-  document.body.appendChild(dbg);
-  setTimeout(function() { dbg.remove(); }, 10000);
-})();
+
 }
 
 function renderAssignedKidsBlock() {
@@ -3540,54 +3522,52 @@ function cloudSave(kidId) {
 // ── CLOUD SIGNUP: create account in Supabase ─────────────────
 async function cloudSignUp(familyName, parentName, parentEmail, parentPin, kids) {
   if (!supabaseClient) throw new Error("Supabase not configured");
-  console.log("CLOUD SIGNUP: starting for", parentEmail);
 
   var authPwd = "chores::" + parentEmail.toLowerCase().trim() + "::" + parentPin + "::v2";
 
+  // Sign up with Supabase Auth
   var signUpRes = await supabaseClient.auth.signUp({
     email: parentEmail,
     password: authPwd,
     options: { data: { parent_name: parentName, family_name: familyName } },
   });
-  console.log("CLOUD SIGNUP: signUp result", signUpRes.error || "ok", signUpRes.data?.session ? "has session" : "no session", signUpRes.data?.user?.id || "no user");
-  if (signUpRes.error) throw signUpRes.error;
+  if (signUpRes.error) throw new Error("Auth signup failed: " + signUpRes.error.message);
 
-  var session = signUpRes.data.session;
-  var user = session ? session.user : null;
-  if (!user) {
-    console.log("CLOUD SIGNUP: no session from signUp, trying signIn");
+  var user = signUpRes.data?.session?.user || signUpRes.data?.user;
+
+  // If no session yet, sign in to get one
+  if (!user || !signUpRes.data?.session) {
     var signInRes = await supabaseClient.auth.signInWithPassword({ email: parentEmail, password: authPwd });
-    console.log("CLOUD SIGNUP: signIn result", signInRes.error || "ok", signInRes.data?.user?.id || "no user");
-    if (signInRes.error) throw new Error("Signup worked but sign-in failed: " + signInRes.error.message);
-    session = signInRes.data.session;
-    user = signInRes.data.user;
+    if (signInRes.error) throw new Error("Sign-in after signup failed: " + signInRes.error.message);
+    user = signInRes.data?.user;
   }
-  if (!user) throw new Error("Could not get authenticated user after signup.");
-  console.log("CLOUD SIGNUP: authenticated as", user.id);
 
-  var familyRes = await supabaseClient.from("families").insert({ family_name: familyName }).select("id").single();
-  console.log("CLOUD SIGNUP: family insert", familyRes.error || "ok", familyRes.data?.id || "no id");
-  if (familyRes.error) throw new Error("Could not create family: " + familyRes.error.message);
+  if (!user?.id) throw new Error("No user returned from auth");
+
+  // Insert family
+  var familyRes = await supabaseClient.from("families")
+    .insert({ family_name: familyName })
+    .select("id")
+    .single();
+  if (familyRes.error) throw new Error("Family insert failed: " + familyRes.error.message + " code:" + familyRes.error.code);
   var familyId = familyRes.data.id;
 
-  var membershipRes = await supabaseClient.from("parent_memberships").insert({
-    family_id: familyId, user_id: user.id, parent_name: parentName,
-  });
-  console.log("CLOUD SIGNUP: membership insert", membershipRes.error || "ok");
-  if (membershipRes.error) throw new Error("Could not create membership: " + membershipRes.error.message);
+  // Insert membership
+  var memberRes = await supabaseClient.from("parent_memberships")
+    .insert({ family_id: familyId, user_id: user.id, parent_name: parentName });
+  if (memberRes.error) throw new Error("Membership insert failed: " + memberRes.error.message);
 
-  var settingsRes = await supabaseClient.from("family_settings").insert({
-    family_id: familyId, parent_pin_hash: parentPin, parent_name: parentName,
-  });
-  console.log("CLOUD SIGNUP: settings insert", settingsRes.error || "ok");
+  // Insert settings
+  await supabaseClient.from("family_settings")
+    .insert({ family_id: familyId, parent_pin_hash: parentPin, parent_name: parentName });
 
+  // Insert kids
   if (kids.length) {
-    var kidsRes = await supabaseClient.from("kids").insert(kids.map(function(k) { return kidToRow(k, familyId); }));
-    console.log("CLOUD SIGNUP: kids insert", kidsRes.error || "ok");
-    if (kidsRes.error) throw new Error("Could not create kids: " + kidsRes.error.message);
+    var kidsRes = await supabaseClient.from("kids")
+      .insert(kids.map(function(k) { return kidToRow(k, familyId); }));
+    if (kidsRes.error) throw new Error("Kids insert failed: " + kidsRes.error.message);
   }
 
-  console.log("CLOUD SIGNUP: complete, familyId =", familyId);
   return familyId;
 }
 

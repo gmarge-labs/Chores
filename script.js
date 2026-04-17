@@ -1,42 +1,24 @@
-// Force unregister old service workers on every load
-if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.getRegistrations().then(function(regs) {
-    regs.forEach(function(reg) { reg.unregister(); });
-  });
-}
-
 const STORAGE_KEY = "chores-multi-family-state-v1";
 const cloudConfig = window.CHORES_FIREBASE_CONFIG || {};
-const cloudModeEnabled = Boolean(cloudConfig.enabled && cloudConfig.apiKey);
-const cloudAuthEnabled = true;
-
-// Firebase services — initialised below after SDK check
-var firebaseApp  = null;
-var firebaseAuth = null;
-var firebaseDb   = null;
-
-if (cloudModeEnabled && typeof firebase !== "undefined") {
-  try {
-    firebaseApp  = firebase.initializeApp({
-      apiKey:            cloudConfig.apiKey,
-      authDomain:        cloudConfig.authDomain,
-      projectId:         cloudConfig.projectId,
-      storageBucket:     cloudConfig.storageBucket,
-      messagingSenderId: cloudConfig.messagingSenderId,
-      appId:             cloudConfig.appId,
-    });
-    firebaseAuth = firebase.auth(firebaseApp);
-    firebaseDb   = firebase.firestore(firebaseApp);
-  } catch(e) {
-    console.warn("Firebase init error:", e.message);
-  }
-}
+const cloudModeEnabled = Boolean(cloudConfig.enabled && cloudConfig.url && cloudConfig.anonKey);
+const cloudAuthEnabled = false;
+const supabaseClient = cloudModeEnabled && window.supabase?.createClient
+  ? window.supabase.createClient(cloudConfig.url, cloudConfig.anonKey, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+      },
+    })
+  : null;
 
 const emptyState = {
   families: [],
   session: null,
 };
 
+let cloudSyncQueue = Promise.resolve();
+let cloudBootstrapStarted = false;
 const MAX_CREATE_KIDS = 10;
 const BASE_CREATE_FIELDS = [
   { name: "familyName", placeholder: "Family name", type: "text" },
@@ -45,10 +27,6 @@ const BASE_CREATE_FIELDS = [
   { name: "parentPin", placeholder: "Parent PIN", type: "password" },
   { name: "confirmParentPin", placeholder: "Confirm parent PIN", type: "password" },
 ];
-function createId(prefix) {
-  return `${prefix}-${Math.random().toString(36).slice(2, 10)}-${Date.now().toString(36)}`;
-}
-
 async function hashPin(pin) {
   const enc = new TextEncoder();
   const keyMaterial = await crypto.subtle.importKey("raw", enc.encode(pin), "PBKDF2", false, ["deriveBits"]);
@@ -64,6 +42,10 @@ async function verifyPin(plain, stored) {
   const isHashed = /^[0-9a-f]{64}$/.test(stored);
   if (!isHashed) return plain === stored;
   try { return (await hashPin(plain)) === stored; } catch { return false; }
+}
+
+function createId(prefix) {
+  return `${prefix}-${Math.random().toString(36).slice(2, 10)}-${Date.now().toString(36)}`;
 }
 
 function buildCloudAuthPassword(parentEmail, parentPin) {
@@ -82,43 +64,17 @@ function createEmptyCreateAccountDraft() {
   for (let index = 1; index <= MAX_CREATE_KIDS; index += 1) {
     draft[`kidName${index}`] = "";
     draft[`kidPin${index}`] = "";
-    draft[`kidColour${index}`] = index - 1;
   }
 
   return draft;
 }
 
-const KID_COLOUR_PALETTE = [
-  { accent: "#ff9d57", deep: "#f07a45" },
-  { accent: "#4fc7b5", deep: "#2f9f8f" },
-  { accent: "#6dafff", deep: "#3f84db" },
-  { accent: "#b99cff", deep: "#8b68f0" },
-  { accent: "#f472b6", deep: "#d946a0" },
-  { accent: "#68d8cf", deep: "#2bada5" },
-  { accent: "#ffbd6f", deep: "#e09020" },
-  { accent: "#a8e063", deep: "#74bb2a" },
-];
-
-function hexToRgb(hex) {
-  const h = String(hex || "").replace("#", "");
-  if (h.length !== 6) return "109,175,255";
-  const r = parseInt(h.slice(0,2),16), g = parseInt(h.slice(2,4),16), b = parseInt(h.slice(4,6),16);
-  return `${r},${g},${b}`;
-}
-
-function getDefaultKidColour(name, index = 0) {
-  return KID_COLOUR_PALETTE[index % KID_COLOUR_PALETTE.length];
-}
-
-function createKid(name, kidPin, avatar = "", colourIndex = 0) {
-  const col = getDefaultKidColour(name, colourIndex);
+function createKid(name, kidPin, avatar = "") {
   return {
     id: createId("kid"),
     name,
     kidPin,
     avatar,
-    accentColour: col.accent,
-    accentColourDeep: col.deep,
     points: 0,
     pointsPerDollarReward: 100,
     dollarRewardValue: 20,
@@ -135,7 +91,6 @@ function createKid(name, kidPin, avatar = "", colourIndex = 0) {
     ],
     bonusReasons: [],
     penaltyReasons: [],
-    pointsHistory: [],
     missedDaysInARow: 0,
     lastMissedCheckDate: null,
     lastTaskRefreshDate: getTodayDateKey(),
@@ -180,9 +135,7 @@ function normalizeKid(kid) {
     lastCelebratedThreshold: Number.isFinite(Number(kid.lastCelebratedThreshold)) ? Number(kid.lastCelebratedThreshold) : 0,
     due: normalizeTaskInstances(kid.due, fallbackDateKey),
     awaiting: normalizeTaskInstances(kid.awaiting, fallbackDateKey),
-    completed: normalizeTaskInstances(kid.completed, fallbackDateKey).filter(
-      (t) => t.instanceDateKey === (kid.lastTaskRefreshDate || getTodayDateKey())
-    ),
+    completed: normalizeTaskInstances(kid.completed, fallbackDateKey),
     taskTemplates: normalizedTaskTemplates,
     rewards: Array.isArray(kid.rewards) ? kid.rewards : [],
     bonusPenalty: Array.isArray(kid.bonusPenalty) && kid.bonusPenalty.length
@@ -200,9 +153,6 @@ function normalizeKid(kid) {
         ],
     bonusReasons: Array.isArray(kid.bonusReasons) ? kid.bonusReasons : [],
     penaltyReasons: Array.isArray(kid.penaltyReasons) ? kid.penaltyReasons : [],
-    pointsHistory: Array.isArray(kid.pointsHistory) ? kid.pointsHistory.slice(-500) : [],
-    accentColour: kid.accentColour || getDefaultKidColour(kid.name || "").accent,
-    accentColourDeep: kid.accentColourDeep || getDefaultKidColour(kid.name || "").deep,
     missedDaysInARow: Number.isFinite(Number(kid.missedDaysInARow)) ? Number(kid.missedDaysInARow) : 0,
     lastMissedCheckDate: kid.lastMissedCheckDate || null,
     lastTaskRefreshDate: kid.lastTaskRefreshDate || getTodayDateKey(),
@@ -244,6 +194,9 @@ refreshAllTasksForToday();
 function saveState(options = {}) {
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 
+  if (!options.skipCloud && cloudAuthEnabled && cloudModeEnabled && isParentSession()) {
+    void queueCloudSync();
+  }
 }
 
 let authStage = "intro";
@@ -256,6 +209,7 @@ let authResetPasscodeOpen = false;
 let createAccountStep = 1;
 let createAccountDraft = createEmptyCreateAccountDraft();
 let createAccountKidCompleteMode = false;
+let pendingCloudFamilyDraft = null;
 let currentSettingsSection = "";
 let currentFamilyControlsSection = "";
 function resetCreateAccountDraft() {
@@ -292,13 +246,10 @@ function renderSettingsSwitcher(activeSection = "") {
 
 function renderFamilyControlsSwitcher(activeSection = "") {
   const controlButtons = [
-    { key: "add-child", label: "Add Child" },
     { key: "add-rewards", label: "Add Rewards" },
-    { key: "manage-rewards", label: "Manage Rewards" },
     { key: "dollar-rate", label: "Dollar Rate" },
+    { key: "add-child", label: "Add Child" },
     { key: "celebration-threshold", label: "Celebration Threshold" },
-    { key: "kid-colours", label: "Edit Kid Colours" },
-    { key: "delete-kid", label: "Remove Child" },
     { key: "delete-family", label: "Delete Family" },
   ];
 
@@ -323,13 +274,10 @@ function renderFamilyControlsSwitcher(activeSection = "") {
 
 function getFamilyControlsLabel(sectionKey = "") {
   const labels = {
-    "add-child": "Add Child",
     "add-rewards": "Add Rewards",
-    "manage-rewards": "Manage Rewards",
     "dollar-rate": "Dollar Rate",
+    "add-child": "Add Child",
     "celebration-threshold": "Celebration Threshold",
-    "kid-colours": "Edit Kid Colours",
-    "delete-kid": "Remove Child",
     "delete-family": "Delete Family",
   };
 
@@ -489,16 +437,6 @@ function renderCurrentCreateStep() {
     `;
   }
 
-  const kidNumber = getKidNumberFromFieldName(currentField.name);
-  const kidName2 = kidNumber ? (String(createAccountDraft["kidName" + kidNumber] || "").trim() || ("Kid " + kidNumber)) : "";
-  const selColourIdx = kidNumber ? (Number(createAccountDraft["kidColour" + kidNumber]) || 0) : 0;
-  const colourPickerHtml = isKidPinCreateStep(currentField) && kidNumber ? (
-    "<div class=\"create-colour-picker\"><p class=\"eyebrow\" style=\"margin-bottom:8px;\">Pick " + escapeHtml(kidName2) + "&#39;s colour</p><div class=\"colour-swatch-row\">" +
-    KID_COLOUR_PALETTE.map(function(col, i) {
-      return "<button type=\"button\" class=\"colour-swatch " + (i === selColourIdx ? "colour-swatch--selected" : "") + "\" style=\"background:" + col.accent + ";\" data-create-kid-colour=\"" + kidNumber + "\" data-create-colour-index=\"" + i + "\" aria-label=\"Colour " + (i+1) + "\"></button>";
-    }).join("") +
-    "</div></div>"
-  ) : "";
   return `
     <div class="auth-kid-block single-step-kid-block">
       <p class="eyebrow">Add your kids</p>
@@ -506,7 +444,6 @@ function renderCurrentCreateStep() {
         ${renderCreateField(currentField.name, currentField.placeholder, currentField.type)}
       </div>
       ${guidance}
-      ${colourPickerHtml}
     </div>
   `;
 }
@@ -573,38 +510,14 @@ function updateAboutTopicDisplay(nextTopic) {
     button.classList.toggle("active", button.dataset.aboutTopic === aboutTopic);
   });
 }
-let tpHour = 8;
-let tpMin = 0;
-let tpAmPm = "AM";
-
-function tpPad(n) { return String(n).padStart(2, "0"); }
-
-function tpUpdate() {
-  const hourEl = document.getElementById("tp-hour-display");
-  const minEl  = document.getElementById("tp-min-display");
-  const hidden = document.getElementById("tp-hidden-value");
-  if (!hourEl || !minEl || !hidden) return;
-  hourEl.textContent = tpHour;
-  minEl.textContent  = tpPad(tpMin);
-  const h24 = tpAmPm === "AM" ? (tpHour === 12 ? 0 : tpHour) : (tpHour === 12 ? 12 : tpHour + 12);
-  hidden.value = tpPad(h24) + ":" + tpPad(tpMin);
-  document.querySelectorAll("[data-tp-ampm]").forEach(function(btn) {
-    btn.classList.toggle("active", btn.dataset.tpAmpm === tpAmPm);
-  });
-  // also update the schedule preview
-  updateTaskSchedulePreview(document.querySelector("#task-form"));
-}
-
-function tpReset() {
-  tpHour = 8; tpMin = 0; tpAmPm = "AM";
-}
-
 let currentKidId = null;
 let currentKidView = "dashboard";
 let currentFamilyMode = false;
 let currentAssignedKids = [];
 let currentRewardAssignedKids = [];
 let currentThresholdAssignedKids = [];
+let isAssignPopupOpen = false;
+let assignPopupPlacement = "task";
 
 function escapeHtml(value) {
   return String(value)
@@ -679,20 +592,6 @@ function getDollarEquivalent(kid) {
   return Math.floor((Number(kid.points) / pointUnit) * dollarUnit);
 }
 
-function renderPointsHistory(kid) {
-  const history = Array.isArray(kid.pointsHistory) ? kid.pointsHistory : [];
-  if (!history.length) return "";
-  const recent = history.slice().reverse().slice(0, 20);
-  const rows = recent.map(function(h) {
-    const isPos = (h.pointsDelta || 0) >= 0;
-    const dotClass = h.changeType === "task" ? "history-dot--task" : h.changeType === "bonus" ? "history-dot--bonus" : h.changeType === "penalty" ? "history-dot--penalty" : "history-dot--reward_claim";
-    const deltaLabel = isPos ? ("+" + h.pointsDelta) : String(h.pointsDelta);
-    const timeLabel = h.createdAt ? new Date(h.createdAt).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : "";
-    return '<div class="history-entry"><span class="history-dot ' + dotClass + '"></span><span class="history-desc">' + escapeHtml(h.description || h.changeType) + '</span><span class="history-delta ' + (isPos ? "history-delta--pos" : "history-delta--neg") + '">' + escapeHtml(deltaLabel) + '</span><span class="history-time">' + escapeHtml(timeLabel) + '</span></div>';
-  }).join("");
-  return '<div class="points-history-block"><p class="eyebrow" style="margin-bottom:10px;">Points history</p><div class="history-list">' + rows + '</div></div>';
-}
-
 function renderAvatar(kid) {
   const initial = String(kid.name || "K").trim().charAt(0).toUpperCase() || "K";
   return `<span class="avatar-initial" aria-hidden="true">${escapeHtml(initial)}</span>`;
@@ -719,7 +618,10 @@ function renderCardList(items, renderer, emptyText) {
 }
 
 function getShellClass(name, familyMode) {
-  return familyMode ? "family" : "kid";
+  if (familyMode) return "family";
+  const lower = String(name || "").trim().toLowerCase();
+  if (["simra", "jinan", "rayyan"].includes(lower)) return lower;
+  return "family";
 }
 
 function showFieldError(form, message) {
@@ -768,8 +670,7 @@ async function handleCreateFamilyAccount() {
       invalidKidPin = true;
       continue;
     }
-    const colourIdx = Number(createAccountDraft[`kidColour${index}`]) || (kids.length);
-    kids.push(createKid(name, pin, "", colourIdx));
+    kids.push(createKid(name, pin));
   }
 
   if (invalidKidPin) {
@@ -782,10 +683,47 @@ async function handleCreateFamilyAccount() {
     return;
   }
 
-  const hashedParentPin = await hashPin(parentPin);
-  for (const kid of kids) { kid.kidPin = await hashPin(kid.kidPin); }
-  const family = createFamily({ familyName, parentName, parentEmail, parentPin: hashedParentPin, kids });
-  family.id = createId("family"); // ensure stable local id before cloud
+  if (cloudAuthEnabled && cloudModeEnabled) {
+    try {
+      const family = await createCloudFamilyAccount({ familyName, parentName, parentEmail, parentPin, kids });
+      upsertFamilyInState(family);
+      pendingCloudFamilyDraft = null;
+      authAccountReady = true;
+      authAccountJustCreated = true;
+      authStage = "login";
+      authView = "parent";
+      resetCreateAccountDraft();
+      await supabaseClient.auth.signOut().catch(() => {
+        // If sign-out fails, we still continue to the login step.
+      });
+      state.session = null;
+      currentKidId = null;
+      currentKidView = "dashboard";
+      currentFamilyMode = false;
+      currentAssignedKids = [];
+      saveState({ skipCloud: true });
+      showToast("Account created. Log in as parent to continue.");
+      renderAuthHome();
+    } catch (error) {
+      const message = String(error?.message || "");
+      if (/rate limit/i.test(message) || /already registered/i.test(message)) {
+        upsertLocalFamilyDraft({ familyName, parentName, parentEmail, parentPin, kids });
+        pendingCloudFamilyDraft = { familyName, parentName, parentEmail, parentPin, kids };
+        authAccountReady = true;
+        authAccountJustCreated = false;
+        authStage = "login";
+        authView = "parent";
+        saveState({ skipCloud: true });
+        renderAuthHome();
+        showToast("Cloud signup is busy. You can log in on this device now, and sync can catch up later.");
+        return;
+      }
+      showToast(message || "Could not create the family account.");
+    }
+    return;
+  }
+
+  const family = createFamily({ familyName, parentName, parentEmail, parentPin, kids });
   state.families.push(family);
   authAccountReady = true;
   authAccountJustCreated = true;
@@ -797,8 +735,7 @@ async function handleCreateFamilyAccount() {
   currentKidView = "dashboard";
   currentFamilyMode = false;
   currentAssignedKids = [];
-  saveState({ skipCloud: true });
-
+  saveState();
   showToast("Account created. Log in as parent to continue.");
   renderAuthHome();
 }
@@ -810,8 +747,8 @@ function showThresholdCelebration(kid, threshold) {
   celebration.innerHTML = `
     <div class="celebration-card">
       <div class="celebration-emojis" aria-hidden="true">
-        <span>\uD83C\uDF89</span><span>\u2B50</span><span>\u2728</span><span>\uD83C\uDFC6</span><span>\uD83D\uDCAB</span><span>\uD83C\uDF1F</span>
-        <span>\uD83C\uDF8A</span><span>\u2B50</span><span>\u2728</span><span>\uD83C\uDFC5</span><span>\uD83D\uDCA5</span><span>\uD83C\uDF08</span>
+        <span>🎉</span><span>⭐</span><span>✨</span><span>🏆</span><span>💫</span><span>🌟</span>
+        <span>🎊</span><span>⭐</span><span>✨</span><span>🏅</span><span>💥</span><span>🌈</span>
       </div>
       <p class="eyebrow">Threshold reached</p>
       <h2>${escapeHtml(kid.name)} hit ${escapeHtml(threshold)} points!</h2>
@@ -1082,7 +1019,7 @@ function updateTaskSchedulePreview(taskForm) {
   const preview = taskForm.querySelector("[data-task-schedule-preview]");
   const customDateInput = taskForm.querySelector('input[name="customDate"]');
   const recurringInput = taskForm.querySelector('input[name="recurring"]:checked');
-  const timeInput = taskForm.querySelector('input[name="time"]') || taskForm.querySelector('#tp-hidden-value');
+  const timeInput = taskForm.querySelector('input[name="time"]');
   const scheduleBlock = taskForm.querySelector(".task-schedule-block");
   if (!preview || !customDateInput || !timeInput || !scheduleBlock) return;
 
@@ -1107,46 +1044,7 @@ function buildTaskDetail(recurring, time, customDateLabel = "") {
     "custom-date": customDateLabel || "Custom date",
   };
 
-  return `${labels[recurring] || "Daily"} \u2022 ${time}`;
-}
-
-function addPointsHistory(kid, changeType, pointsDelta, description) {
-  if (!Array.isArray(kid.pointsHistory)) kid.pointsHistory = [];
-  kid.pointsHistory.push({ id: createId("hist"), changeType, pointsDelta, pointsAfter: kid.points, description: description || changeType, createdAt: new Date().toISOString() });
-  if (kid.pointsHistory.length > 500) kid.pointsHistory = kid.pointsHistory.slice(-500);
-}
-
-function editTask(kidId, templateId, newTitle, newPoints, newTime) {
-  const kid = getKid(kidId); if (!kid) return;
-  const tmpl = kid.taskTemplates.find(t => t.id === templateId); if (!tmpl) return;
-  tmpl.title = String(newTitle || "").trim().slice(0,100) || tmpl.title;
-  tmpl.points = Math.max(0, Number(newPoints) || 0);
-  tmpl.time = String(newTime || "").trim();
-  [...kid.due, ...kid.awaiting].forEach(t => { if (t.templateId === templateId) { t.title = tmpl.title; t.points = tmpl.points; t.time = tmpl.time; t.detail = buildTaskDetail(t.recurring, tmpl.time, t.customDate ? formatCustomDate(t.customDate) : ""); } });
-}
-
-function deleteTask(kidId, templateId) {
-  const kid = getKid(kidId); if (!kid) return;
-  kid.taskTemplates = kid.taskTemplates.filter(t => t.id !== templateId);
-  kid.due = kid.due.filter(t => t.templateId !== templateId);
-  kid.awaiting = kid.awaiting.filter(t => t.templateId !== templateId);
-}
-
-function editReward(kidId, rewardId, newTitle, newCost) {
-  const kid = getKid(kidId); if (!kid) return;
-  const r = kid.rewards.find(r => r.id === rewardId); if (!r) return;
-  r.title = String(newTitle || "").trim().slice(0,100) || r.title;
-  r.cost = Math.max(0, Number(newCost) || 0);
-}
-
-function deleteReward(kidId, rewardId) {
-  const kid = getKid(kidId); if (!kid) return;
-  kid.rewards = kid.rewards.filter(r => r.id !== rewardId);
-}
-
-function updateKidColour(kidId, accent, deep) {
-  const kid = getKid(kidId); if (!kid) return;
-  kid.accentColour = accent; kid.accentColourDeep = deep;
+  return `${labels[recurring] || "Daily"} • ${time}`;
 }
 
 function addReward(kidIds, title, cost) {
@@ -1181,7 +1079,6 @@ function addAdjustment(kidIds, label, value, reason = "") {
     });
 
     kid.points = Math.max(0, kid.points + value);
-    addPointsHistory(kid, type === "penalty" ? "penalty" : "bonus", value, reason || (type === "penalty" ? "Penalty" : "Bonus"));
     maybeCelebrateThreshold(kid, previousPoints);
   });
 }
@@ -1196,13 +1093,10 @@ function addReason(kidIds, type, reason) {
   });
 }
 
-function addChild(name, kidPin, avatar = "", accentColour = "", accentColourDeep = "") {
+function addChild(name, kidPin, avatar = "") {
   const family = getCurrentFamily();
   if (!family) return;
-  const colourIndex = family.kids.length;
-  const kid = createKid(name, kidPin, avatar, colourIndex);
-  if (accentColour) { kid.accentColour = accentColour; kid.accentColourDeep = accentColourDeep || accentColour; }
-  family.kids.push(kid);
+  family.kids.push(createKid(name, kidPin, avatar));
 }
 
 function updateDollarConversion(kidId, points, dollars) {
@@ -1260,13 +1154,11 @@ function moveTask(kidId, fromStatus, toStatus, taskIndex) {
   kid[toStatus].push(task);
   if (toStatus === "completed" && fromStatus !== "completed") {
     kid.points += Number(task.points) || 0;
-    addPointsHistory(kid, "task", Number(task.points)||0, "Completed: " + task.title);
     maybeCelebrateThreshold(kid, previousPoints);
   }
+
   if (fromStatus === "completed" && toStatus !== "completed") {
-    const delta = -(Number(task.points)||0);
-    kid.points = Math.max(0, kid.points + delta);
-    addPointsHistory(kid, "task", delta, "Uncompleted: " + task.title);
+    kid.points = Math.max(0, kid.points - (Number(task.points) || 0));
   }
 }
 
@@ -1303,7 +1195,6 @@ function claimReward(kidId, rewardId) {
   }
 
   kid.points = currentPoints - cost;
-  addPointsHistory(kid, "reward_claim", -cost, "Claimed: " + reward.title);
   family.favorClaims = [
     {
       id: createId("favor-claim"),
@@ -1325,31 +1216,18 @@ function claimReward(kidId, rewardId) {
   };
 }
 
-function resetAllTasks() {
+function resetAllTasksAndPoints() {
   getFamilyKids().forEach((kid) => {
-    kid.due = []; kid.awaiting = []; kid.completed = []; kid.taskTemplates = [];
-    kid.missedDaysInARow = 0; kid.lastMissedCheckDate = getTodayDateKey(); kid.lastTaskRefreshDate = getTodayDateKey();
+    kid.points = 0;
+    kid.due = [];
+    kid.awaiting = [];
+    kid.completed = [];
+    kid.taskTemplates = [];
+    kid.lastCelebratedThreshold = 0;
+    kid.missedDaysInARow = 0;
+    kid.lastMissedCheckDate = getTodayDateKey();
+    kid.lastTaskRefreshDate = getTodayDateKey();
   });
-}
-
-function resetAllPoints() {
-  getFamilyKids().forEach((kid) => {
-    kid.points = 0; kid.lastCelebratedThreshold = 0; kid.pointsHistory = [];
-    kid.bonusPenalty = [
-      { type: "bonus", title: "+0 points", value: "+0 points", reason: "", dateKey: null, createdAt: null },
-      { type: "penalty", title: "-0 points", value: "-0 points", reason: "", dateKey: null, createdAt: null },
-    ];
-  });
-}
-
-function resetAllTasksAndPoints() { resetAllTasks(); resetAllPoints(); }
-
-function deleteKid(kidId) {
-  const family = getCurrentFamily(); if (!family) return false;
-  const kid = family.kids.find(k => k.id === kidId); if (!kid) return false;
-  family.kids = family.kids.filter(k => k.id !== kidId);
-  family.favorClaims = (family.favorClaims || []).filter(c => c.kidId !== kidId);
-  return kid.name;
 }
 
 function deleteCurrentFamilyFromDevice() {
@@ -1362,6 +1240,8 @@ function deleteCurrentFamilyFromDevice() {
   currentKidView = "dashboard";
   currentFamilyMode = false;
   currentAssignedKids = [];
+  isAssignPopupOpen = false;
+  assignPopupPlacement = "task";
   authStage = "intro";
   authView = "";
   authAccountJustCreated = false;
@@ -1372,15 +1252,473 @@ function deleteCurrentFamilyFromDevice() {
 }
 
 async function logout() {
+  if (cloudAuthEnabled && cloudModeEnabled && isParentSession() && supabaseClient) {
+    await supabaseClient.auth.signOut().catch(() => {
+      // Local logout still happens even if cloud sign out fails.
+    });
+  }
 
   state.session = null;
   currentKidId = null;
   currentKidView = "dashboard";
   currentFamilyMode = false;
   currentAssignedKids = [];
+  isAssignPopupOpen = false;
+  assignPopupPlacement = "task";
   saveState();
   renderApp();
+}
 
+function mapKidRowsToKidState(kidRow, taskRows, rewardRows, adjustmentRows, reasonRows) {
+  const tasks = taskRows.filter((task) => task.kid_id === kidRow.id);
+  const kidAdjustments = adjustmentRows
+    .filter((entry) => entry.kid_id === kidRow.id)
+    .sort((left, right) => new Date(right.created_at || 0) - new Date(left.created_at || 0));
+  const latestBonus = kidAdjustments.find((entry) => entry.adjustment_type === "bonus");
+  const latestPenalty = kidAdjustments.find((entry) => entry.adjustment_type === "penalty");
+
+  return normalizeKid({
+    id: kidRow.id,
+    name: kidRow.name,
+    kidPin: kidRow.kid_pin_hash || "",
+    avatar: kidRow.avatar || kidRow.name.trim().charAt(0).toUpperCase() || "K",
+    points: kidRow.points,
+    pointsPerDollarReward: kidRow.points_per_dollar_reward,
+    dollarRewardValue: kidRow.dollar_reward_value,
+    celebrationThreshold: kidRow.celebration_threshold,
+    lastCelebratedThreshold: kidRow.last_celebrated_threshold,
+    missedDaysInARow: kidRow.missed_days_in_a_row,
+    lastMissedCheckDate: kidRow.last_missed_check_date,
+    due: tasks
+      .filter((task) => task.status === "due")
+      .map((task) => ({
+        id: task.id,
+        title: task.title,
+        detail: task.detail,
+        points: task.points,
+        recurring: task.recurring_key,
+        time: task.due_time_label,
+      })),
+    awaiting: tasks
+      .filter((task) => task.status === "awaiting")
+      .map((task) => ({
+        id: task.id,
+        title: task.title,
+        detail: task.detail,
+        points: task.points,
+        recurring: task.recurring_key,
+        time: task.due_time_label,
+      })),
+    completed: tasks
+      .filter((task) => task.status === "completed")
+      .map((task) => ({
+        id: task.id,
+        title: task.title,
+        detail: task.detail,
+        points: task.points,
+        recurring: task.recurring_key,
+        time: task.due_time_label,
+      })),
+    rewards: rewardRows
+      .filter((reward) => reward.kid_id === kidRow.id)
+      .map((reward) => ({
+        id: reward.id,
+        title: reward.title,
+        cost: reward.cost,
+      })),
+    bonusPenalty: [
+      {
+        type: "bonus",
+        title: latestBonus?.display_value || "+0 points",
+        value: latestBonus?.display_value || "+0 points",
+      },
+      {
+        type: "penalty",
+        title: latestPenalty?.display_value || "-0 points",
+        value: latestPenalty?.display_value || "-0 points",
+      },
+    ],
+    bonusReasons: reasonRows
+      .filter((entry) => entry.kid_id === kidRow.id && entry.reason_type === "bonus")
+      .map((entry) => entry.reason),
+    penaltyReasons: reasonRows
+      .filter((entry) => entry.kid_id === kidRow.id && entry.reason_type === "penalty")
+      .map((entry) => entry.reason),
+  });
+}
+
+async function fetchCloudFamilyForUser(user) {
+  if (!supabaseClient || !user) return null;
+
+  const { data: memberships, error: membershipError } = await supabaseClient
+    .from("parent_memberships")
+    .select("family_id, parent_name, created_at")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: true });
+
+  if (membershipError) throw membershipError;
+  if (!memberships?.length) return null;
+
+  const membership = memberships[0];
+  const familyId = membership.family_id;
+
+  const [
+    { data: familyRow, error: familyError },
+    { data: kidRows, error: kidsError },
+    { data: settingsRow, error: settingsError },
+  ] = await Promise.all([
+    supabaseClient.from("families").select("id, family_name, created_at").eq("id", familyId).single(),
+    supabaseClient.from("kids").select("*").eq("family_id", familyId).order("created_at", { ascending: true }),
+    supabaseClient.from("family_settings").select("*").eq("family_id", familyId).maybeSingle(),
+  ]);
+
+  if (familyError) throw familyError;
+  if (kidsError) throw kidsError;
+  if (settingsError) throw settingsError;
+
+  const kidIds = (kidRows || []).map((kid) => kid.id);
+  let taskRows = [];
+  let rewardRows = [];
+  let adjustmentRows = [];
+  let reasonRows = [];
+
+  if (kidIds.length) {
+    const [
+      { data: fetchedTasks, error: tasksError },
+      { data: fetchedRewards, error: rewardsError },
+      { data: fetchedAdjustments, error: adjustmentsError },
+      { data: fetchedReasons, error: reasonsError },
+    ] = await Promise.all([
+      supabaseClient.from("tasks").select("*").in("kid_id", kidIds).order("created_at", { ascending: true }),
+      supabaseClient.from("rewards").select("*").in("kid_id", kidIds).order("created_at", { ascending: true }),
+      supabaseClient.from("adjustments").select("*").in("kid_id", kidIds).order("created_at", { ascending: true }),
+      supabaseClient.from("reason_lists").select("*").in("kid_id", kidIds).order("created_at", { ascending: true }),
+    ]);
+
+    if (tasksError) throw tasksError;
+    if (rewardsError) throw rewardsError;
+    if (adjustmentsError) throw adjustmentsError;
+    if (reasonsError) throw reasonsError;
+
+    taskRows = fetchedTasks || [];
+    rewardRows = fetchedRewards || [];
+    adjustmentRows = fetchedAdjustments || [];
+    reasonRows = fetchedReasons || [];
+  }
+
+  return normalizeFamily({
+    id: familyRow.id,
+    familyName: familyRow.family_name,
+    parentName: membership.parent_name || user.user_metadata?.parent_name || "Parent",
+    parentEmail: user.email || "",
+    parentEmailLower: (user.email || "").toLowerCase(),
+    parentPin: settingsRow?.parent_pin_hash || "",
+    createdAt: familyRow.created_at,
+    kids: (kidRows || []).map((kidRow) => mapKidRowsToKidState(kidRow, taskRows, rewardRows, adjustmentRows, reasonRows)),
+  });
+}
+
+async function createCloudFamilyDataForUser(user, { familyName, parentName, parentPin, kids }) {
+  const { data: familyRow, error: familyError } = await supabaseClient
+    .from("families")
+    .insert({ family_name: familyName })
+    .select("id, family_name, created_at")
+    .single();
+
+  if (familyError) throw familyError;
+
+  const { error: membershipError } = await supabaseClient.from("parent_memberships").insert({
+    family_id: familyRow.id,
+    user_id: user.id,
+    parent_name: parentName,
+  });
+
+  if (membershipError) throw membershipError;
+
+  const { error: settingsError } = await supabaseClient.from("family_settings").upsert({
+    family_id: familyRow.id,
+    parent_pin_hash: parentPin,
+  });
+
+  if (settingsError) throw settingsError;
+
+  if (kids.length) {
+    const { error: kidsError } = await supabaseClient.from("kids").insert(
+      kids.map((kid) => ({
+        id: kid.id,
+        family_id: familyRow.id,
+        name: kid.name,
+        avatar: kid.avatar,
+        kid_pin_hash: kid.kidPin,
+        points: kid.points,
+        points_per_dollar_reward: kid.pointsPerDollarReward,
+        dollar_reward_value: kid.dollarRewardValue,
+        celebration_threshold: kid.celebrationThreshold,
+        last_celebrated_threshold: kid.lastCelebratedThreshold,
+        missed_days_in_a_row: kid.missedDaysInARow,
+        last_missed_check_date: kid.lastMissedCheckDate,
+      }))
+    );
+
+    if (kidsError) throw kidsError;
+  }
+
+  return fetchCloudFamilyForUser(user);
+}
+
+async function createCloudFamilyAccount({ familyName, parentName, parentEmail, parentPin, kids }) {
+  if (!supabaseClient) throw new Error("Cloud sync is not configured yet.");
+  const authPassword = buildCloudAuthPassword(parentEmail, parentPin);
+
+  const { data: signUpData, error: signUpError } = await supabaseClient.auth.signUp({
+    email: parentEmail,
+    password: authPassword,
+    options: {
+      data: {
+        parent_name: parentName,
+        family_name: familyName,
+      },
+    },
+  });
+
+  if (signUpError) throw signUpError;
+
+  let session = signUpData.session;
+  if (!session) {
+    const { data: signInData, error: signInError } = await supabaseClient.auth.signInWithPassword({
+      email: parentEmail,
+      password: authPassword,
+    });
+
+    if (signInError || !signInData.session) {
+      throw new Error("Signup worked, but Supabase still needs email confirmation. In Supabase, disable Confirm email for now or confirm the email before logging in.");
+    }
+
+    session = signInData.session;
+  }
+
+  const user = session.user;
+  return createCloudFamilyDataForUser(user, { familyName, parentName, parentPin, kids });
+}
+
+async function loginCloudParent(parentEmail, parentPin) {
+  if (!supabaseClient) throw new Error("Cloud sync is not configured yet.");
+  const authPassword = buildCloudAuthPassword(parentEmail, parentPin);
+
+  const { data, error } = await supabaseClient.auth.signInWithPassword({
+    email: parentEmail,
+    password: authPassword,
+  });
+
+  if (error) throw error;
+  return fetchCloudFamilyForUser(data.user);
+}
+
+function buildCloudTaskRows(family) {
+  return family.kids.flatMap((kid) => (
+    [
+      ...kid.due.map((task) => ({ task, status: "due" })),
+      ...kid.awaiting.map((task) => ({ task, status: "awaiting" })),
+      ...kid.completed.map((task) => ({ task, status: "completed" })),
+    ].map(({ task, status }) => ({
+      id: task.id,
+      kid_id: kid.id,
+      title: task.title,
+      detail: task.detail,
+      points: Number(task.points) || 0,
+      recurring_key: task.recurring || "daily",
+      due_time_label: task.time || "",
+      status,
+    }))
+  ));
+}
+
+function buildCloudRewardRows(family) {
+  return family.kids.flatMap((kid) =>
+    kid.rewards.map((reward) => ({
+      id: reward.id,
+      kid_id: kid.id,
+      title: reward.title,
+      cost: Number(reward.cost) || 0,
+    }))
+  );
+}
+
+function buildCloudAdjustmentRows(family) {
+  return family.kids.flatMap((kid) =>
+    kid.bonusPenalty.map((entry, index) => ({
+      id: `${kid.id}-${entry.type || "adjustment"}-${index}`,
+      kid_id: kid.id,
+      adjustment_type: entry.type || "bonus",
+      points_delta: Number(String(entry.value).replace(/[^\d-]/g, "")) || 0,
+      display_value: entry.value || entry.title || "",
+    }))
+  );
+}
+
+function buildCloudReasonRows(family) {
+  return family.kids.flatMap((kid) => ([
+    ...kid.bonusReasons.map((reason, index) => ({
+      id: `${kid.id}-bonus-reason-${index}`,
+      kid_id: kid.id,
+      reason_type: "bonus",
+      reason,
+    })),
+    ...kid.penaltyReasons.map((reason, index) => ({
+      id: `${kid.id}-penalty-reason-${index}`,
+      kid_id: kid.id,
+      reason_type: "penalty",
+      reason,
+    })),
+  ]));
+}
+
+async function syncCurrentFamilyToCloud() {
+  if (!supabaseClient || !isParentSession()) return;
+
+  const family = getCurrentFamily();
+  if (!family) return;
+
+  const { data: sessionData, error: sessionError } = await supabaseClient.auth.getSession();
+  if (sessionError) throw sessionError;
+  if (!sessionData.session?.user) return;
+
+  const userId = sessionData.session.user.id;
+  const localKidIds = family.kids.map((kid) => kid.id);
+
+  const { error: familyUpdateError } = await supabaseClient
+    .from("families")
+    .update({ family_name: family.familyName })
+    .eq("id", family.id);
+
+  if (familyUpdateError) throw familyUpdateError;
+
+  const { error: membershipError } = await supabaseClient
+    .from("parent_memberships")
+    .upsert(
+      {
+        family_id: family.id,
+        user_id: userId,
+        parent_name: family.parentName,
+      },
+      { onConflict: "family_id,user_id" }
+    );
+
+  if (membershipError) throw membershipError;
+
+  const { error: settingsError } = await supabaseClient.from("family_settings").upsert({
+    family_id: family.id,
+    parent_pin_hash: family.parentPin || null,
+  });
+
+  if (settingsError) throw settingsError;
+
+  const { data: remoteKids, error: remoteKidsError } = await supabaseClient
+    .from("kids")
+    .select("id")
+    .eq("family_id", family.id);
+
+  if (remoteKidsError) throw remoteKidsError;
+
+  const removedKidIds = (remoteKids || [])
+    .map((entry) => entry.id)
+    .filter((kidId) => !localKidIds.includes(kidId));
+
+  if (removedKidIds.length) {
+    const { error: deleteKidsError } = await supabaseClient.from("kids").delete().in("id", removedKidIds);
+    if (deleteKidsError) throw deleteKidsError;
+  }
+
+  if (localKidIds.length) {
+    const { error: upsertKidsError } = await supabaseClient.from("kids").upsert(
+      family.kids.map((kid) => ({
+        id: kid.id,
+        family_id: family.id,
+        name: kid.name,
+        avatar: kid.avatar,
+        kid_pin_hash: kid.kidPin || "",
+        points: Number(kid.points) || 0,
+        points_per_dollar_reward: Number(kid.pointsPerDollarReward) || 100,
+        dollar_reward_value: Number(kid.dollarRewardValue) || 20,
+        celebration_threshold: Number(kid.celebrationThreshold) || 100,
+        last_celebrated_threshold: Number(kid.lastCelebratedThreshold) || 0,
+        missed_days_in_a_row: Number(kid.missedDaysInARow) || 0,
+        last_missed_check_date: kid.lastMissedCheckDate,
+      }))
+    );
+
+    if (upsertKidsError) throw upsertKidsError;
+
+    const deleteOps = [
+      supabaseClient.from("tasks").delete().in("kid_id", localKidIds),
+      supabaseClient.from("rewards").delete().in("kid_id", localKidIds),
+      supabaseClient.from("adjustments").delete().in("kid_id", localKidIds),
+      supabaseClient.from("reason_lists").delete().in("kid_id", localKidIds),
+    ];
+
+    const deleteResults = await Promise.all(deleteOps);
+    const deleteError = deleteResults.find((result) => result.error)?.error;
+    if (deleteError) throw deleteError;
+
+    const taskRows = buildCloudTaskRows(family);
+    const rewardRows = buildCloudRewardRows(family);
+    const adjustmentRows = buildCloudAdjustmentRows(family);
+    const reasonRows = buildCloudReasonRows(family);
+
+    if (taskRows.length) {
+      const { error } = await supabaseClient.from("tasks").insert(taskRows);
+      if (error) throw error;
+    }
+
+    if (rewardRows.length) {
+      const { error } = await supabaseClient.from("rewards").insert(rewardRows);
+      if (error) throw error;
+    }
+
+    if (adjustmentRows.length) {
+      const { error } = await supabaseClient.from("adjustments").insert(adjustmentRows);
+      if (error) throw error;
+    }
+
+    if (reasonRows.length) {
+      const { error } = await supabaseClient.from("reason_lists").insert(reasonRows);
+      if (error) throw error;
+    }
+  }
+}
+
+function queueCloudSync() {
+  cloudSyncQueue = cloudSyncQueue
+    .then(() => syncCurrentFamilyToCloud())
+    .catch((error) => {
+      console.error("Cloud sync failed", error);
+      showToast("Saved locally. Cloud sync needs attention.");
+    });
+
+  return cloudSyncQueue;
+}
+
+async function bootstrapCloudSessionIfAvailable() {
+  if (!cloudAuthEnabled || !supabaseClient || cloudBootstrapStarted) return;
+  cloudBootstrapStarted = true;
+
+  const { data, error } = await supabaseClient.auth.getSession();
+  if (error || !data.session?.user) return;
+
+  const family = await fetchCloudFamilyForUser(data.session.user).catch((cloudError) => {
+    console.error("Cloud bootstrap failed", cloudError);
+    return null;
+  });
+
+  if (!family) return;
+
+  upsertFamilyInState(family);
+  if (!state.session || state.session.role === "parent") {
+    state.session = { familyId: family.id, role: "parent" };
+  }
+
+  saveState({ skipCloud: true });
+  renderApp();
 }
 
 function renderAssignedKidsBlock() {
@@ -1428,24 +1766,10 @@ function renderTaskRecurringBlock() {
       </div>
       <div class="task-time-row">
         <input class="custom-date-field is-hidden" type="date" name="customDate" aria-label="Custom date" />
-        <div class="time-picker-wrap">
-          <div class="tp-spinner">
-            <button type="button" class="tp-arrow" data-tp-hour="+1">\u25B2</button>
-            <div class="tp-val" id="tp-hour-display">8</div>
-            <button type="button" class="tp-arrow" data-tp-hour="-1">\u25BC</button>
-          </div>
-          <div class="tp-sep">:</div>
-          <div class="tp-spinner">
-            <button type="button" class="tp-arrow" data-tp-min="+1">\u25B2</button>
-            <div class="tp-val" id="tp-min-display">00</div>
-            <button type="button" class="tp-arrow" data-tp-min="-1">\u25BC</button>
-          </div>
-          <div class="tp-ampm-group">
-            <button type="button" class="tp-ampm-btn active" data-tp-ampm="AM">AM</button>
-            <button type="button" class="tp-ampm-btn" data-tp-ampm="PM">PM</button>
-          </div>
-          <input type="hidden" name="time" id="tp-hidden-value" value="08:00" />
-        </div>
+        <label class="time-field task-time-capsule" aria-label="Task time">
+          <span class="task-time-icon" aria-hidden="true">◔</span>
+          <input type="time" name="time" required />
+        </label>
       </div>
       <p class="task-schedule-preview" data-task-schedule-preview="true">Choose a repeat style and time to preview the schedule.</p>
     </div>
@@ -1458,7 +1782,7 @@ function renderAuthHome() {
   }
 
   if (authStage === "login" && !["parent", "kid", "returning"].includes(authView)) {
-    authView = "parent";
+    authView = "";
   }
 
   document.getElementById("page-home").innerHTML = `
@@ -1466,14 +1790,14 @@ function renderAuthHome() {
       <header class="home-header">
         <p class="eyebrow">Family task tracker</p>
         <h1 class="rainbow-title" aria-label="CHORES">
-          <span class="title-star" aria-hidden="true">\u2726</span>
+          <span class="title-star" aria-hidden="true">✦</span>
           <span aria-hidden="true">C</span>
           <span aria-hidden="true">H</span>
           <span aria-hidden="true">O</span>
           <span aria-hidden="true">R</span>
           <span aria-hidden="true">E</span>
           <span aria-hidden="true">S</span>
-          <span class="title-star" aria-hidden="true">\u2726</span>
+          <span class="title-star" aria-hidden="true">✦</span>
         </h1>
       </header>
 
@@ -1501,10 +1825,24 @@ function renderAuthHome() {
                       `
                   }
                 `
-                : `
-                  <button class="view-button ${authView === "parent" ? "active" : ""}" type="button" data-auth-view="parent">Parent login</button>
-                  <button class="view-button ${authView === "kid" ? "active" : ""}" type="button" data-auth-view="kid">Kid login</button>
-                `
+                : authView === ""
+                  ? `
+                    <div class="login-picker">
+                      <button class="login-picker-btn login-picker-parent" type="button" data-auth-view="parent">
+                        <span class="score-sparkles" aria-hidden="true"></span>
+                        Parent login
+                      </button>
+                      <button class="login-picker-btn login-picker-kid" type="button" data-auth-view="kid">
+                        <span class="score-sparkles" aria-hidden="true"></span>
+                        Kid login
+                      </button>
+                      <button class="action-button secondary" type="button" data-auth-stage="intro" style="margin-top:8px;">Back to home</button>
+                    </div>
+                  `
+                  : `
+                    <button class="action-button secondary auth-back-button" type="button" data-auth-view="login-picker">← Back</button>
+                    <button class="view-button active" type="button">${authView === "parent" ? "Parent login" : "Kid login"}</button>
+                  ` 
             }
           </div>
 
@@ -1622,14 +1960,14 @@ function renderParentHome() {
         <button class="back-button home-logout-button" type="button" data-logout="true">Log out</button>
         <p class="eyebrow">${escapeHtml(family.familyName)} family</p>
         <h1 class="rainbow-title" aria-label="CHORES">
-          <span class="title-star" aria-hidden="true">\u2726</span>
+          <span class="title-star" aria-hidden="true">✦</span>
           <span aria-hidden="true">C</span>
           <span aria-hidden="true">H</span>
           <span aria-hidden="true">O</span>
           <span aria-hidden="true">R</span>
           <span aria-hidden="true">E</span>
           <span aria-hidden="true">S</span>
-          <span class="title-star" aria-hidden="true">\u2726</span>
+          <span class="title-star" aria-hidden="true">✦</span>
         </h1>
       </header>
 
@@ -1637,7 +1975,7 @@ function renderParentHome() {
         ${kids
           .map(
             (kid) => `
-              <article class="kid-card ${escapeHtml(getShellClass(kid.name, false))}" data-kid-id="${escapeHtml(kid.id)}" role="button" tabindex="0" ${kid.accentColour ? `style="--kid-accent:${kid.accentColour};--kid-accent-deep:${kid.accentColourDeep||kid.accentColour};--kid-accent-soft:rgba(${hexToRgb(kid.accentColour)},0.12);--kid-accent-rgb:${hexToRgb(kid.accentColour)};"` : ""}>
+              <article class="kid-card ${escapeHtml(getShellClass(kid.name, false))}" data-kid-id="${escapeHtml(kid.id)}" role="button" tabindex="0">
                 ${renderTileBubbles()}
                 <div class="kid-card-top">
                   <div class="avatar">${renderAvatar(kid)}</div>
@@ -1688,7 +2026,6 @@ function renderKidPage(kidId) {
   const familyMode = currentFamilyMode && isParentSession();
   const role = isParentSession() ? "parent" : "kid";
   const shellClass = getShellClass(kid.name, familyMode);
-  const kidInlineStyle = kid.accentColour ? `style="--kid-accent:${kid.accentColour};--kid-accent-deep:${kid.accentColourDeep||kid.accentColour};--kid-accent-soft:rgba(${hexToRgb(kid.accentColour)},0.12);--kid-accent-rgb:${hexToRgb(kid.accentColour)};"` : "";
   const pageTitle = familyMode ? family.familyName : kid.name;
   const canSeeReports = role === "parent";
   const canSeeSettings = role === "parent";
@@ -1697,7 +2034,7 @@ function renderKidPage(kidId) {
   const todayPenalty = getKidAdjustmentForToday(kid, "penalty");
   const parentFocusedNav = (currentKidView === "settings" || currentKidView === "report") && isParentSession();
   document.getElementById("page-kid").innerHTML = `
-    <div class="kid-shell ${escapeHtml(shellClass)}" ${kidInlineStyle}>
+    <div class="kid-shell ${escapeHtml(shellClass)}">
       <header class="kid-header">
         <div class="kid-profile-pill">
           <h1>${escapeHtml(pageTitle)}</h1>
@@ -1720,7 +2057,7 @@ function renderKidPage(kidId) {
               : ""
           }
         </div>
-        <button class="back-button" type="button" id="back-home">${isParentSession() ? "\u2190 Back to family" : "Log out"}</button>
+        <button class="back-button" type="button" id="back-home">${isParentSession() ? "← Back to family" : "Log out"}</button>
       </header>
 
       <section class="kid-layout">
@@ -1804,10 +2141,10 @@ function renderKidPage(kidId) {
             hasReachedThreshold
               ? `
                 <span class="rewards-celebration-cloud" aria-hidden="true">
-                  <span>\uD83E\uDD73</span><span>\uD83D\uDE04</span><span>\uD83D\uDE01</span><span>\uD83E\uDD29</span><span>\uD83D\uDE06</span><span>\uD83C\uDF89</span>
-                  <span>\uD83D\uDE04</span><span>\uD83E\uDD73</span><span>\uD83D\uDE01</span><span>\uD83E\uDD29</span><span>\uD83D\uDE06</span><span>\uD83C\uDF8A</span>
-                  <span>\uD83E\uDD73</span><span>\uD83D\uDE04</span><span>\uD83D\uDE01</span><span>\uD83E\uDD29</span><span>\uD83D\uDE06</span><span>\uD83C\uDF89</span>
-                  <span>\uD83D\uDE04</span><span>\uD83E\uDD73</span><span>\uD83D\uDE01</span><span>\uD83E\uDD29</span><span>\uD83D\uDE06</span><span>\uD83C\uDF8A</span>
+                  <span>🥳</span><span>😄</span><span>😁</span><span>🤩</span><span>😆</span><span>🎉</span>
+                  <span>😄</span><span>🥳</span><span>😁</span><span>🤩</span><span>😆</span><span>🎊</span>
+                  <span>🥳</span><span>😄</span><span>😁</span><span>🤩</span><span>😆</span><span>🎉</span>
+                  <span>😄</span><span>🥳</span><span>😁</span><span>🤩</span><span>😆</span><span>🎊</span>
                 </span>
               `
               : ""
@@ -1821,14 +2158,14 @@ function renderKidPage(kidId) {
 
           <div class="rewards-layout">
             <div class="points-column">
-              <article class="points-card is-bursting ${hasReachedThreshold ? "threshold-celebration" : ""}" data-points-card="true" role="button" tabindex="0" aria-label="Make points sparkle">
+              <article class="points-card points-card-v2 is-bursting ${hasReachedThreshold ? "threshold-celebration" : ""}" data-points-card="true" role="button" tabindex="0" aria-label="Make points sparkle">
                 ${renderTileBubbles()}
                 ${
                   hasReachedThreshold
                     ? `
                       <span class="points-celebration-cloud" aria-hidden="true">
-                        <span>\uD83E\uDD73</span><span>\uD83D\uDE04</span><span>\uD83D\uDE01</span><span>\uD83E\uDD29</span><span>\uD83D\uDE06</span><span>\uD83C\uDF89</span>
-                        <span>\uD83D\uDE04</span><span>\uD83E\uDD73</span><span>\uD83D\uDE01</span><span>\uD83E\uDD29</span><span>\uD83D\uDE06</span><span>\uD83C\uDF8A</span>
+                        <span>🥳</span><span>😄</span><span>😁</span><span>🤩</span><span>😆</span><span>🎉</span>
+                        <span>😄</span><span>🥳</span><span>😁</span><span>🤩</span><span>😆</span><span>🎊</span>
                       </span>
                     `
                     : ""
@@ -1838,39 +2175,34 @@ function renderKidPage(kidId) {
                   <span></span><span></span><span></span><span></span><span></span><span></span>
                   <span></span><span></span><span></span><span></span><span></span><span></span>
                 </span>
-                <p class="eyebrow">Points earned</p>
+                <div class="points-gem-ring" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span></div>
+                <p class="eyebrow points-eyebrow">✨ Points earned ✨</p>
                 <h3 class="points-total">${escapeHtml(kid.points)}</h3>
-                <p class="points-message is-changing">You are building your treasure, ${escapeHtml(kid.name)}!</p>
+                <div class="points-coin-trail" aria-hidden="true"><span>⭐</span><span>??</span><span>✨</span><span>⭐</span><span>??</span><span>✨</span></div>
+                <p class="points-message is-changing">${
+                  kid.points === 0 ? "?? Ready to launch, " + escapeHtml(kid.name) + "!"
+                  : kid.points < 20 ? "?? Growing strong, " + escapeHtml(kid.name) + "!"
+                  : kid.points < 50 ? "?? On fire, " + escapeHtml(kid.name) + "!"
+                  : kid.points < 100 ? "?? Smashing it, " + escapeHtml(kid.name) + "!"
+                  : kid.points < 200 ? "?? Royalty, " + escapeHtml(kid.name) + "!"
+                  : "✨ Legend, " + escapeHtml(kid.name) + "!"
+                }</p>
               </article>
 
-              <section class="daily-adjustment-panel">
+              <section class="daily-adjustment-panel daily-adjustment-panel-v2">
                 <article class="daily-adjustment-card bonus ${todayBonus ? "has-update" : "is-empty"}">
-                  <p class="eyebrow">Today's bonus</p>
-                  ${
-                    todayBonus
-                      ? `
-                        <h4>${escapeHtml(todayBonus.value)}</h4>
-                        <p>${escapeHtml(todayBonus.reason || "A bonus was added today.")}</p>
-                      `
-                      : `
-                        <h4>No bonus yet</h4>
-                        <p>No bonus has been added for today.</p>
-                      `
-                  }
+                  <span class="adj-icon">${todayBonus ? "??" : "⭐"}</span>
+                  <p class="eyebrow">Today’s bonus</p>
+                  ${todayBonus
+                    ? `<h4>${escapeHtml(todayBonus.value)}</h4><p>${escapeHtml(todayBonus.reason || "A bonus was added today.")}</p>`
+                    : `<h4>No bonus yet</h4><p>Keep going — a bonus could be yours!</p>`}
                 </article>
                 <article class="daily-adjustment-card penalty ${todayPenalty ? "has-update" : "is-empty"}">
-                  <p class="eyebrow">Today's penalty</p>
-                  ${
-                    todayPenalty
-                      ? `
-                        <h4>${escapeHtml(todayPenalty.value)}</h4>
-                        <p>${escapeHtml(todayPenalty.reason || "A penalty was added today.")}</p>
-                      `
-                      : `
-                        <h4>No penalty yet</h4>
-                        <p>No penalty has been added for today.</p>
-                      `
-                  }
+                  <span class="adj-icon">${todayPenalty ? "⚡" : "??️"}</span>
+                  <p class="eyebrow">Today’s penalty</p>
+                  ${todayPenalty
+                    ? `<h4>${escapeHtml(todayPenalty.value)}</h4><p>${escapeHtml(todayPenalty.reason || "A penalty was added today.")}</p>`
+                    : `<h4>All clear!</h4><p>No penalties today — great work!</p>`}
                 </article>
               </section>
             </div>
@@ -1881,7 +2213,6 @@ function renderKidPage(kidId) {
                 <span class="score-sparkles" aria-hidden="true"></span>
                 <span>Buy favors with your points</span>
               </button>
-              ${renderPointsHistory(kid)}
             </section>
           </div>
         </article>
@@ -1930,7 +2261,7 @@ function renderKidPage(kidId) {
             ${getFamilyKids()
               .map(
                 (child) => `
-                  <section class="report-tile ${escapeHtml(getShellClass(child.name, false))}" ${child.accentColour ? `style="--kid-accent:${child.accentColour};--kid-accent-deep:${child.accentColourDeep||child.accentColour};--kid-accent-soft:rgba(${hexToRgb(child.accentColour)},0.12);"` : ""}>
+                  <section class="report-tile ${escapeHtml(getShellClass(child.name, false))}">
                     ${renderTileBubbles()}
                     <div class="report-head">
                       <h3>${escapeHtml(child.name)}</h3>
@@ -1943,7 +2274,7 @@ function renderKidPage(kidId) {
                           <article class="task-card report-task">
                             <h4>${escapeHtml(task.title)}</h4>
                             <p class="meta">${escapeHtml(task.detail)}</p>
-                            <p class="meta">Not done yet \u2022 ${escapeHtml(task.points)} points</p>
+                            <p class="meta">Not done yet • ${escapeHtml(task.points)} points</p>
                           </article>
                         `,
                         "All caught up."
@@ -1963,7 +2294,7 @@ function renderKidPage(kidId) {
                   const missedDays = Number(child.missedDaysInARow) || 0;
                   const cappedDays = Math.min(missedDays, 3);
                   return `
-                    <article class="watch-pill ${escapeHtml(getShellClass(child.name, false))} ${missedDays >= 3 ? "alert" : ""}" ${child.accentColour ? `style="--kid-accent:${child.accentColour};--kid-accent-deep:${child.accentColourDeep||child.accentColour};--kid-accent-soft:rgba(${hexToRgb(child.accentColour)},0.12);"` : ""}>
+                    <article class="watch-pill ${escapeHtml(getShellClass(child.name, false))} ${missedDays >= 3 ? "alert" : ""}">
                       <strong>${escapeHtml(child.name)}</strong>
                       <span>${escapeHtml(cappedDays)}/3 days</span>
                       <em>${missedDays >= 3 ? "Check in today" : child.due.length ? "Still has due tasks" : "On track"}</em>
@@ -2025,27 +2356,9 @@ function renderKidPage(kidId) {
                               <input type="number" name="points" placeholder="Points" min="1" required />
                               <div class="button-row">
                                 <button class="action-button primary" type="submit">Add task</button>
-                                <button class="action-button danger" type="button" data-reset-tasks="true">Reset tasks</button>
-                                <button class="action-button danger" type="button" data-reset-points="true">Reset points</button>
+                                <button class="action-button danger" type="button" data-reset-tasks="true">Reset tasks & points</button>
                               </div>
                             </form>
-                          
-                            ${kid.taskTemplates && kid.taskTemplates.length ? `
-                            <article class="reward-card settings-tile single-settings-tile task-template-list-tile" style="margin-top:14px;">
-                              ${renderTileBubbles()}
-                              <p class="eyebrow">Task templates</p>
-                              ${kid.taskTemplates.map(tmpl => `
-                                <div class="template-row">
-                                  <div class="template-row-info">
-                                    <span class="template-row-title">${escapeHtml(tmpl.title)}</span>
-                                    <span class="template-row-meta">${escapeHtml(tmpl.recurring)} \u00B7 ${escapeHtml(tmpl.time)} \u00B7 ${escapeHtml(tmpl.points)} pts</span>
-                                  </div>
-                                  <div class="template-row-actions">
-                                    <button class="action-button secondary small-action-button" type="button" data-edit-task-template="${escapeHtml(tmpl.id)}">Edit</button>
-                                    <button class="action-button danger small-action-button" type="button" data-delete-task-template="${escapeHtml(tmpl.id)}">Delete</button>
-                                  </div>
-                                </div>`).join("")}
-                            </article>` : ""}
                           </article>
                         `
                         : ""
@@ -2139,14 +2452,6 @@ function renderKidPage(kidId) {
                                               <form class="reward-form" id="add-child-form">
                                                 <input type="text" name="childName" placeholder="Child name" required />
                                                 <input type="password" name="childPin" placeholder="4-digit child PIN" inputmode="numeric" pattern="\\d{4}" maxlength="4" required />
-                                                <div>
-                                                  <p class="eyebrow" style="margin-bottom:8px;">Pick a colour</p>
-                                                  <div class="colour-swatch-row" id="add-child-colour-row">
-                                                    ${KID_COLOUR_PALETTE.map((col, i) => `<button type="button" class="colour-swatch ${i === 0 ? "colour-swatch--selected" : ""}" style="background:${col.accent};" data-new-child-colour-accent="${col.accent}" data-new-child-colour-deep="${col.deep}" aria-label="Colour ${i+1}"></button>`).join("")}
-                                                  </div>
-                                                  <input type="hidden" name="childColourAccent" value="${KID_COLOUR_PALETTE[0].accent}" />
-                                                  <input type="hidden" name="childColourDeep" value="${KID_COLOUR_PALETTE[0].deep}" />
-                                                </div>
                                                 <div class="button-row">
                                                   <button class="action-button primary" type="submit">Add child</button>
                                                 </div>
@@ -2181,73 +2486,6 @@ function renderKidPage(kidId) {
                                                   <button class="action-button primary threshold-submit-button" type="submit" ${currentThresholdAssignedKids.length ? "" : "disabled"}>Save threshold</button>
                                                 </div>
                                               </form>
-                                            </section>
-                                          `
-                                          : ""
-                                      }
-                                      ${
-                                        currentFamilyControlsSection === "manage-rewards"
-                                          ? `
-                                            <section class="settings-mini-section family-controls-page">
-                                              <p class="eyebrow">Manage rewards</p>
-                                              ${getFamilyKids().some(c => c.rewards && c.rewards.length) ? `
-                                                ${getFamilyKids().filter(c => c.rewards && c.rewards.length).map(child => `
-                                                  <p class="eyebrow" style="margin-top:12px;font-size:0.68rem;">${escapeHtml(child.name)}</p>
-                                                  ${child.rewards.map(reward => `
-                                                    <div class="template-row">
-                                                      <div class="template-row-info">
-                                                        <span class="template-row-title">${escapeHtml(reward.title)}</span>
-                                                        <span class="template-row-meta">${escapeHtml(reward.cost)} pts</span>
-                                                      </div>
-                                                      <div class="template-row-actions">
-                                                        <button class="action-button secondary small-action-button" type="button" data-edit-reward="${escapeHtml(reward.id)}" data-reward-kid="${escapeHtml(child.id)}">Edit</button>
-                                                        <button class="action-button danger small-action-button" type="button" data-delete-reward="${escapeHtml(reward.id)}" data-reward-kid="${escapeHtml(child.id)}">Delete</button>
-                                                      </div>
-                                                    </div>
-                                                  `).join("")}
-                                                `).join("")}
-                                              ` : `<p class="empty">No rewards added yet.</p>`}
-                                            </section>
-                                          `
-                                          : ""
-                                      }
-                                      ${
-                                        currentFamilyControlsSection === "kid-colours"
-                                          ? `
-                                            <section class="settings-mini-section family-controls-page">
-                                              <p class="eyebrow">Edit kid colours</p>
-                                              ${getFamilyKids().map(child => `
-                                                <p class="eyebrow" style="margin-top:14px;font-size:0.68rem;">${escapeHtml(child.name)}</p>
-                                                <div class="colour-swatch-row">
-                                                  ${KID_COLOUR_PALETTE.map((col, i) => `
-                                                    <button type="button" class="colour-swatch ${child.accentColour === col.accent ? "colour-swatch--selected" : ""}"
-                                                      style="background:${col.accent};"
-                                                      data-colour-kid="${escapeHtml(child.id)}"
-                                                      data-colour-accent="${col.accent}"
-                                                      data-colour-deep="${col.deep}"
-                                                      aria-label="Colour ${i+1}"></button>
-                                                  `).join("")}
-                                                </div>
-                                              `).join("")}
-                                            </section>
-                                          `
-                                          : ""
-                                      }
-                                      ${
-                                        currentFamilyControlsSection === "delete-kid"
-                                          ? `
-                                            <section class="settings-mini-section family-controls-page">
-                                              <p class="eyebrow">Remove child</p>
-                                              <p style="font-size:0.85rem;color:var(--muted);margin-bottom:14px;">Permanently deletes all their tasks, points, and rewards.</p>
-                                              ${getFamilyKids().length ? getFamilyKids().map(child => `
-                                                <div class="template-row">
-                                                  <div class="template-row-info">
-                                                    <span class="template-row-title">${escapeHtml(child.name)}</span>
-                                                    <span class="template-row-meta">${escapeHtml(child.points)} points</span>
-                                                  </div>
-                                                  <button class="action-button danger small-action-button" type="button" data-delete-kid="${escapeHtml(child.id)}">Remove</button>
-                                                </div>
-                                              `).join("") : `<p class="empty">No children added yet.</p>`}
                                             </section>
                                           `
                                           : ""
@@ -2327,12 +2565,13 @@ function renderKidPage(kidId) {
     currentKidId = null;
     currentFamilyMode = false;
     currentKidView = "dashboard";
+    isAssignPopupOpen = false;
+    assignPopupPlacement = "task";
     renderApp();
   });
 
   showPage("page-kid");
   updateTaskSchedulePreview(document.querySelector("#task-form"));
-  tpUpdate();
 }
 
 function renderApp() {
@@ -2374,66 +2613,15 @@ function triggerPointsBurst(pointsCard) {
   window.setTimeout(() => pointsCard.classList.remove("is-bursting"), 900);
 }
 
-function buildModalBubbles() {
-  return '<span style="position:absolute;width:40px;height:40px;border-radius:50%;top:-12px;right:24px;background:linear-gradient(145deg,var(--kid-accent),var(--kid-accent-deep));opacity:0.55;animation:bubble-bounce 3s ease-in-out infinite;pointer-events:none;"></span><span style="position:absolute;width:22px;height:22px;border-radius:50%;bottom:18px;left:14px;background:linear-gradient(145deg,#ffd77a,#b99cff);opacity:0.45;animation:bubble-bounce 3.4s ease-in-out 0.8s infinite;pointer-events:none;"></span>';
-}
-
-function showAppConfirm(eyebrow, title, body, confirmLabel, isDanger) {
-  if (confirmLabel === undefined) confirmLabel = "Confirm";
-  if (isDanger === undefined) isDanger = false;
-  return new Promise(function(resolve) {
-    const modal = document.createElement("div");
-    modal.className = "pin-modal";
-    modal.innerHTML = '<div class="pin-card" style="text-align:left;max-width:380px;">' + buildModalBubbles() + '<p class="eyebrow" style="position:relative;z-index:2;">' + escapeHtml(eyebrow) + '</p><h2 style="font-size:1.5rem;margin:0 0 8px;position:relative;z-index:2;">' + escapeHtml(title) + '</h2><p style="font-size:0.88rem;color:rgba(46,44,58,0.76);margin:0 0 20px;line-height:1.5;position:relative;z-index:2;">' + escapeHtml(body) + '</p><div class="button-row pin-actions" style="justify-content:flex-end;position:relative;z-index:2;"><button class="action-button secondary" type="button" data-modal-cancel="true">Cancel</button><button class="action-button ' + (isDanger ? "danger" : "primary") + '" type="button" data-modal-confirm="true">' + escapeHtml(confirmLabel) + '</button></div></div>';
-    document.body.appendChild(modal);
-    const cleanup = function(val) { modal.classList.add("is-closing"); setTimeout(function() { modal.remove(); }, 200); resolve(val); };
-    modal.querySelector("[data-modal-confirm]").onclick = function() { cleanup(true); };
-    modal.querySelector("[data-modal-cancel]").onclick = function() { cleanup(false); };
-    modal.addEventListener("click", function(e) { if (e.target === modal) cleanup(false); });
-  });
-}
-
-function showAppEdit(eyebrow, title, fields, confirmLabel) {
-  if (confirmLabel === undefined) confirmLabel = "Save";
-  return new Promise(function(resolve) {
-    const modal = document.createElement("div");
-    modal.className = "pin-modal";
-    const fieldsHtml = fields.map(function(f) {
-      return '<div style="margin-bottom:12px;position:relative;z-index:2;"><p class="eyebrow" style="margin-bottom:4px;">' + escapeHtml(f.label) + '</p><input class="pin-input" style="font-size:1rem;letter-spacing:0;text-align:left;min-height:48px;" type="' + (f.type || "text") + '" name="' + f.name + '" value="' + escapeHtml(String(f.value || "")) + '" placeholder="' + escapeHtml(f.placeholder || "") + '" ' + (f.min !== undefined ? 'min="' + f.min + '"' : "") + ' /></div>';
-    }).join("");
-    modal.innerHTML = '<div class="pin-card" style="text-align:left;max-width:380px;">' + buildModalBubbles() + '<p class="eyebrow" style="position:relative;z-index:2;">' + escapeHtml(eyebrow) + '</p><h2 style="font-size:1.5rem;margin:0 0 16px;position:relative;z-index:2;">' + escapeHtml(title) + '</h2><form id="app-edit-form">' + fieldsHtml + '<div class="button-row pin-actions" style="justify-content:flex-end;position:relative;z-index:2;margin-top:8px;"><button class="action-button secondary" type="button" data-modal-cancel="true">Cancel</button><button class="action-button primary" type="submit">' + escapeHtml(confirmLabel) + '</button></div></form></div>';
-    document.body.appendChild(modal);
-    const cleanup = function(val) { modal.classList.add("is-closing"); setTimeout(function() { modal.remove(); }, 200); resolve(val); };
-    modal.querySelector("[data-modal-cancel]").onclick = function() { cleanup(null); };
-    modal.querySelector("#app-edit-form").onsubmit = function(e) { e.preventDefault(); const data = {}; fields.forEach(function(f) { data[f.name] = modal.querySelector('[name="' + f.name + '"]').value; }); cleanup(data); };
-    modal.addEventListener("click", function(e) { if (e.target === modal) cleanup(null); });
-    setTimeout(function() { modal.querySelector("input") && modal.querySelector("input").focus(); }, 50);
-  });
-}
-
 document.body.addEventListener("click", async (event) => {
-  // ── TIME PICKER ─────────────────────────────────────────────
-  const tpHourBtn = event.target.closest("[data-tp-hour]");
-  if (tpHourBtn) {
-    const dir = Number(tpHourBtn.dataset.tpHour);
-    tpHour = ((tpHour - 1 + dir + 12) % 12) + 1;
-    tpUpdate(); return;
-  }
-  const tpMinBtn = event.target.closest("[data-tp-min]");
-  if (tpMinBtn) {
-    const dir = Number(tpMinBtn.dataset.tpMin);
-    tpMin = (tpMin + dir * 15 + 60) % 60;
-    tpUpdate(); return;
-  }
-  const tpAmPmBtn = event.target.closest("[data-tp-ampm]");
-  if (tpAmPmBtn) {
-    tpAmPm = tpAmPmBtn.dataset.tpAmpm;
-    tpUpdate(); return;
-  }
-
   const authButton = event.target.closest("[data-auth-view]");
   if (authButton && !state.session) {
     const nextView = authButton.dataset.authView || "create";
+    if (nextView === "login-picker") {
+      authView = "";
+      renderAuthHome();
+      return;
+    }
     if (nextView === "back-intro") {
       authView = "";
       aboutTopic = "";
@@ -2547,118 +2735,21 @@ document.body.addEventListener("click", async (event) => {
 
   const resetTasksButton = event.target.closest("[data-reset-tasks]");
   if (resetTasksButton && isParentSession()) {
-    const confirmed = await showAppConfirm("Reset all tasks", "Are you sure?", "This permanently deletes all task templates and clears today\u2019s tasks for every child. Points are not affected.", "Reset tasks", true);
-    if (!confirmed) return;
-    resetAllTasks(); saveState(); renderKidPage(currentKidId); showToast("All tasks reset."); return;
-  }
-
-  const resetPointsButton = event.target.closest("[data-reset-points]");
-  if (resetPointsButton && isParentSession()) {
-    const confirmed = await showAppConfirm("Reset all points", "Are you sure?", "This sets every child\u2019s points to zero and clears their points history. Tasks are not affected.", "Reset points", true);
-    if (!confirmed) return;
-    resetAllPoints(); saveState(); renderKidPage(currentKidId); showToast("All points reset."); return;
+    resetAllTasksAndPoints();
+    saveState();
+    renderKidPage(currentKidId);
+    showToast("Tasks and points reset.");
+    return;
   }
 
   const deleteFamilyButton = event.target.closest("[data-delete-family]");
   if (deleteFamilyButton && isParentSession()) {
-    const confirmed = await showAppConfirm("Delete family", "Are you sure?", "This permanently deletes your family, all kids, tasks, points, and rewards from this device. This cannot be undone.", "Delete forever", true);
+    const confirmed = window.confirm("Delete this family from this device? This cannot be undone.");
     if (!confirmed) return;
     const deleted = deleteCurrentFamilyFromDevice();
     if (!deleted) return;
     showToast("Family deleted from this device.");
     renderApp();
-    return;
-  }
-
-  const editTaskBtn = event.target.closest("[data-edit-task-template]");
-  if (editTaskBtn && isParentSession() && currentKidId) {
-    const templateId = editTaskBtn.dataset.editTaskTemplate;
-    const kid = getKid(currentKidId);
-    const tmpl = kid?.taskTemplates.find(t => t.id === templateId);
-    if (!tmpl) return;
-    const data = await showAppEdit("Edit task", tmpl.title, [
-      { name: "title", label: "Title", value: tmpl.title, placeholder: "Task title" },
-      { name: "points", label: "Points", value: tmpl.points, type: "number", min: 1 },
-      { name: "time", label: "Time", value: tmpl.time, placeholder: "e.g. 8:00 AM" },
-    ]);
-    if (!data) return;
-    editTask(currentKidId, templateId, data.title, data.points, data.time);
-    saveState(); renderKidPage(currentKidId); showToast("Task updated."); return;
-  }
-
-  const deleteTaskBtn = event.target.closest("[data-delete-task-template]");
-  if (deleteTaskBtn && isParentSession() && currentKidId) {
-    const templateId = deleteTaskBtn.dataset.deleteTaskTemplate;
-    const kid = getKid(currentKidId);
-    const tmpl = kid?.taskTemplates.find(t => t.id === templateId);
-    if (!tmpl) return;
-    const confirmed = await showAppConfirm("Delete task", tmpl.title, "This removes the task and today\u2019s instance. This cannot be undone.", "Delete", true);
-    if (!confirmed) return;
-    deleteTask(currentKidId, templateId); saveState(); renderKidPage(currentKidId); showToast("Task deleted."); return;
-  }
-
-  const editRewardBtn = event.target.closest("[data-edit-reward]");
-  if (editRewardBtn && isParentSession()) {
-    const rewardId = editRewardBtn.dataset.editReward;
-    const kidId = editRewardBtn.dataset.rewardKid;
-    const kid = getKid(kidId);
-    const reward = kid?.rewards.find(r => r.id === rewardId);
-    if (!reward) return;
-    const data = await showAppEdit("Edit reward", reward.title, [
-      { name: "title", label: "Title", value: reward.title, placeholder: "Reward title" },
-      { name: "cost", label: "Points cost", value: reward.cost, type: "number", min: 1 },
-    ]);
-    if (!data) return;
-    editReward(kidId, rewardId, data.title, data.cost);
-    saveState(); renderKidPage(currentKidId || getFamilyKids()[0]?.id); showToast("Reward updated."); return;
-  }
-
-  const deleteRewardBtn = event.target.closest("[data-delete-reward]");
-  if (deleteRewardBtn && isParentSession()) {
-    const rewardId = deleteRewardBtn.dataset.deleteReward;
-    const kidId = deleteRewardBtn.dataset.rewardKid;
-    const kid = getKid(kidId);
-    const reward = kid?.rewards.find(r => r.id === rewardId);
-    if (!reward) return;
-    const confirmed = await showAppConfirm("Delete reward", reward.title, "This reward will be removed permanently.", "Delete", true);
-    if (!confirmed) return;
-    deleteReward(kidId, rewardId); saveState(); renderKidPage(currentKidId || getFamilyKids()[0]?.id); showToast("Reward deleted."); return;
-  }
-
-  const deleteKidButton = event.target.closest("[data-delete-kid]");
-  if (deleteKidButton && isParentSession()) {
-    const kidId = deleteKidButton.dataset.deleteKid;
-    const kid = getKid(kidId);
-    if (!kid) return;
-    const confirmed = await showAppConfirm("Remove child", "Remove " + kid.name + "?", "This permanently deletes all of " + kid.name + "\u2019s tasks, points, rewards, and history.", "Remove", true);
-    if (!confirmed) return;
-    const kidName = deleteKid(kidId);
-    if (currentKidId === kidId) { currentKidId = getFamilyKids()[0]?.id || null; }
-    saveState(); showToast(kidName + " has been removed."); renderKidPage(currentKidId || getFamilyKids()[0]?.id); return;
-  }
-
-  const colourSwatch = event.target.closest("[data-colour-kid]");
-  if (colourSwatch && isParentSession()) {
-    updateKidColour(colourSwatch.dataset.colourKid, colourSwatch.dataset.colourAccent, colourSwatch.dataset.colourDeep);
-    saveState(); renderKidPage(currentKidId || getFamilyKids()[0]?.id); return;
-  }
-
-  const newChildSwatch = event.target.closest("[data-new-child-colour-accent]");
-  if (newChildSwatch) {
-    const accent = newChildSwatch.dataset.newChildColourAccent;
-    const deep = newChildSwatch.dataset.newChildColourDeep;
-    const form = newChildSwatch.closest("form");
-    if (form) { form.querySelector("[name=childColourAccent]").value = accent; form.querySelector("[name=childColourDeep]").value = deep; }
-    document.querySelectorAll("[data-new-child-colour-accent]").forEach(s => { s.classList.toggle("colour-swatch--selected", s.dataset.newChildColourAccent === accent); });
-    return;
-  }
-
-  const createKidColourSwatch = event.target.closest("[data-create-kid-colour]");
-  if (createKidColourSwatch && !state.session) {
-    const kidNumber = Number(createKidColourSwatch.dataset.createKidColour);
-    const colourIndex = Number(createKidColourSwatch.dataset.createColourIndex);
-    createAccountDraft["kidColour" + kidNumber] = colourIndex;
-    document.querySelectorAll("[data-create-kid-colour=\"" + kidNumber + "\"]").forEach(s => { s.classList.toggle("colour-swatch--selected", Number(s.dataset.createColourIndex) === colourIndex); });
     return;
   }
 
@@ -2674,7 +2765,7 @@ document.body.addEventListener("click", async (event) => {
       toStatus,
       Number(taskMoveButton.dataset.taskIndex)
     );
-    saveState({ kidId: currentKidId });
+    saveState();
     renderKidPage(currentKidId);
     return;
   }
@@ -2693,7 +2784,7 @@ document.body.addEventListener("click", async (event) => {
       return;
     }
     showToast(`${result.kidName} successfully claimed ${result.rewardTitle}.`);
-    saveState({ kidId: currentKidId });
+    saveState();
     renderKidPage(currentKidId);
     return;
   }
@@ -2708,6 +2799,9 @@ document.body.addEventListener("click", async (event) => {
     currentSettingsSection = view === "settings" ? "" : currentSettingsSection;
     currentFamilyControlsSection = view === "settings" ? "" : currentFamilyControlsSection;
     currentFamilyMode = view === "report" || view === "settings";
+    currentProfileAvatarPickerOpen = false;
+    isAssignPopupOpen = false;
+    assignPopupPlacement = "task";
     renderKidPage(currentKidId);
     return;
   }
@@ -2721,9 +2815,12 @@ document.body.addEventListener("click", async (event) => {
     currentKidView = familyButton.dataset.familyView;
     currentSettingsSection = familyButton.dataset.familyView === "settings" ? "" : currentSettingsSection;
     currentFamilyControlsSection = familyButton.dataset.familyView === "settings" ? "" : currentFamilyControlsSection;
+    currentProfileAvatarPickerOpen = false;
     currentAssignedKids = [];
     currentRewardAssignedKids = [];
     currentThresholdAssignedKids = [];
+    isAssignPopupOpen = false;
+    assignPopupPlacement = "task";
     renderKidPage(firstKid.id);
     return;
   }
@@ -2732,9 +2829,12 @@ document.body.addEventListener("click", async (event) => {
   if (settingsSwitchButton && currentKidView === "settings" && isParentSession()) {
     currentSettingsSection = settingsSwitchButton.dataset.settingsView || "";
     currentFamilyControlsSection = "";
+    currentProfileAvatarPickerOpen = false;
     currentAssignedKids = [];
     currentRewardAssignedKids = [];
     currentThresholdAssignedKids = [];
+    isAssignPopupOpen = false;
+    assignPopupPlacement = "task";
     renderKidPage(currentKidId);
     return;
   }
@@ -2744,6 +2844,7 @@ document.body.addEventListener("click", async (event) => {
     currentFamilyControlsSection = familyControlsSwitchButton.dataset.familyControlsView || "";
     if (currentFamilyControlsSection === "add-rewards") currentRewardAssignedKids = [];
     if (currentFamilyControlsSection === "celebration-threshold") currentThresholdAssignedKids = [];
+    currentProfileAvatarPickerOpen = false;
     renderKidPage(currentKidId);
     return;
   }
@@ -2751,6 +2852,7 @@ document.body.addEventListener("click", async (event) => {
   const familyControlsBackButton = event.target.closest("[data-family-controls-back]");
   if (familyControlsBackButton && currentKidView === "settings" && currentSettingsSection === "family-controls" && isParentSession()) {
     currentFamilyControlsSection = "";
+    currentProfileAvatarPickerOpen = false;
     renderKidPage(currentKidId);
     return;
   }
@@ -2760,9 +2862,12 @@ document.body.addEventListener("click", async (event) => {
     currentKidId = kidCard.dataset.kidId;
     currentKidView = "dashboard";
     currentFamilyMode = false;
+    currentProfileAvatarPickerOpen = false;
     currentAssignedKids = [];
     currentRewardAssignedKids = [];
     currentThresholdAssignedKids = [];
+    isAssignPopupOpen = false;
+    assignPopupPlacement = "task";
     renderKidPage(currentKidId);
   }
 });
@@ -2927,25 +3032,63 @@ document.body.addEventListener("submit", async (event) => {
     const email = String(formData.get("parentEmail") || "").trim().toLowerCase();
     const pin = String(formData.get("parentPin") || "").trim();
 
-    // Find local family first
+    if (cloudAuthEnabled && cloudModeEnabled) {
+      try {
+        let family = await loginCloudParent(email, pin);
+        if (!family && pendingCloudFamilyDraft && pendingCloudFamilyDraft.parentEmail.toLowerCase() === email && pendingCloudFamilyDraft.parentPin === pin) {
+          const { data } = await supabaseClient.auth.getSession();
+          if (data.session?.user) {
+            family = await createCloudFamilyDataForUser(data.session.user, pendingCloudFamilyDraft);
+            pendingCloudFamilyDraft = null;
+          }
+        }
+        if (!family) {
+          showToast("No family was found for this parent account yet.");
+          return;
+        }
+
+        upsertFamilyInState(family);
+        authStage = "login";
+        authAccountJustCreated = false;
+        state.session = { familyId: family.id, role: "parent" };
+        currentKidId = null;
+        currentKidView = "dashboard";
+        currentFamilyMode = false;
+        currentAssignedKids = [];
+        saveState({ skipCloud: true });
+        renderApp();
+      } catch (error) {
+        const localFamily = state.families.find((entry) => entry.parentEmailLower === email && entry.parentPin === pin);
+        if (localFamily) {
+          state.session = { familyId: localFamily.id, role: "parent" };
+          authStage = "login";
+          authAccountJustCreated = false;
+          currentKidId = null;
+          currentKidView = "dashboard";
+          currentFamilyMode = false;
+          currentAssignedKids = [];
+          saveState({ skipCloud: true });
+          showToast("Logged in on this device. Cloud sync will reconnect later.");
+          renderApp();
+          return;
+        }
+        showToast(error.message || "Incorrect parent login.");
+      }
+      return;
+    }
+
     const localFamily = state.families.find((entry) => entry.parentEmailLower === email);
     if (!localFamily) { showToast("No account found for that email."); return; }
     const pinOk = await verifyPin(pin, localFamily.parentPin);
     if (!pinOk) { showToast("Incorrect PIN."); return; }
-
-    // Hash PIN on first login if still plain
     if (localFamily.parentPin && !/^[0-9a-f]{64}$/.test(localFamily.parentPin)) {
       localFamily.parentPin = await hashPin(pin);
     }
-
-    // Set local session immediately so app works even if cloud fails
     authStage = "login"; authView = "parent"; authAccountJustCreated = false;
     state.session = { familyId: localFamily.id, role: "parent" };
     currentKidId = null; currentKidView = "dashboard"; currentFamilyMode = false; currentAssignedKids = [];
     saveState({ skipCloud: true });
     renderApp();
-
-    // Cloud sync in background
     if (cloudAuthEnabled && cloudModeEnabled) {
       void cloudSyncOnLogin(email, pin, localFamily);
     }
@@ -2959,22 +3102,69 @@ document.body.addEventListener("submit", async (event) => {
     const email = String(formData.get("username") || "").trim().toLowerCase();
     const pin = String(formData.get("password") || "").trim();
 
-    // Try cloud login first, fall back to local
-    const family = state.families.find((entry) => entry.parentEmailLower === email);
-    if (!family) { showToast("No account found for that email."); return; }
-    const pinOk = await verifyPin(pin, family.parentPin);
-    if (!pinOk) { showToast("Incorrect PIN."); return; }
-    if (family.parentPin && !/^[0-9a-f]{64}$/.test(family.parentPin)) {
-      family.parentPin = await hashPin(pin);
-    }
-    authStage = "login"; authView = "parent"; authAccountJustCreated = false;
-    state.session = { familyId: family.id, role: "parent" };
-    currentKidId = null; currentKidView = "dashboard"; currentFamilyMode = false; currentAssignedKids = [];
-    saveState({ skipCloud: true });
-    renderApp();
     if (cloudAuthEnabled && cloudModeEnabled) {
-      void cloudSyncOnLogin(email, pin, family);
+      try {
+        let family = await loginCloudParent(email, pin);
+        if (!family && pendingCloudFamilyDraft && pendingCloudFamilyDraft.parentEmail.toLowerCase() === email && pendingCloudFamilyDraft.parentPin === pin) {
+          const { data } = await supabaseClient.auth.getSession();
+          if (data.session?.user) {
+            family = await createCloudFamilyDataForUser(data.session.user, pendingCloudFamilyDraft);
+            pendingCloudFamilyDraft = null;
+          }
+        }
+        if (!family) {
+          showToast("No family was found for this account.");
+          return;
+        }
+
+        upsertFamilyInState(family);
+        authStage = "login";
+        authView = "parent";
+        authAccountJustCreated = false;
+        state.session = { familyId: family.id, role: "parent" };
+        currentKidId = null;
+        currentKidView = "dashboard";
+        currentFamilyMode = false;
+        currentAssignedKids = [];
+        saveState({ skipCloud: true });
+        renderApp();
+      } catch (error) {
+        const localFamily = state.families.find((entry) => entry.parentEmailLower === email && entry.parentPin === pin);
+        if (localFamily) {
+          authStage = "login";
+          authView = "parent";
+          authAccountJustCreated = false;
+          state.session = { familyId: localFamily.id, role: "parent" };
+          currentKidId = null;
+          currentKidView = "dashboard";
+          currentFamilyMode = false;
+          currentAssignedKids = [];
+          saveState({ skipCloud: true });
+          showToast("Logged in on this device. Cloud sync will reconnect later.");
+          renderApp();
+          return;
+        }
+        showToast(error.message || "Incorrect login.");
+      }
+      return;
     }
+
+    const family = state.families.find((entry) => entry.parentEmailLower === email && entry.parentPin === pin);
+    if (!family) {
+      showToast("Incorrect login.");
+      return;
+    }
+
+    authStage = "login";
+    authView = "parent";
+    authAccountJustCreated = false;
+    state.session = { familyId: family.id, role: "parent" };
+    currentKidId = null;
+    currentKidView = "dashboard";
+    currentFamilyMode = false;
+    currentAssignedKids = [];
+    saveState();
+    renderApp();
     return;
   }
 
@@ -3025,7 +3215,7 @@ document.body.addEventListener("submit", async (event) => {
     const kidCandidate = family?.kids.find((entry) => entry.name.trim().toLowerCase() === kidName);
     const kidPinOk = kidCandidate ? await verifyPin(kidPin, kidCandidate.kidPin) : false;
     if (!family || !kidCandidate || !kidPinOk) { showToast("Incorrect kid login."); return; }
-    if (kidCandidate.kidPin && !/^[0-9a-f]{64}$/.test(kidCandidate.kidPin)) { kidCandidate.kidPin = await hashPin(kidPin); saveState(); }
+    if (kidCandidate.kidPin && !/^[0-9a-f]{64}$/.test(kidCandidate.kidPin)) { kidCandidate.kidPin = await hashPin(kidPin); saveState({ skipCloud: true }); }
     const kid = kidCandidate;
 
     state.session = { familyId: family.id, role: "kid", kidId: kid.id };
@@ -3050,9 +3240,10 @@ document.body.addEventListener("submit", async (event) => {
     const cost = Number(formData.get("cost"));
     const targetKids = formData.getAll("rewardAssignedKids").map((value) => String(value)).filter(Boolean);
 
-    if (!title) { showFieldError(rewardForm, "Please enter a reward title."); return; }
-    if (!Number.isFinite(cost) || cost < 1) { showFieldError(rewardForm, "Points cost must be at least 1."); return; }
-    if (!targetKids.length) { showFieldError(rewardForm, "Select at least one child for this reward."); return; }
+    if (!title || !Number.isFinite(cost) || cost < 1 || !targetKids.length) {
+      if (!targetKids.length) showToast("Select at least one kid for this reward.");
+      return;
+    }
     addReward(targetKids, title, cost);
     currentRewardAssignedKids = [];
     saveState();
@@ -3069,9 +3260,7 @@ document.body.addEventListener("submit", async (event) => {
     const points = Number(formData.get("points"));
     const dollars = Number(formData.get("dollars"));
 
-    if (!kidId) return;
-    if (!Number.isFinite(points) || points < 1) { showFieldError(dollarForm, "Points must be at least 1."); return; }
-    if (!Number.isFinite(dollars) || dollars < 1) { showFieldError(dollarForm, "Dollar value must be at least 1."); return; }
+    if (!kidId || !Number.isFinite(points) || points < 1 || !Number.isFinite(dollars) || dollars < 1) return;
     updateDollarConversion(kidId, points, dollars);
     saveState();
     renderKidPage(currentKidId || getFamilyKids()[0]?.id);
@@ -3084,12 +3273,12 @@ document.body.addEventListener("submit", async (event) => {
     const formData = new FormData(addChildForm);
     const childName = String(formData.get("childName") || "").trim();
     const childPin = String(formData.get("childPin") || "").trim();
-    const childColourAccent = String(formData.get("childColourAccent") || "").trim();
-    const childColourDeep = String(formData.get("childColourDeep") || "").trim();
-    if (!childName) { showFieldError(addChildForm, "Please enter the child's name."); return; }
-    if (!childPin) { showFieldError(addChildForm, "Please enter a 4-digit PIN."); return; }
-    if (!isValidKidPin(childPin)) { showFieldError(addChildForm, "PIN must be exactly 4 digits (numbers only)."); return; }
-    addChild(childName, childPin, "", childColourAccent, childColourDeep);
+    if (!childName || !childPin) return;
+    if (!isValidKidPin(childPin)) {
+      showToast("Child PIN must be exactly 4 digits.");
+      return;
+    }
+    addChild(childName, childPin);
     saveState();
     renderKidPage(currentKidId || getFamilyKids()[0]?.id);
     showToast("Child added.");
@@ -3102,8 +3291,7 @@ document.body.addEventListener("submit", async (event) => {
     const formData = new FormData(thresholdForm);
     const threshold = Number(formData.get("threshold"));
     const thresholdKidIds = currentThresholdAssignedKids.length ? currentThresholdAssignedKids : [currentKidId].filter(Boolean);
-    if (!thresholdKidIds.length) { showFieldError(thresholdForm, "Select at least one child."); return; }
-    if (!Number.isFinite(threshold) || threshold < 1) { showFieldError(thresholdForm, "Points target must be at least 1."); return; }
+    if (!thresholdKidIds.length || !Number.isFinite(threshold) || threshold < 1) return;
     updateCelebrationThreshold(thresholdKidIds, threshold);
     saveState();
     renderKidPage(currentKidId || getFamilyKids()[0]?.id);
@@ -3121,10 +3309,7 @@ document.body.addEventListener("submit", async (event) => {
     const customDate = String(formData.get("customDate") || "").trim();
     const assignedKids = currentAssignedKids.length ? currentAssignedKids : [currentKidId];
 
-    if (!title) { showFieldError(taskForm, "Please enter a task title."); return; }
-    if (!timeValue) { showFieldError(taskForm, "Please pick a time."); return; }
-    if (!Number.isFinite(points) || points < 1) { showFieldError(taskForm, "Points must be at least 1."); return; }
-    if (!assignedKids.length) { showFieldError(taskForm, "Select at least one child."); return; }
+    if (!title || !Number.isFinite(points) || points < 1 || !timeValue || !assignedKids.length) return;
     if (recurring === "custom-date" && !customDate) {
       showToast("Choose the custom date for this task.");
       return;
@@ -3135,7 +3320,6 @@ document.body.addEventListener("submit", async (event) => {
     addTask(assignedKids, title, points, recurring, displayTime, customDate);
     saveState();
     currentAssignedKids = [];
-    tpReset();
     renderKidPage(currentKidId || getFamilyKids()[0]?.id);
     return;
   }
@@ -3149,9 +3333,7 @@ document.body.addEventListener("submit", async (event) => {
     const reason = String(formData.get("reason") || "").trim();
     const adjustmentKidIds = currentAssignedKids.length ? currentAssignedKids : [currentKidId];
 
-    if (!adjustmentKidIds.length) { showFieldError(bonusPenaltySaveForm, "Select at least one child."); return; }
-    if (!reason) { showFieldError(bonusPenaltySaveForm, "Please enter a reason."); return; }
-    if (!Number.isFinite(value) || value < 1) { showFieldError(bonusPenaltySaveForm, "Points must be at least 1."); return; }
+    if (!reason || !Number.isFinite(value) || !adjustmentKidIds.length) return;
     addReason(adjustmentKidIds, label, reason);
     addAdjustment(adjustmentKidIds, label, label === "penalty" ? -Math.abs(value) : Math.abs(value), reason);
     saveState();
@@ -3170,16 +3352,9 @@ if ("serviceWorker" in navigator) {
 }
 
 renderApp();
+void bootstrapCloudSessionIfAvailable();
 
-// ============================================================
-// FIREBASE SYNC LAYER
-// Firestore is source of truth. localStorage is cache.
-// Data model:
-//   families/{familyId}          — family doc (name, ownerUid, parentPin, parentName)
-//   families/{familyId}/kids/{kidId} — each kid's full state as one doc
-// ============================================================
-
-// ── WRITE QUEUE ───────────────────────────────────────────────
+// ── FIREBASE SYNC LAYER ───────────────────────────────────────
 var _fbWriteQueue = Promise.resolve();
 function fbEnqueue(fn) {
   _fbWriteQueue = _fbWriteQueue.then(fn).catch(function(err) {
@@ -3188,156 +3363,72 @@ function fbEnqueue(fn) {
   return _fbWriteQueue;
 }
 
-// ── KID → FIRESTORE DOC ───────────────────────────────────────
 function kidToFirestoreDoc(kid) {
   return {
-    id: kid.id,
-    name: kid.name,
-    kidPin: kid.kidPin || "",
-    avatar: kid.avatar || "",
-    accentColour: kid.accentColour || "#6dafff",
-    accentColourDeep: kid.accentColourDeep || "#3f84db",
-    points: kid.points || 0,
-    pointsPerDollarReward: kid.pointsPerDollarReward || 100,
-    dollarRewardValue: kid.dollarRewardValue || 20,
-    celebrationThreshold: kid.celebrationThreshold || 100,
-    lastCelebratedThreshold: kid.lastCelebratedThreshold || 0,
-    missedDaysInARow: kid.missedDaysInARow || 0,
-    lastMissedCheckDate: kid.lastMissedCheckDate || null,
-    lastTaskRefreshDate: kid.lastTaskRefreshDate || getTodayDateKey(),
-    due: kid.due || [],
-    awaiting: kid.awaiting || [],
-    completed: kid.completed || [],
-    taskTemplates: kid.taskTemplates || [],
-    rewards: kid.rewards || [],
-    bonusPenalty: kid.bonusPenalty || [],
-    bonusReasons: kid.bonusReasons || [],
-    penaltyReasons: kid.penaltyReasons || [],
-    pointsHistory: (kid.pointsHistory || []).slice(-200),
+    id: kid.id, name: kid.name, kidPin: kid.kidPin || "", avatar: kid.avatar || "",
+    accentColour: kid.accentColour || "#6dafff", accentColourDeep: kid.accentColourDeep || "#3f84db",
+    points: kid.points || 0, pointsPerDollarReward: kid.pointsPerDollarReward || 100,
+    dollarRewardValue: kid.dollarRewardValue || 20, celebrationThreshold: kid.celebrationThreshold || 100,
+    lastCelebratedThreshold: kid.lastCelebratedThreshold || 0, missedDaysInARow: kid.missedDaysInARow || 0,
+    lastMissedCheckDate: kid.lastMissedCheckDate || null, lastTaskRefreshDate: kid.lastTaskRefreshDate || getTodayDateKey(),
+    due: kid.due || [], awaiting: kid.awaiting || [], completed: kid.completed || [],
+    taskTemplates: kid.taskTemplates || [], rewards: kid.rewards || [],
+    bonusPenalty: kid.bonusPenalty || [], bonusReasons: kid.bonusReasons || [],
+    penaltyReasons: kid.penaltyReasons || [], pointsHistory: (kid.pointsHistory || []).slice(-200),
   };
 }
 
-// ── FIRESTORE DOC → KID ───────────────────────────────────────
-function firestoreDocToKid(doc) {
-  return normalizeKid(doc);
-}
+function firestoreDocToKid(doc) { return normalizeKid(doc); }
 
-// ── PUSH SINGLE KID ───────────────────────────────────────────
 async function fbPushKid(familyId, kid) {
   if (!firebaseDb) return;
-  await firebaseDb
-    .collection("families").doc(familyId)
-    .collection("kids").doc(kid.id)
-    .set(kidToFirestoreDoc(kid), { merge: true });
+  await firebaseDb.collection("families").doc(familyId).collection("kids").doc(kid.id).set(kidToFirestoreDoc(kid), { merge: true });
 }
 
-// ── PUSH FULL FAMILY ──────────────────────────────────────────
 async function fbPushFamily(family) {
   if (!firebaseDb) return;
   var famRef = firebaseDb.collection("families").doc(family.id);
-
-  // Push family doc
-  await famRef.set({
-    familyName: family.familyName,
-    parentName: family.parentName || "Parent",
-    parentPin: family.parentPin || "",
-    ownerUid: family.ownerUid || "",
-    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-  }, { merge: true });
-
-  // Push all kids
+  await famRef.set({ familyName: family.familyName, parentName: family.parentName || "Parent", parentPin: family.parentPin || "", ownerUid: family.ownerUid || "", updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
   var batch = firebaseDb.batch();
-  (family.kids || []).forEach(function(kid) {
-    var kidRef = famRef.collection("kids").doc(kid.id);
-    batch.set(kidRef, kidToFirestoreDoc(kid), { merge: true });
-  });
+  (family.kids || []).forEach(function(kid) { batch.set(famRef.collection("kids").doc(kid.id), kidToFirestoreDoc(kid), { merge: true }); });
   await batch.commit();
 }
 
-// ── PULL FAMILY FROM FIRESTORE ────────────────────────────────
 async function fbPullFamily(familyId) {
   if (!firebaseDb) throw new Error("Firebase not initialised");
-
   var famSnap = await firebaseDb.collection("families").doc(familyId).get();
   if (!famSnap.exists) throw new Error("Family not found in Firestore");
-
   var famData = famSnap.data();
   var kidsSnap = await firebaseDb.collection("families").doc(familyId).collection("kids").get();
   var kids = kidsSnap.docs.map(function(d) { return firestoreDocToKid(d.data()); });
-
-  return normalizeFamily({
-    id: familyId,
-    familyName: famData.familyName || "",
-    parentName: famData.parentName || "Parent",
-    parentPin: famData.parentPin || "",
-    parentEmail: famData.parentEmail || "",
-    parentEmailLower: famData.parentEmailLower || "",
-    ownerUid: famData.ownerUid || "",
-    kids: kids,
-    favorClaims: famData.favorClaims || [],
-  });
+  return normalizeFamily({ id: familyId, familyName: famData.familyName || "", parentName: famData.parentName || "Parent", parentPin: famData.parentPin || "", parentEmail: famData.parentEmail || "", parentEmailLower: famData.parentEmailLower || "", ownerUid: famData.ownerUid || "", kids: kids, favorClaims: famData.favorClaims || [] });
 }
 
-// ── CLOUD SAVE ────────────────────────────────────────────────
 function cloudSave(kidId) {
   if (!cloudAuthEnabled || !cloudModeEnabled || !firebaseDb) return;
-  var family = getCurrentFamily();
-  if (!family) return;
-
-  if (kidId) {
-    var kid = getKid(kidId);
-    if (kid) {
-      fbEnqueue(function() { return fbPushKid(family.id, kid); });
-      return;
-    }
-  }
+  var family = getCurrentFamily(); if (!family) return;
+  if (kidId) { var kid = getKid(kidId); if (kid) { fbEnqueue(function() { return fbPushKid(family.id, kid); }); return; } }
   fbEnqueue(function() { return fbPushFamily(family); });
 }
 
-// ── CLOUD SYNC ON LOGIN ───────────────────────────────────────
 async function cloudSyncOnLogin(email, plainPin, localFamily) {
-  if (!firebaseAuth || !firebaseDb) {
-    console.warn("Firebase not ready - skipping sync");
-    return;
-  }
-  if (!email || !plainPin) {
-    console.warn("Missing email or PIN, skipping sync");
-    return;
-  }
-
-  var authPwd = "chores::" + String(email).toLowerCase().trim() + "::" + String(plainPin) + "::v1";
+  if (!firebaseAuth || !firebaseDb) return;
+  var authPwd = "chores::" + email.toLowerCase().trim() + "::" + plainPin + "::v1";
   var user = null;
-
-  // Try sign in first
   try {
-      var signInRes = await firebaseAuth.signInWithEmailAndPassword(email, authPwd);
+    var signInRes = await firebaseAuth.signInWithEmailAndPassword(email, authPwd);
     user = signInRes.user;
   } catch(signInErr) {
-    if (signInErr.code === "auth/user-not-found" || signInErr.code === "auth/invalid-credential" || signInErr.code === "auth/wrong-password" || signInErr.code === "auth/invalid-login-credentials" || signInErr.code === "auth/invalid-email") {
-      // New user — create account
+    if (["auth/user-not-found","auth/invalid-credential","auth/wrong-password","auth/invalid-login-credentials","auth/invalid-email"].includes(signInErr.code)) {
       try {
         var signUpRes = await firebaseAuth.createUserWithEmailAndPassword(email, authPwd);
         user = signUpRes.user;
-      } catch(signUpErr) {
-        console.warn("Firebase signup failed:", signUpErr.code);
-        return;
-      }
-    } else {
-      console.warn("Firebase sign in failed:", signInErr.message);
-      return;
-    }
+      } catch(signUpErr) { console.warn("Firebase signup failed:", signUpErr.code); return; }
+    } else { console.warn("Firebase sign in failed:", signInErr.message); return; }
   }
-
   if (!user) return;
-
-  // Check if family doc exists in Firestore for this user
-  var existingSnap = await firebaseDb.collection("families")
-    .where("ownerUid", "==", user.uid)
-    .limit(1)
-    .get();
-
+  var existingSnap = await firebaseDb.collection("families").where("ownerUid", "==", user.uid).limit(1).get();
   if (!existingSnap.empty) {
-    // Pull existing family from cloud
     try {
       var cloudFamilyId = existingSnap.docs[0].id;
       var cloudFamily = await fbPullFamily(cloudFamilyId);
@@ -3345,100 +3436,36 @@ async function cloudSyncOnLogin(email, plainPin, localFamily) {
       cloudFamily.parentEmailLower = localFamily.parentEmailLower;
       upsertFamilyInState(cloudFamily);
       state.session = { familyId: cloudFamily.id, role: "parent" };
-      saveState({ skipCloud: true });
-      renderApp();
-      showToast("Synced from cloud ✓");
-    } catch(e) {
-      console.warn("Firebase pull failed:", e.message);
-    }
+      saveState({ skipCloud: true }); renderApp();
+      showToast("Synced from cloud \u2713");
+    } catch(e) { console.warn("Firebase pull failed:", e.message); }
     return;
   }
-
-  // No cloud family — push local family up
   try {
     localFamily.ownerUid = user.uid;
-    await firebaseDb.collection("families").doc(localFamily.id).set({
-      familyName: localFamily.familyName,
-      parentName: localFamily.parentName || "Parent",
-      parentPin: localFamily.parentPin || "",
-      parentEmail: localFamily.parentEmail || "",
-      parentEmailLower: localFamily.parentEmailLower || "",
-      ownerUid: user.uid,
-      favorClaims: localFamily.favorClaims || [],
-      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-    });
-
-    // Push all kids
+    await firebaseDb.collection("families").doc(localFamily.id).set({ familyName: localFamily.familyName, parentName: localFamily.parentName || "Parent", parentPin: localFamily.parentPin || "", parentEmail: localFamily.parentEmail || "", parentEmailLower: localFamily.parentEmailLower || "", ownerUid: user.uid, favorClaims: localFamily.favorClaims || [], createdAt: firebase.firestore.FieldValue.serverTimestamp() });
     var batch = firebaseDb.batch();
-    (localFamily.kids || []).forEach(function(kid) {
-      var kidRef = firebaseDb.collection("families").doc(localFamily.id).collection("kids").doc(kid.id);
-      batch.set(kidRef, kidToFirestoreDoc(kid));
-    });
+    (localFamily.kids || []).forEach(function(kid) { batch.set(firebaseDb.collection("families").doc(localFamily.id).collection("kids").doc(kid.id), kidToFirestoreDoc(kid)); });
     await batch.commit();
-
     saveState({ skipCloud: true });
-    showToast("Synced to cloud ✓");
-  } catch(e) {
-    console.warn("Firebase push failed:", e.message);
-    showToast("Cloud sync failed: " + (e.message || "unknown"));
-  }
+    showToast("Synced to cloud \u2713");
+  } catch(e) { console.warn("Firebase push failed:", e.message); }
 }
 
+// ── OFFLINE INDICATOR ─────────────────────────────────────────
 (function initOfflineIndicator() {
-  let banner = null;
+  var banner = null;
   function showOfflineBanner() {
     if (banner) return;
-    banner = document.createElement("div");
-    banner.className = "offline-banner";
+    banner = document.createElement("div"); banner.className = "offline-banner";
     banner.textContent = "You\u2019re offline \u2014 changes are saved on this device";
     document.body.appendChild(banner);
   }
   function hideOfflineBanner() {
-    if (!banner) return;
-    banner.classList.add("offline-banner--hide");
+    if (!banner) return; banner.classList.add("offline-banner--hide");
     setTimeout(function() { if (banner) { banner.remove(); banner = null; } }, 400);
   }
   if (!navigator.onLine) showOfflineBanner();
   window.addEventListener("offline", showOfflineBanner);
   window.addEventListener("online", function() { hideOfflineBanner(); showToast("Back online \u2713"); });
 })();
-
-(function initOfflineIndicator() {
-  let banner = null;
-  function showOfflineBanner() {
-    if (banner) return;
-    banner = document.createElement("div");
-    banner.className = "offline-banner";
-    banner.textContent = "You\u2019re offline \u2014 changes are saved on this device";
-    document.body.appendChild(banner);
-  }
-  function hideOfflineBanner() {
-    if (!banner) return;
-    banner.classList.add("offline-banner--hide");
-    setTimeout(function() { if (banner) { banner.remove(); banner = null; } }, 400);
-  }
-  if (!navigator.onLine) showOfflineBanner();
-  window.addEventListener("offline", showOfflineBanner);
-  window.addEventListener("online", function() { hideOfflineBanner(); showToast("Back online \u2713"); });
-})();
-
-// ============================================================
-// CLOUD SYNC LAYER
-// Supabase is source of truth. localStorage is cache.
-// ============================================================
-
-// ── PULL: fetch entire family from Supabase ───────────────────
-
-// ── PUSH: write entire family state to Supabase ───────────────
-
-// ── PUSH SINGLE KID: fast path for task moves & points ────────
-
-// ── CLOUD SAVE: called after every state mutation ─────────────
-
-// ── CLOUD SYNC ON LOGIN ──────────────────────────────────────
-// Called after successful local login. Signs up or signs in to Supabase,
-// then pushes local family data to the cloud.
-
-// ── CLOUD SIGNUP: create account in Supabase ─────────────────
-
-// ── CLOUD LOGIN: sign in and pull family ──────────────────────

@@ -6921,9 +6921,13 @@ details[open] .existing-tasks-chevron { transform: rotate(180deg); }
   height: auto !important;
   min-height: 0 !important;
   overflow: hidden auto !important;
-  display: flex !important;
   flex-direction: column !important;
   padding: 22px !important;
+  display: none !important;
+}
+
+.section-card.primary.kid-view[data-panel="favors"].active {
+  display: flex !important;
 }
 
 /* ── GOLD TABS: EQUAL WIDTH + CENTRED ────────────────── */
@@ -6939,4 +6943,71 @@ details[open] .existing-tasks-chevron { transform: rotate(180deg); }
 .gold-tab-text {
   align-items: center !important;
   text-align: center !important;
+}
+
+/* ── FINAL REWARDS FIX ───────────────────────────────── */
+
+/* Points card: strict 3-row grid, number in exact centre */
+.points-card-v2 {
+  display: grid !important;
+  grid-template-rows: 1fr auto 1fr !important;
+  grid-template-columns: 1fr !important;
+  align-items: center !important;
+  justify-items: center !important;
+  min-height: 200px !important;
+}
+
+/* Eyebrow row 1 */
+.points-card-v2 > .eyebrow,
+.points-card-v2 > .points-eyebrow {
+  grid-row: 1 !important;
+  grid-column: 1 !important;
+  align-self: end !important;
+  margin-bottom: 4px !important;
+  position: relative !important;
+  top: auto !important; left: auto !important;
+  transform: none !important;
+}
+
+/* Number row 2 — dead centre */
+.points-card-v2 > .points-total {
+  grid-row: 2 !important;
+  grid-column: 1 !important;
+  align-self: center !important;
+  justify-self: center !important;
+  margin: 0 !important;
+  position: relative !important;
+}
+
+/* Coin trail + message row 3 */
+.points-card-v2 > .points-coin-trail,
+.points-card-v2 > .points-message {
+  grid-row: 3 !important;
+  grid-column: 1 !important;
+  align-self: start !important;
+  justify-self: center !important;
+  position: relative !important;
+  bottom: auto !important; left: auto !important;
+  transform: none !important;
+  margin-top: 4px !important;
+}
+
+/* Gem ring + tile bubbles stay as overlays */
+.points-card-v2 > .points-gem-ring,
+.points-card-v2 > .tile-bubbles {
+  grid-row: 1 / 4 !important;
+  grid-column: 1 !important;
+  position: absolute !important;
+}
+
+/* Fix favors panel — only show when active */
+.kid-view[data-panel="favors"] {
+  display: none !important;
+}
+.kid-view[data-panel="favors"].active {
+  display: flex !important;
+  flex-direction: column !important;
+  height: auto !important;
+  min-height: 0 !important;
+  overflow: hidden auto !important;
 }

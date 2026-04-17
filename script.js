@@ -1725,7 +1725,8 @@ function renderKidPage(kidId) {
           </div>
         </article>
 
-        <article class="section-card primary kid-view ${currentKidView === "favors" ? "active" : ""}" data-panel="favors">
+        ${currentKidView === "favors" ? `
+        <article class="section-card primary kid-view active" data-panel="favors">
           <span class="panel-bubbles" aria-hidden="true"><span></span><span></span><span></span></span>
           <div class="section-head">
             <div>
@@ -1754,7 +1755,8 @@ function renderKidPage(kidId) {
               "No favors yet. Ask a parent to add some in Settings."
             )}
           </section>
-        </article>
+        </articl
+        ` : ""}e>
 
         <article class="section-card primary kid-view ${currentKidView === "report" && canSeeReports ? "active" : ""}" data-panel="report">
           <span class="panel-bubbles" aria-hidden="true"><span></span><span></span><span></span></span>

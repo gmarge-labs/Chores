@@ -1,60 +1,40 @@
-const CACHE_NAME = "chores-offline-v6";
+const CACHE_NAME = "chores-v8";
 
-const APP_SHELL = [
-  "./",
-  "./index.html",
-  "./styles.css",
-  
-  "./firebase-config.js",
-  "./script.js",
-  "./manifest.webmanifest",
-  "./icons/icon.svg",
-];
+const SHELL = ["./","./index.html","./manifest.webmanifest","./icons/icon.svg"];
 
-self.addEventListener("install", (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL))
-  );
+self.addEventListener("install", (e) => {
+  e.waitUntil(caches.open(CACHE_NAME).then(c => c.addAll(SHELL)));
   self.skipWaiting();
 });
 
-self.addEventListener("activate", (event) => {
-  event.waitUntil(
-    caches
-      .keys()
-      .then((cacheNames) =>
-        Promise.all(
-          cacheNames
-            .filter((cacheName) => cacheName !== CACHE_NAME)
-            .map((cacheName) => caches.delete(cacheName))
-        )
-      )
-      .then(() => self.clients.claim())
+self.addEventListener("activate", (e) => {
+  e.waitUntil(
+    caches.keys().then(keys =>
+      Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
+    ).then(() => self.clients.claim())
   );
 });
 
-self.addEventListener("fetch", (event) => {
-  if (event.request.method !== "GET") return;
-
-  event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
-      if (cachedResponse) return cachedResponse;
-
-      return fetch(event.request)
-        .then((networkResponse) => {
-          const shouldCache =
-            networkResponse &&
-            networkResponse.ok &&
-            new URL(event.request.url).origin === self.location.origin;
-
-          if (shouldCache) {
-            const responseClone = networkResponse.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseClone));
-          }
-
-          return networkResponse;
-        })
-        .catch(() => caches.match("./index.html"));
-    })
+self.addEventListener("fetch", (e) => {
+  const url = new URL(e.request.url);
+  // Always network-first for JS, CSS, config files — never serve stale code
+  if (url.pathname.endsWith(".js") || url.pathname.endsWith(".css")) {
+    e.respondWith(
+      fetch(e.request).then(r => {
+        const clone = r.clone();
+        caches.open(CACHE_NAME).then(c => c.put(e.request, clone));
+        return r;
+      }).catch(() => caches.match(e.request))
+    );
+    return;
+  }
+  // Cache-first for everything else
+  e.respondWith(
+    caches.match(e.request).then(cached => cached || fetch(e.request).then(r => {
+      if (r.ok && url.origin === self.location.origin) {
+        caches.open(CACHE_NAME).then(c => c.put(e.request, r.clone()));
+      }
+      return r;
+    }).catch(() => caches.match("./index.html")))
   );
 });

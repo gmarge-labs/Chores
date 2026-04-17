@@ -1665,11 +1665,7 @@ function renderKidPage(kidId) {
                     `
                     : ""
                 }
-                <span class="points-star-cloud" aria-hidden="true">
-                  <span></span><span></span><span></span><span></span><span></span><span></span>
-                  <span></span><span></span><span></span><span></span><span></span><span></span>
-                  <span></span><span></span><span></span><span></span><span></span><span></span>
-                </span>
+
                 <div class="points-gem-ring" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span></div>
                 <p class="eyebrow points-eyebrow">Points earned</p>
                 <h3 class="points-total">${escapeHtml(kid.points)}</h3>

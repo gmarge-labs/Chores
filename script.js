@@ -1721,13 +1721,7 @@ function renderKidPage(kidId) {
               </div>
             </div>
 
-            <section class="reward-stack">
-              ${renderTileBubbles()}
-              <button class="favor-pill" type="button" data-view="favors">
-                <span class="score-sparkles" aria-hidden="true"></span>
-                <span>Buy favors with your points</span>
-              </button>
-            </section>
+
           </div>
         </article>
 

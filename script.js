@@ -254,6 +254,7 @@ function renderFamilyControlsSwitcher(activeSection = "") {
     { key: "add-rewards", label: "Add Rewards" },
     { key: "dollar-rate", label: "Dollar Rate" },
     { key: "add-child", label: "Add Child" },
+    { key: "remove-child", label: "Remove Child" },
     { key: "celebration-threshold", label: "Celebration Threshold" },
     { key: "delete-family", label: "Delete Family" },
   ];
@@ -282,6 +283,7 @@ function getFamilyControlsLabel(sectionKey = "") {
     "add-rewards": "Add Rewards",
     "dollar-rate": "Dollar Rate",
     "add-child": "Add Child",
+    "remove-child": "Remove Child",
     "celebration-threshold": "Celebration Threshold",
     "delete-family": "Delete Family",
   };
@@ -628,6 +630,27 @@ function showFieldError(form, message) {
   err.textContent = message;
   form.appendChild(err);
   setTimeout(() => err?.remove(), 3200);
+}
+
+function showAppConfirm(message, onConfirm) {
+  const existing = document.getElementById("app-confirm-modal");
+  if (existing) existing.remove();
+  const modal = document.createElement("div");
+  modal.id = "app-confirm-modal";
+  modal.className = "app-modal-overlay";
+  modal.innerHTML = `
+    <div class="app-modal">
+      <p class="app-modal-message">${message}</p>
+      <div class="app-modal-buttons">
+        <button class="action-button secondary app-modal-cancel">Cancel</button>
+        <button class="action-button danger app-modal-confirm">Confirm</button>
+      </div>
+    </div>
+  `;
+  modal.querySelector(".app-modal-cancel").addEventListener("click", () => modal.remove());
+  modal.querySelector(".app-modal-confirm").addEventListener("click", () => { modal.remove(); onConfirm(); });
+  modal.addEventListener("click", (e) => { if (e.target === modal) modal.remove(); });
+  document.body.appendChild(modal);
 }
 
 function showToast(message) {
@@ -1850,6 +1873,27 @@ function renderKidPage(kidId) {
                                 <button class="action-button danger" type="button" data-reset-tasks="true">Reset tasks & points</button>
                               </div>
                             </form>
+                            ${(() => {
+                              const allTasks = getFamilyKids().flatMap(k => (k.taskTemplates || []).map(t => ({ ...t, kidId: k.id, kidName: k.name })));
+                              if (!allTasks.length) return "";
+                              return `
+                                <div class="existing-tasks-list">
+                                  <p class="eyebrow" style="margin-top:16px;">Existing tasks</p>
+                                  ${allTasks.map(t => `
+                                    <div class="existing-task-row">
+                                      <div class="existing-task-info">
+                                        <span class="existing-task-title">${escapeHtml(t.title)}</span>
+                                        <span class="existing-task-meta">${escapeHtml(t.kidName)} • ${escapeHtml(t.points)} pts</span>
+                                      </div>
+                                      <div class="existing-task-actions">
+                                        <button class="action-button secondary btn-sm" type="button" data-edit-task="${escapeHtml(t.id)}" data-edit-kid="${escapeHtml(t.kidId)}">Edit</button>
+                                        <button class="action-button danger btn-sm" type="button" data-delete-task="${escapeHtml(t.id)}" data-delete-kid="${escapeHtml(t.kidId)}">Delete</button>
+                                      </div>
+                                    </div>
+                                  `).join("")}
+                                </div>
+                              `;
+                            })()}
                           </article>
                         `
                         : ""
@@ -1952,6 +1996,21 @@ function renderKidPage(kidId) {
                                           : ""
                                       }
                                       ${
+                                        currentFamilyControlsSection === "remove-child"
+                                          ? `
+                                            <section class="settings-mini-section family-controls-page">
+                                              <p class="eyebrow">Remove child</p>
+                                              <div class="remove-child-list">
+                                                ${getFamilyKids().map(child => `
+                                                  <div class="remove-child-row">
+                                                    <span>${escapeHtml(child.name)}</span>
+                                                    <button class="action-button danger" type="button" data-remove-kid="${escapeHtml(child.id)}">Remove</button>
+                                                  </div>
+                                                `).join("")}
+                                              </div>
+                                            </section>
+                                          `
+                                          :
                                         currentFamilyControlsSection === "celebration-threshold"
                                           ? `
                                             <section class="settings-mini-section threshold-section family-controls-page">
@@ -2231,16 +2290,75 @@ document.body.addEventListener("click", async (event) => {
     return;
   }
 
+  // ── Edit task ─────────────────────────────────────────────
+  const editTaskButton = event.target.closest("[data-edit-task]");
+  if (editTaskButton && isParentSession()) {
+    const taskId = editTaskButton.dataset.editTask;
+    const kidId = editTaskButton.dataset.editKid;
+    const kid = getKid(kidId);
+    if (!kid) return;
+    const task = kid.taskTemplates.find(t => t.id === taskId);
+    if (!task) return;
+    const newTitle = window.prompt("Edit task title:", task.title);
+    if (newTitle === null) return;
+    const newPoints = window.prompt("Edit points:", task.points);
+    if (newPoints === null) return;
+    if (newTitle.trim()) task.title = newTitle.trim();
+    if (!isNaN(Number(newPoints)) && Number(newPoints) > 0) task.points = Number(newPoints);
+    saveState({ kidId });
+    showToast("Task updated.");
+    renderApp();
+    return;
+  }
+
+  // ── Delete task ────────────────────────────────────────────
+  const deleteTaskButton = event.target.closest("[data-delete-task]");
+  if (deleteTaskButton && isParentSession()) {
+    const taskId = deleteTaskButton.dataset.deleteTask;
+    const kidId = deleteTaskButton.dataset.deleteKid;
+    const kid = getKid(kidId);
+    if (!kid) return;
+    const task = kid.taskTemplates.find(t => t.id === taskId);
+    if (!task) return;
+    showAppConfirm(`Delete task "${task.title}"? This cannot be undone.`, () => {
+      kid.taskTemplates = kid.taskTemplates.filter(t => t.id !== taskId);
+      kid.due = kid.due.filter(t => t.id !== taskId);
+      kid.awaiting = kid.awaiting.filter(t => t.id !== taskId);
+      kid.completed = kid.completed.filter(t => t.id !== taskId);
+      saveState({ kidId });
+      showToast("Task deleted.");
+      renderApp();
+    });
+    return;
+  }
+
+  const removeKidButton = event.target.closest("[data-remove-kid]");
+  if (removeKidButton && isParentSession()) {
+    const kidId = removeKidButton.dataset.removeKid;
+    const kidToRemove = getKid(kidId);
+    if (!kidToRemove) return;
+    showAppConfirm(`Remove ${kidToRemove.name} from the family? This cannot be undone.`, () => {
+      const family = getCurrentFamily();
+      if (!family) return;
+      family.kids = family.kids.filter(k => k.id !== kidId);
+      if (currentKidId === kidId) currentKidId = getFamilyKids()[0]?.id || null;
+      saveState();
+      showToast(`${kidToRemove.name} removed.`);
+      renderApp();
+    });
+    return;
+  }
+
   const deleteFamilyButton = event.target.closest("[data-delete-family]");
   if (deleteFamilyButton && isParentSession()) {
-    const confirmed = window.confirm("Delete this family from this device? This cannot be undone.");
-    if (!confirmed) return;
+    showAppConfirm("Delete this family from this device? This cannot be undone.", () => {
     const deleted = deleteCurrentFamilyFromDevice();
     if (!deleted) return;
     showToast("Family deleted from this device.");
     renderApp();
     return;
-  }
+    });
+}
 
   const taskMoveButton = event.target.closest("[data-task-move]");
   if (taskMoveButton && currentKidId) {

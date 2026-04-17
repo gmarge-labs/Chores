@@ -3077,8 +3077,36 @@ document.body.addEventListener("submit", async (event) => {
       return;
     }
 
+    // Try cloud login first — works even if localStorage was cleared
+    if (cloudAuthEnabled && cloudModeEnabled) {
+      try {
+        showToast("Signing in…");
+        const authPwd = "chores::" + email + "::" + pin + "::v1";
+        const signInRes = await firebaseAuth.signInWithEmailAndPassword(email, authPwd);
+        if (signInRes.user) {
+          const uid = signInRes.user.uid;
+          const existingSnap = await firebaseDb.collection("families").where("ownerUid", "==", uid).limit(1).get();
+          if (!existingSnap.empty) {
+            const cloudFamily = await fbPullFamily(existingSnap.docs[0].id);
+            cloudFamily.parentEmail = email;
+            cloudFamily.parentEmailLower = email.toLowerCase();
+            upsertFamilyInState(cloudFamily);
+            authStage = "login"; authView = "parent"; authAccountJustCreated = false;
+            state.session = { familyId: cloudFamily.id, role: "parent" };
+            currentKidId = null; currentKidView = "dashboard"; currentFamilyMode = false; currentAssignedKids = [];
+            saveState({ skipCloud: true });
+            renderApp();
+            showToast("Welcome back!");
+            return;
+          }
+        }
+      } catch(cloudErr) {
+        console.warn("Cloud login failed:", cloudErr.message);
+      }
+    }
+    // Local fallback
     const localFamily = state.families.find((entry) => entry.parentEmailLower === email);
-    if (!localFamily) { showToast("No account found for that email."); return; }
+    if (!localFamily) { showToast("Incorrect login."); return; }
     const pinOk = await verifyPin(pin, localFamily.parentPin);
     if (!pinOk) { showToast("Incorrect PIN."); return; }
     if (localFamily.parentPin && !/^[0-9a-f]{64}$/.test(localFamily.parentPin)) {

@@ -779,23 +779,6 @@ async function handleCreateFamilyAccount() {
   currentAssignedKids = [];
   saveState({ skipCloud: true });
 
-  // Cloud signup (non-blocking — local account already works)
-  if (cloudAuthEnabled && cloudModeEnabled) {
-    cloudSignUp(familyName, parentName, parentEmail, parentPin, family.kids).then(function(cloudFamilyId) {
-      family.id = cloudFamilyId;
-      saveState({ skipCloud: true });
-      showToast("Account synced to cloud ✓");
-    }).catch(function(err) {
-      var msg = String(err.message || err || "unknown error");
-      console.error("CLOUD SIGNUP ERROR:", msg);
-      var el = document.createElement("div");
-      el.style.cssText = "position:fixed;top:10px;left:10px;right:10px;z-index:9999;background:#c00;color:#fff;padding:14px 18px;border-radius:12px;font-size:0.82rem;line-height:1.4;";
-      el.textContent = "Cloud sync error: " + msg;
-      document.body.appendChild(el);
-      setTimeout(function() { el.remove(); }, 20000);
-    });
-  }
-
   showToast("Account created. Log in as parent to continue.");
   renderAuthHome();
 }
@@ -2925,38 +2908,28 @@ document.body.addEventListener("submit", async (event) => {
     const email = String(formData.get("parentEmail") || "").trim().toLowerCase();
     const pin = String(formData.get("parentPin") || "").trim();
 
-    // Try cloud login first, fall back to local
-    if (cloudAuthEnabled && cloudModeEnabled) {
-      try {
-        showToast("Signing in…");
-        const cloudFamily = await cloudLogin(email, pin);
-        if (cloudFamily) {
-          upsertFamilyInState(cloudFamily);
-          authStage = "login"; authView = "parent"; authAccountJustCreated = false;
-          state.session = { familyId: cloudFamily.id, role: "parent" };
-          currentKidId = null; currentKidView = "dashboard"; currentFamilyMode = false; currentAssignedKids = [];
-          saveState({ skipCloud: true });
-          renderApp();
-          return;
-        }
-      } catch (cloudErr) {
-        console.warn("Cloud login failed, trying local:", cloudErr.message);
-      }
+    // Find local family first
+    const localFamily = state.families.find((entry) => entry.parentEmailLower === email);
+    if (!localFamily) { showToast("No account found for that email."); return; }
+    const pinOk = await verifyPin(pin, localFamily.parentPin);
+    if (!pinOk) { showToast("Incorrect PIN."); return; }
+
+    // Hash PIN on first login if still plain
+    if (localFamily.parentPin && !/^[0-9a-f]{64}$/.test(localFamily.parentPin)) {
+      localFamily.parentPin = await hashPin(pin);
     }
-    // Local fallback
-    const family = state.families.find((entry) => entry.parentEmailLower === email);
-    if (!family) { showToast("Incorrect login."); return; }
-    const pinOk = await verifyPin(pin, family.parentPin);
-    if (!pinOk) { showToast("Incorrect login."); return; }
-    if (family.parentPin && !/^[0-9a-f]{64}$/.test(family.parentPin)) {
-      family.parentPin = await hashPin(pin);
-      saveState({ skipCloud: true });
-    }
+
+    // Set local session immediately so app works even if cloud fails
     authStage = "login"; authView = "parent"; authAccountJustCreated = false;
-    state.session = { familyId: family.id, role: "parent" };
+    state.session = { familyId: localFamily.id, role: "parent" };
     currentKidId = null; currentKidView = "dashboard"; currentFamilyMode = false; currentAssignedKids = [];
     saveState({ skipCloud: true });
     renderApp();
+
+    // Cloud sync in background
+    if (cloudAuthEnabled && cloudModeEnabled) {
+      void cloudSyncOnLogin(email, pin, localFamily);
+    }
     return;
   }
 
@@ -3519,6 +3492,102 @@ function cloudSave(kidId) {
   enqueueWrite(function() { return pushFamilyToCloud(family); });
 }
 
+// ── CLOUD SYNC ON LOGIN ──────────────────────────────────────
+// Called after successful local login. Signs up or signs in to Supabase,
+// then pushes local family data to the cloud.
+async function cloudSyncOnLogin(email, plainPin, localFamily) {
+  if (!supabaseClient) return;
+
+  var authPwd = "chores::" + email.toLowerCase().trim() + "::" + plainPin + "::v2";
+  var user = null;
+  var session = null;
+
+  // Try signing in first (existing cloud account)
+  var signInRes = await supabaseClient.auth.signInWithPassword({ email: email, password: authPwd });
+  if (!signInRes.error && signInRes.data?.session) {
+    session = signInRes.data.session;
+    user = signInRes.data.user;
+  } else {
+    // New cloud account — sign up
+    var signUpRes = await supabaseClient.auth.signUp({
+      email: email,
+      password: authPwd,
+      options: { data: { parent_name: localFamily.parentName, family_name: localFamily.familyName } },
+    });
+    if (signUpRes.error) {
+      console.warn("Cloud signup failed:", signUpRes.error.message);
+      return;
+    }
+    // After signup, sign in to get session
+    await new Promise(function(r) { setTimeout(r, 500); });
+    var signIn2Res = await supabaseClient.auth.signInWithPassword({ email: email, password: authPwd });
+    if (signIn2Res.error || !signIn2Res.data?.session) {
+      console.warn("Cloud sign-in after signup failed:", signIn2Res.error?.message);
+      return;
+    }
+    session = signIn2Res.data.session;
+    user = signIn2Res.data.user;
+  }
+
+  if (!user?.id || !session?.access_token) return;
+
+  // Create a fresh authenticated client using the session token
+  var authClient = window.supabase.createClient(cloudConfig.url, cloudConfig.anonKey, {
+    global: { headers: { Authorization: "Bearer " + session.access_token } },
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+
+  // Check if family already exists in cloud
+  var memberRes = await authClient.from("parent_memberships").select("family_id").eq("user_id", user.id).maybeSingle();
+
+  if (memberRes.data?.family_id) {
+    // Family exists — pull latest and merge
+    try {
+      // Temporarily swap supabaseClient session for the pull
+      await supabaseClient.auth.setSession({ access_token: session.access_token, refresh_token: session.refresh_token });
+      var cloudFamily = await pullFamilyFromCloud(memberRes.data.family_id);
+      if (cloudFamily) {
+        cloudFamily.parentEmail = localFamily.parentEmail;
+        cloudFamily.parentEmailLower = localFamily.parentEmailLower;
+        upsertFamilyInState(cloudFamily);
+        state.session = { familyId: cloudFamily.id, role: "parent" };
+        saveState({ skipCloud: true });
+        renderApp();
+        showToast("Synced from cloud ✓");
+      }
+    } catch(e) { console.warn("Pull failed:", e.message); }
+    return;
+  }
+
+  // No cloud family yet — create and push
+  try {
+    var famRes = await authClient.from("families").insert({ family_name: localFamily.familyName }).select("id").single();
+    if (famRes.error) { console.warn("Family insert failed:", famRes.error.message, famRes.error.code); return; }
+    var cloudFamilyId = famRes.data.id;
+
+    await authClient.from("parent_memberships").insert({ family_id: cloudFamilyId, user_id: user.id, parent_name: localFamily.parentName });
+    await authClient.from("family_settings").insert({ family_id: cloudFamilyId, parent_pin_hash: localFamily.parentPin, parent_name: localFamily.parentName });
+
+    // Update local family id to match cloud
+    localFamily.id = cloudFamilyId;
+    state.session = { familyId: cloudFamilyId, role: "parent" };
+
+    // Set session on main client for ongoing saves
+    await supabaseClient.auth.setSession({ access_token: session.access_token, refresh_token: session.refresh_token });
+
+    saveState({ skipCloud: true });
+
+    // Push kids
+    if (localFamily.kids.length) {
+      await authClient.from("kids").insert(localFamily.kids.map(function(k) { return kidToRow(k, cloudFamilyId); }));
+    }
+
+    showToast("Synced to cloud ✓");
+  } catch(e) {
+    console.warn("Cloud push failed:", e.message);
+  }
+}
+
 // ── CLOUD SIGNUP: create account in Supabase ─────────────────
 async function cloudSignUp(familyName, parentName, parentEmail, parentPin, kids) {
   if (!supabaseClient) throw new Error("Supabase not configured");
@@ -3533,17 +3602,26 @@ async function cloudSignUp(familyName, parentName, parentEmail, parentPin, kids)
   });
   if (signUpRes.error) throw new Error("Auth signup failed: " + signUpRes.error.message);
 
-  // Always sign in after signup to ensure we have a fresh session with JWT
-  var signInRes = await supabaseClient.auth.signInWithPassword({ email: parentEmail, password: authPwd });
-  if (signInRes.error) throw new Error("Sign-in after signup failed: " + signInRes.error.message);
-  var user = signInRes.data?.user;
-  if (!user?.id) throw new Error("No user returned from sign-in");
+  // Get session - use signUp session if available, otherwise sign in
+  var session = signUpRes.data?.session;
+  var user = session?.user || signUpRes.data?.user;
 
-  // Explicitly set the session so all subsequent requests use the JWT
-  if (signInRes.data?.session) {
+  if (!session) {
+    // Brief pause then sign in
+    await new Promise(function(r) { setTimeout(r, 1000); });
+    var signInRes = await supabaseClient.auth.signInWithPassword({ email: parentEmail, password: authPwd });
+    if (signInRes.error) throw new Error("Sign-in failed (pwd:" + authPwd.slice(0,20) + "): " + signInRes.error.message);
+    session = signInRes.data?.session;
+    user = signInRes.data?.user;
+  }
+
+  if (!user?.id) throw new Error("No user ID available");
+
+  // Explicitly set session so RLS can read auth.uid()
+  if (session?.access_token) {
     await supabaseClient.auth.setSession({
-      access_token: signInRes.data.session.access_token,
-      refresh_token: signInRes.data.session.refresh_token,
+      access_token: session.access_token,
+      refresh_token: session.refresh_token,
     });
   }
 

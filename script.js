@@ -3300,12 +3300,17 @@ function cloudSave(kidId) {
 // ── CLOUD SYNC ON LOGIN ───────────────────────────────────────
 async function cloudSyncOnLogin(email, plainPin, localFamily) {
   console.log("cloudSyncOnLogin called, firebaseAuth:", !!firebaseAuth, "firebaseDb:", !!firebaseDb);
+  console.log("params - email:", typeof email, email, "pin:", typeof plainPin, "family:", typeof localFamily);
   if (!firebaseAuth || !firebaseDb) {
     console.warn("Firebase not ready - skipping sync");
     return;
   }
+  if (!email || !plainPin) {
+    console.warn("Missing email or PIN, skipping sync");
+    return;
+  }
 
-  var authPwd = "chores::" + email.toLowerCase().trim() + "::" + plainPin + "::v1";
+  var authPwd = "chores::" + String(email).toLowerCase().trim() + "::" + String(plainPin) + "::v1";
   console.log("Firebase auth attempt, email:", email, "pwd:", authPwd.slice(0,30));
   var user = null;
 

@@ -3316,10 +3316,13 @@ async function cloudSyncOnLogin(email, plainPin, localFamily) {
     if (signInErr.code === "auth/user-not-found" || signInErr.code === "auth/invalid-credential" || signInErr.code === "auth/wrong-password" || signInErr.code === "auth/invalid-login-credentials" || signInErr.code === "auth/invalid-email") {
       // New user — create account
       try {
+        console.log("Attempting Firebase signup for:", email, "pwd length:", authPwd.length);
         var signUpRes = await firebaseAuth.createUserWithEmailAndPassword(email, authPwd);
         user = signUpRes.user;
+        console.log("Firebase signup OK, uid:", user.uid);
       } catch(signUpErr) {
-        console.warn("Firebase signup failed:", signUpErr.message);
+        console.warn("Firebase signup failed:", signUpErr.code, signUpErr.message);
+        showToast("Cloud signup failed: " + signUpErr.code + " - " + signUpErr.message);
         return;
       }
     } else {

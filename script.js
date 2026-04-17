@@ -2176,9 +2176,9 @@ function renderKidPage(kidId) {
                   <span></span><span></span><span></span><span></span><span></span><span></span>
                 </span>
                 <div class="points-gem-ring" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span></div>
-                <p class="eyebrow points-eyebrow">✨ Points earned ✨</p>
+                <p class="eyebrow points-eyebrow">Points earned</p>
                 <h3 class="points-total">${escapeHtml(kid.points)}</h3>
-                <div class="points-coin-trail" aria-hidden="true"><span>⭐</span><span>??</span><span>✨</span><span>⭐</span><span>??</span><span>✨</span></div>
+                <div class="points-coin-trail" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span></div>
                 <p class="points-message is-changing">${
                   kid.points === 0 ? "?? Ready to launch, " + escapeHtml(kid.name) + "!"
                   : kid.points < 20 ? "?? Growing strong, " + escapeHtml(kid.name) + "!"

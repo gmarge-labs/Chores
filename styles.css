@@ -6076,3 +6076,35 @@ details[open] .template-accordion-chevron { transform:rotate(180deg); }
   position: relative;
   z-index: 2;
 }
+
+/* â”€â”€ POINTS CARD V2 FIXES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+
+/* Hide the âœ¦ stars pseudo-elements on v2 card (they render garbled) */
+.points-card-v2 .eyebrow::before,
+.points-card-v2 .eyebrow::after {
+  display: none !important;
+}
+
+/* Centre everything in the card */
+.points-card-v2 {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+}
+
+/* Hide tile-bubbles on v2 card â€” they show as garbled circles */
+.points-card-v2 .tile-bubbles {
+  display: none;
+}
+
+/* Make points number larger and centred */
+.points-card-v2 .points-total {
+  margin: 4px 0 !important;
+}
+
+/* Fix message to not show ?? prefix */
+.points-card-v2 .points-message::before {
+  content: none !important;
+}

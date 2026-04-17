@@ -3533,16 +3533,19 @@ async function cloudSignUp(familyName, parentName, parentEmail, parentPin, kids)
   });
   if (signUpRes.error) throw new Error("Auth signup failed: " + signUpRes.error.message);
 
-  var user = signUpRes.data?.session?.user || signUpRes.data?.user;
+  // Always sign in after signup to ensure we have a fresh session with JWT
+  var signInRes = await supabaseClient.auth.signInWithPassword({ email: parentEmail, password: authPwd });
+  if (signInRes.error) throw new Error("Sign-in after signup failed: " + signInRes.error.message);
+  var user = signInRes.data?.user;
+  if (!user?.id) throw new Error("No user returned from sign-in");
 
-  // If no session yet, sign in to get one
-  if (!user || !signUpRes.data?.session) {
-    var signInRes = await supabaseClient.auth.signInWithPassword({ email: parentEmail, password: authPwd });
-    if (signInRes.error) throw new Error("Sign-in after signup failed: " + signInRes.error.message);
-    user = signInRes.data?.user;
+  // Explicitly set the session so all subsequent requests use the JWT
+  if (signInRes.data?.session) {
+    await supabaseClient.auth.setSession({
+      access_token: signInRes.data.session.access_token,
+      refresh_token: signInRes.data.session.refresh_token,
+    });
   }
-
-  if (!user?.id) throw new Error("No user returned from auth");
 
   // Insert family
   var familyRes = await supabaseClient.from("families")

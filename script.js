@@ -1379,6 +1379,24 @@ async function logout() {
   currentAssignedKids = [];
   saveState();
   renderApp();
+
+// DEBUG: show Supabase status on load
+(function() {
+  var dbg = document.createElement("div");
+  dbg.style.cssText = "position:fixed;top:0;left:0;right:0;z-index:9999;padding:6px 12px;font-size:0.75rem;font-weight:700;text-align:center;";
+  if (!window.supabase) {
+    dbg.style.background = "#ff4444"; dbg.style.color = "#fff";
+    dbg.textContent = "SUPABASE LIB NOT LOADED";
+  } else if (!supabaseClient) {
+    dbg.style.background = "#ff8800"; dbg.style.color = "#fff";
+    dbg.textContent = "SUPABASE CLIENT NULL - url: " + (cloudConfig.url || "none") + " key: " + (cloudConfig.anonKey ? cloudConfig.anonKey.slice(0,20) : "none");
+  } else {
+    dbg.style.background = "#22cc66"; dbg.style.color = "#fff";
+    dbg.textContent = "SUPABASE OK - " + cloudConfig.url;
+  }
+  document.body.appendChild(dbg);
+  setTimeout(function() { dbg.remove(); }, 10000);
+})();
 }
 
 function renderAssignedKidsBlock() {
@@ -1451,27 +1469,6 @@ function renderTaskRecurringBlock() {
 }
 
 function renderAuthHome() {
-  // DEBUG: show Supabase connection status
-  var dbg = document.getElementById("supabase-debug-banner");
-  if (!dbg) {
-    dbg = document.createElement("div");
-    dbg.id = "supabase-debug-banner";
-    dbg.style.cssText = "position:fixed;top:0;left:0;right:0;z-index:9999;padding:6px 12px;font-size:0.75rem;font-weight:700;text-align:center;";
-    document.body.appendChild(dbg);
-  }
-  if (!window.supabase) {
-    dbg.style.background = "#ff4444";
-    dbg.style.color = "#fff";
-    dbg.textContent = "SUPABASE LIB NOT LOADED";
-  } else if (!supabaseClient) {
-    dbg.style.background = "#ff8800";
-    dbg.style.color = "#fff";
-    dbg.textContent = "SUPABASE CLIENT NULL - check config";
-  } else {
-    dbg.style.background = "#22cc66";
-    dbg.style.color = "#fff";
-    dbg.textContent = "SUPABASE OK - " + (cloudConfig.url || "no url");
-  }
   if (authStage === "intro" && !["about", "create", "returning", ""].includes(authView)) {
     authView = "";
   }

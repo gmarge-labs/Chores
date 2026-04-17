@@ -6102,31 +6102,49 @@ details[open] .template-accordion-chevron { transform:rotate(180deg); }
   padding-bottom: 0 !important;
 }
 
-/* Force eyebrow and message to not push number off-centre */
-.points-card-v2 .eyebrow {
-  position: absolute;
-  top: 18px;
-  left: 50%;
-  transform: translateX(-50%);
-  white-space: nowrap;
-  z-index: 3;
+/* Eyebrow pinned to top, number dead centre, message pinned to bottom */
+.points-card-v2 {
+  display: grid !important;
+  grid-template-rows: auto 1fr auto !important;
+  align-items: center !important;
+  justify-items: center !important;
+  padding: 14px 22px !important;
 }
 
-.points-card-v2 .points-message {
-  position: absolute;
-  bottom: 18px;
-  left: 50%;
-  transform: translateX(-50%);
+.points-card-v2 .eyebrow {
+  position: relative !important;
+  top: auto !important; left: auto !important;
+  transform: none !important;
   white-space: nowrap;
   z-index: 3;
+  grid-row: 1;
+  align-self: start;
+}
+
+.points-card-v2 .points-total {
+  grid-row: 2 !important;
+  align-self: center !important;
+  margin: 0 !important;
 }
 
 .points-card-v2 .points-coin-trail {
-  position: absolute;
-  bottom: 56px;
-  left: 50%;
-  transform: translateX(-50%);
+  position: relative !important;
+  bottom: auto !important; left: auto !important;
+  transform: none !important;
   z-index: 3;
+  grid-row: 3;
+  align-self: end;
+  margin-bottom: 2px;
+}
+
+.points-card-v2 .points-message {
+  position: relative !important;
+  bottom: auto !important; left: auto !important;
+  transform: none !important;
+  white-space: nowrap;
+  z-index: 3;
+  grid-row: 3;
+  align-self: end;
 }
 
 /* Hide tile-bubbles on v2 card — they show as garbled circles */
@@ -6206,16 +6224,15 @@ details[open] .template-accordion-chevron { transform:rotate(180deg); }
 }
 
 /* ── COMPACT REWARDS LAYOUT ─────────────────────────── */
-/* Make points card shorter */
-.kid-view[data-panel="rewards"] .points-card {
-  min-height: 240px !important;
-}
-
+/* Points card — fill available space, no white gap */
+.kid-view[data-panel="rewards"] .points-card,
 .points-card-v2 {
-  min-height: 240px !important;
+  min-height: 0 !important;
+  flex: 1 1 auto !important;
+  height: 100% !important;
 }
 
-/* Smaller points number */
+/* Points number size */
 .points-card-v2 .points-total {
   font-size: 5rem !important;
 }
@@ -6676,4 +6693,138 @@ details[open] .template-accordion-chevron { transform:rotate(180deg); }
   overflow: hidden;
   text-overflow: ellipsis;
   text-shadow: 0 0 8px rgba(255,180,0,0.4);
+}
+
+/* ── SETTINGS: EXISTING TASKS LIST ──────────────────── */
+.existing-tasks-list { margin-top: 8px; display: flex; flex-direction: column; gap: 8px; }
+
+.existing-task-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 8px 12px; border-radius: 12px;
+  background: rgba(255,255,255,0.6);
+  border: 1px solid rgba(255,255,255,0.8);
+}
+
+.existing-task-info { display: flex; flex-direction: column; min-width: 0; }
+.existing-task-title { font-size: 0.88rem; font-weight: 800; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.existing-task-meta { font-size: 0.72rem; color: rgba(44,54,78,0.6); margin-top: 1px; }
+
+.existing-task-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.btn-sm { padding: 4px 10px !important; font-size: 0.75rem !important; border-radius: 8px !important; }
+
+/* ── REMOVE CHILD ROW ────────────────────────────────── */
+.remove-child-list { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+.remove-child-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 14px; border-radius: 12px;
+  background: rgba(255,255,255,0.6);
+  border: 1px solid rgba(255,255,255,0.8);
+  font-weight: 700; font-size: 0.9rem;
+}
+
+/* ── APP CONFIRM MODAL ───────────────────────────────── */
+.app-modal-overlay {
+  position: fixed; inset: 0; z-index: 9999;
+  background: rgba(20,15,40,0.55);
+  backdrop-filter: blur(6px);
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+  animation: rise-in 200ms ease both;
+}
+
+.app-modal {
+  background: rgba(255,255,255,0.97);
+  border-radius: 20px;
+  padding: 28px 24px 20px;
+  max-width: 360px; width: 100%;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.25);
+  border: 1.5px solid rgba(255,255,255,0.9);
+}
+
+.app-modal-message {
+  font-size: 1rem; font-weight: 700;
+  color: #2c364e;
+  margin-bottom: 20px; line-height: 1.5;
+  text-align: center;
+}
+
+.app-modal-buttons { display: flex; gap: 10px; justify-content: center; }
+
+/* ── REWARDS LAYOUT: NO WHITE SPACE ─────────────────── */
+.rewards-layout-v2,
+.kid-view[data-panel="rewards"] .rewards-layout {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 10px !important;
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+}
+
+.kid-view[data-panel="rewards"] .points-column {
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  gap: 10px !important;
+}
+
+.kid-view[data-panel="rewards"] .points-card {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+}
+
+.kid-view[data-panel="rewards"] {
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+/* ── EXISTING TASKS DROPDOWN ─────────────────────────── */
+.existing-tasks-dropdown {
+  margin-top: 14px;
+  border-radius: 14px;
+  border: 1.5px solid rgba(255,255,255,0.6);
+  overflow: hidden;
+  background: rgba(255,255,255,0.5);
+}
+
+.existing-tasks-summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+  background: rgba(255,255,255,0.7);
+}
+
+.existing-tasks-summary::-webkit-details-marker { display: none; }
+
+.existing-tasks-count {
+  background: var(--kid-accent, #6dafff);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 999px;
+  margin-left: 4px;
+}
+
+.existing-tasks-chevron {
+  margin-left: auto;
+  font-size: 0.85rem;
+  color: rgba(44,54,78,0.5);
+  transition: transform 200ms ease;
+}
+
+details[open] .existing-tasks-chevron { transform: rotate(180deg); }
+
+.existing-tasks-dropdown .existing-tasks-list {
+  max-height: 260px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }

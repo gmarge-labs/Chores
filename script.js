@@ -3313,7 +3313,7 @@ async function cloudSyncOnLogin(email, plainPin, localFamily) {
     var signInRes = await firebaseAuth.signInWithEmailAndPassword(email, authPwd);
     user = signInRes.user;
   } catch(signInErr) {
-    if (signInErr.code === "auth/user-not-found" || signInErr.code === "auth/invalid-credential" || signInErr.code === "auth/wrong-password") {
+    if (signInErr.code === "auth/user-not-found" || signInErr.code === "auth/invalid-credential" || signInErr.code === "auth/wrong-password" || signInErr.code === "auth/invalid-login-credentials" || signInErr.code === "auth/invalid-email") {
       // New user — create account
       try {
         var signUpRes = await firebaseAuth.createUserWithEmailAndPassword(email, authPwd);

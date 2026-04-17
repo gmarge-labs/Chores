@@ -20,9 +20,12 @@ if (cloudModeEnabled && typeof firebase !== "undefined") {
     });
     firebaseAuth = firebase.auth(firebaseApp);
     firebaseDb   = firebase.firestore(firebaseApp);
+    console.log("Firebase initialised OK, projectId:", cloudConfig.projectId);
   } catch(e) {
     console.warn("Firebase init error:", e.message);
   }
+} else {
+  console.warn("Firebase NOT initialised. cloudModeEnabled:", cloudModeEnabled, "firebase available:", typeof firebase !== "undefined", "config:", JSON.stringify(cloudConfig));
 }
 
 const emptyState = {
@@ -3290,7 +3293,11 @@ function cloudSave(kidId) {
 
 // ── CLOUD SYNC ON LOGIN ───────────────────────────────────────
 async function cloudSyncOnLogin(email, plainPin, localFamily) {
-  if (!firebaseAuth || !firebaseDb) return;
+  console.log("cloudSyncOnLogin called, firebaseAuth:", !!firebaseAuth, "firebaseDb:", !!firebaseDb);
+  if (!firebaseAuth || !firebaseDb) {
+    console.warn("Firebase not ready - skipping sync");
+    return;
+  }
 
   var authPwd = "chores::" + email.toLowerCase().trim() + "::" + plainPin + "::v1";
   var user = null;

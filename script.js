@@ -1644,14 +1644,7 @@ function renderKidPage(kidId) {
               `
               : ""
           }
-          <div class="section-head">
-            <div>
-              <p class="eyebrow">${escapeHtml(kid.name)}'s Rewards</p>
-              <h2>Rewards</h2>
-            </div>
-          </div>
-
-          <div class="rewards-layout">
+          <div class="rewards-layout rewards-layout-v2">
             <div class="points-column">
               <article class="points-card points-card-v2 is-bursting ${hasReachedThreshold ? "threshold-celebration" : ""}" data-points-card="true" role="button" tabindex="0" aria-label="Make points sparkle">
                 ${renderTileBubbles()}

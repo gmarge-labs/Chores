@@ -6239,3 +6239,56 @@ details[open] .template-accordion-chevron { transform:rotate(180deg); }
 .rewards-layout-v2 .reward-stack {
   padding: 12px !important;
 }
+
+/* ── COMPACT REWARDS PAGE ────────────────────────────── */
+/* Remove extra padding from rewards panel */
+.kid-view[data-panel="rewards"] {
+  padding-top: 14px !important;
+  padding-bottom: 14px !important;
+}
+
+/* Tighter bonus/penalty cards */
+.daily-adjustment-panel {
+  gap: 10px !important;
+}
+
+.daily-adjustment-card {
+  padding: 10px 14px 12px !important;
+}
+
+.daily-adjustment-card h4 {
+  font-size: 0.95rem !important;
+  margin: 2px 0 0 !important;
+}
+
+.daily-adjustment-card p:last-child {
+  font-size: 0.76rem !important;
+  margin-top: 3px !important;
+}
+
+.adj-icon {
+  width: 26px !important;
+  height: 26px !important;
+  margin-bottom: 4px !important;
+}
+
+/* Tighter reward-stack / buy favors */
+.kid-view[data-panel="rewards"] .reward-stack {
+  min-height: 60px !important;
+  padding: 10px 14px !important;
+}
+
+.favor-pill {
+  padding: 12px 20px !important;
+  font-size: 0.95rem !important;
+}
+
+/* Tighter points column gap */
+.points-column {
+  gap: 10px !important;
+}
+
+/* Tighter rewards layout gap */
+.rewards-layout {
+  gap: 10px !important;
+}

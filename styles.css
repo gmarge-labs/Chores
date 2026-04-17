@@ -2718,8 +2718,6 @@ button {
   align-self: stretch;
 }
 
-
-
 .settings-subview {
   display: none;
 }
@@ -3791,7 +3789,6 @@ button {
   grid-template-columns: 1fr;
   gap: 14px;
 }
-
 
 .task-card,
 .reward-card,
@@ -5908,16 +5905,7 @@ details[open] .template-accordion-chevron { transform:rotate(180deg); }
 .task-lane .task-stack { overflow-y:auto;overflow-x:hidden;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,0.35) transparent;padding-right:4px;margin-right:-4px; }
 
 /* â”€â”€ REWARDS PAGE V2 â€” MAGICAL â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-.points-card-v2 {
-  background:
-    radial-gradient(ellipse at 20% 10%,rgba(255,210,120,0.35) 0%,transparent 45%),
-    radial-gradient(ellipse at 80% 90%,rgba(var(--kid-accent-rgb),0.45) 0%,transparent 50%),
-    linear-gradient(160deg,#1a1060 0%,#2d1b8a 35%,#0e3a8a 70%,#0a2060 100%);
-  border:3px solid rgba(255,255,255,0.18);
-  box-shadow:0 0 0 1px rgba(255,255,255,0.08),0 24px 60px rgba(10,12,40,0.55),inset 0 1px 0 rgba(255,255,255,0.22);
-  overflow:hidden;
-  min-height:300px;
-}
+
 .points-gem-ring { position:absolute;width:260px;height:260px;top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none;animation:gem-orbit 8s linear infinite; }
 .points-gem-ring span { position:absolute;font-size:1.1rem;top:50%;left:50%; }
 .points-gem-ring span:nth-child(1){transform:rotate(0deg) translateX(120px) translateY(-50%);}
@@ -5938,3 +5926,138 @@ details[open] .template-accordion-chevron { transform:rotate(180deg); }
 .adj-icon { display:block;font-size:1.8rem;margin-bottom:6px;animation:trail-float 2.5s ease-in-out infinite; }
 .daily-adjustment-panel-v2 .daily-adjustment-card.bonus.has-update { background:linear-gradient(145deg,rgba(255,230,100,0.92),rgba(100,230,180,0.88)); }
 .daily-adjustment-panel-v2 .daily-adjustment-card.penalty.has-update { background:linear-gradient(145deg,rgba(255,160,120,0.92),rgba(255,100,160,0.88)); }
+
+/* â”€â”€ REWARDS PAGE V2 â€” GOLDEN TROPHY â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.points-card-v2 {
+  background: linear-gradient(160deg,#1a0a00 0%,#3d1c02 35%,#5c2e05 65%,#3d1c02 100%);
+  border: 3px solid rgba(255,200,50,0.4);
+  box-shadow: 0 0 0 1px rgba(255,180,0,0.15), 0 24px 60px rgba(80,30,0,0.6), inset 0 1px 0 rgba(255,220,80,0.3);
+  overflow: hidden;
+  min-height: 300px;
+}
+
+/* Spinning gold rays */
+.points-card-v2::before {
+  content: "";
+  position: absolute;
+  inset: -50%;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg, rgba(255,200,50,0.07) 10deg, transparent 20deg,
+    rgba(255,180,30,0.06) 30deg, transparent 40deg,
+    rgba(255,200,50,0.07) 50deg, transparent 60deg,
+    rgba(255,180,30,0.05) 70deg, transparent 80deg,
+    rgba(255,200,50,0.07) 90deg, transparent 100deg,
+    rgba(255,180,30,0.06) 110deg, transparent 120deg,
+    rgba(255,200,50,0.07) 130deg, transparent 140deg,
+    rgba(255,180,30,0.05) 150deg, transparent 160deg,
+    rgba(255,200,50,0.07) 170deg, transparent 180deg,
+    rgba(255,180,30,0.06) 190deg, transparent 200deg,
+    rgba(255,200,50,0.07) 210deg, transparent 220deg,
+    rgba(255,180,30,0.05) 230deg, transparent 240deg,
+    rgba(255,200,50,0.07) 250deg, transparent 260deg,
+    rgba(255,180,30,0.06) 270deg, transparent 280deg,
+    rgba(255,200,50,0.07) 290deg, transparent 300deg,
+    rgba(255,180,30,0.05) 310deg, transparent 320deg,
+    rgba(255,200,50,0.07) 330deg, transparent 340deg,
+    rgba(255,180,30,0.06) 350deg, transparent 360deg
+  );
+  animation: spin-rays 20s linear infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+
+@keyframes spin-rays { from{transform:rotate(0deg);}to{transform:rotate(360deg);} }
+
+/* Floating gold coins */
+.points-gem-ring {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.points-gem-ring span {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  background: radial-gradient(circle at 35% 35%, #ffe680, #cc8800);
+  border-radius: 50%;
+  border: 2px solid #ffcc00;
+  box-shadow: 0 2px 8px rgba(255,180,0,0.6);
+}
+
+.points-gem-ring span:nth-child(1){top:12%;left:10%;animation:coin-float 3s ease-in-out 0s infinite;}
+.points-gem-ring span:nth-child(2){top:18%;right:12%;animation:coin-float 3s ease-in-out 0.5s infinite;}
+.points-gem-ring span:nth-child(3){bottom:20%;left:8%;animation:coin-float 3s ease-in-out 1s infinite;}
+.points-gem-ring span:nth-child(4){bottom:15%;right:10%;animation:coin-float 3s ease-in-out 1.5s infinite;}
+.points-gem-ring span:nth-child(5){top:8%;left:45%;animation:coin-float 3s ease-in-out 0.8s infinite;}
+.points-gem-ring span:nth-child(6){bottom:8%;left:42%;animation:coin-float 3s ease-in-out 2s infinite;}
+
+@keyframes coin-float {
+  0%,100%{transform:translateY(0) rotateY(0deg);opacity:0.8;}
+  50%{transform:translateY(-10px) rotateY(180deg);opacity:1;}
+}
+
+.points-eyebrow {
+  color: rgba(255,220,80,0.95) !important;
+  text-shadow: 0 0 18px rgba(255,180,0,0.8);
+  font-size: 0.78rem !important;
+  letter-spacing: 0.14em !important;
+  position: relative;
+  z-index: 2;
+}
+
+.points-card-v2 .points-total {
+  color: #ffd700;
+  text-shadow:
+    0 0 20px rgba(255,200,0,0.9),
+    0 0 60px rgba(255,150,0,0.6),
+    0 4px 0 rgba(80,40,0,0.7);
+  font-size: 7rem;
+  position: relative;
+  z-index: 2;
+}
+
+.points-coin-trail {
+  display: flex;
+  gap: 6px;
+  font-size: 1rem;
+  position: relative;
+  z-index: 2;
+}
+
+.points-coin-trail span {
+  width: 14px;
+  height: 14px;
+  background: radial-gradient(circle at 35% 35%, #ffe680, #cc8800);
+  border-radius: 50%;
+  border: 1.5px solid #ffcc00;
+  display: inline-block;
+  animation: coin-float 2.5s ease-in-out infinite;
+}
+
+.points-coin-trail span:nth-child(2){animation-delay:0.3s;}
+.points-coin-trail span:nth-child(3){animation-delay:0.6s;}
+.points-coin-trail span:nth-child(4){animation-delay:0.9s;}
+.points-coin-trail span:nth-child(5){animation-delay:1.2s;}
+.points-coin-trail span:nth-child(6){animation-delay:1.5s;}
+
+.points-card-v2 .points-message {
+  color: rgba(255,230,150,0.95);
+  font-size: 0.92rem;
+  font-weight: 700;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+  position: relative;
+  z-index: 2;
+  margin-top: 8px;
+  background: rgba(255,180,0,0.2);
+  padding: 5px 16px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,200,50,0.3);
+}
+
+.daily-adjustment-panel-v2 .daily-adjustment-card { text-align:center;padding:16px 14px 18px; }
+.adj-icon { display:block;font-size:1.8rem;margin-bottom:6px;animation:coin-float 2.5s ease-in-out infinite; }
+.daily-adjustment-panel-v2 .daily-adjustment-card.bonus.has-update { background:linear-gradient(145deg,rgba(255,220,80,0.92),rgba(100,230,150,0.88)); }
+.daily-adjustment-panel-v2 .daily-adjustment-card.penalty.has-update { background:linear-gradient(145deg,rgba(255,160,80,0.92),rgba(255,100,120,0.88)); }

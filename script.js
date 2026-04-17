@@ -1877,21 +1877,27 @@ function renderKidPage(kidId) {
                               const allTasks = getFamilyKids().flatMap(k => (k.taskTemplates || []).map(t => ({ ...t, kidId: k.id, kidName: k.name })));
                               if (!allTasks.length) return "";
                               return `
-                                <div class="existing-tasks-list">
-                                  <p class="eyebrow" style="margin-top:16px;">Existing tasks</p>
-                                  ${allTasks.map(t => `
-                                    <div class="existing-task-row">
-                                      <div class="existing-task-info">
-                                        <span class="existing-task-title">${escapeHtml(t.title)}</span>
-                                        <span class="existing-task-meta">${escapeHtml(t.kidName)} • ${escapeHtml(t.points)} pts</span>
+                                <details class="existing-tasks-dropdown">
+                                  <summary class="existing-tasks-summary">
+                                    <span class="eyebrow" style="margin:0;">Existing tasks</span>
+                                    <span class="existing-tasks-count">${allTasks.length}</span>
+                                    <span class="existing-tasks-chevron">&#9662;</span>
+                                  </summary>
+                                  <div class="existing-tasks-list">
+                                    ${allTasks.map(t => `
+                                      <div class="existing-task-row">
+                                        <div class="existing-task-info">
+                                          <span class="existing-task-title">${escapeHtml(t.title)}</span>
+                                          <span class="existing-task-meta">${escapeHtml(t.kidName)} • ${escapeHtml(t.points)} pts</span>
+                                        </div>
+                                        <div class="existing-task-actions">
+                                          <button class="action-button secondary btn-sm" type="button" data-edit-task="${escapeHtml(t.id)}" data-edit-kid="${escapeHtml(t.kidId)}">Edit</button>
+                                          <button class="action-button danger btn-sm" type="button" data-delete-task="${escapeHtml(t.id)}" data-delete-kid="${escapeHtml(t.kidId)}">Delete</button>
+                                        </div>
                                       </div>
-                                      <div class="existing-task-actions">
-                                        <button class="action-button secondary btn-sm" type="button" data-edit-task="${escapeHtml(t.id)}" data-edit-kid="${escapeHtml(t.kidId)}">Edit</button>
-                                        <button class="action-button danger btn-sm" type="button" data-delete-task="${escapeHtml(t.id)}" data-delete-kid="${escapeHtml(t.kidId)}">Delete</button>
-                                      </div>
-                                    </div>
-                                  `).join("")}
-                                </div>
+                                    `).join("")}
+                                  </div>
+                                </details>
                               `;
                             })()}
                           </article>

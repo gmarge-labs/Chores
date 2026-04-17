@@ -3531,20 +3531,24 @@ async function cloudSyncOnLogin(email, plainPin, localFamily) {
 
   if (!user?.id || !session?.access_token) return;
 
-  // Create a fresh authenticated client using the session token
-  var authClient = window.supabase.createClient(cloudConfig.url, cloudConfig.anonKey, {
-    global: { headers: { Authorization: "Bearer " + session.access_token } },
-    auth: { persistSession: false, autoRefreshToken: false },
+  if (!user?.id || !session?.access_token) return;
+
+  // Set session on client so all subsequent calls use the JWT
+  await supabaseClient.auth.setSession({
+    access_token: session.access_token,
+    refresh_token: session.refresh_token,
   });
 
-  // Check if family already exists in cloud
-  var memberRes = await authClient.from("parent_memberships").select("family_id").eq("user_id", user.id).maybeSingle();
+  // Check if family already exists for this user
+  var memberRes = await supabaseClient
+    .from("parent_memberships")
+    .select("family_id")
+    .eq("user_id", user.id)
+    .maybeSingle();
 
   if (memberRes.data?.family_id) {
-    // Family exists — pull latest and merge
+    // Pull existing cloud family and merge
     try {
-      // Temporarily swap supabaseClient session for the pull
-      await supabaseClient.auth.setSession({ access_token: session.access_token, refresh_token: session.refresh_token });
       var cloudFamily = await pullFamilyFromCloud(memberRes.data.family_id);
       if (cloudFamily) {
         cloudFamily.parentEmail = localFamily.parentEmail;
@@ -3555,36 +3559,41 @@ async function cloudSyncOnLogin(email, plainPin, localFamily) {
         renderApp();
         showToast("Synced from cloud ✓");
       }
-    } catch(e) { console.warn("Pull failed:", e.message); }
+    } catch(e) { console.warn("Cloud pull failed:", e.message); }
     return;
   }
 
-  // No cloud family yet — create and push
+  // No cloud family yet — use security definer function to create atomically
   try {
-    var famRes = await authClient.from("families").insert({ family_name: localFamily.familyName }).select("id").single();
-    if (famRes.error) { console.warn("Family insert failed:", famRes.error.message, famRes.error.code); return; }
-    var cloudFamilyId = famRes.data.id;
+    var rpcRes = await supabaseClient.rpc("create_family_for_user", {
+      p_user_id: user.id,
+      p_family_name: localFamily.familyName,
+      p_parent_name: localFamily.parentName,
+      p_parent_pin_hash: localFamily.parentPin,
+    });
 
-    await authClient.from("parent_memberships").insert({ family_id: cloudFamilyId, user_id: user.id, parent_name: localFamily.parentName });
-    await authClient.from("family_settings").insert({ family_id: cloudFamilyId, parent_pin_hash: localFamily.parentPin, parent_name: localFamily.parentName });
+    if (rpcRes.error) throw new Error("create_family_for_user failed: " + rpcRes.error.message);
 
-    // Update local family id to match cloud
+    var cloudFamilyId = rpcRes.data;
     localFamily.id = cloudFamilyId;
     state.session = { familyId: cloudFamilyId, role: "parent" };
-
-    // Set session on main client for ongoing saves
-    await supabaseClient.auth.setSession({ access_token: session.access_token, refresh_token: session.refresh_token });
-
     saveState({ skipCloud: true });
 
     // Push kids
     if (localFamily.kids.length) {
-      await authClient.from("kids").insert(localFamily.kids.map(function(k) { return kidToRow(k, cloudFamilyId); }));
+      await supabaseClient.from("kids").insert(
+        localFamily.kids.map(function(k) { return kidToRow(k, cloudFamilyId); })
+      );
     }
 
     showToast("Synced to cloud ✓");
   } catch(e) {
-    console.warn("Cloud push failed:", e.message);
+    var el = document.createElement("div");
+    el.style.cssText = "position:fixed;top:10px;left:10px;right:10px;z-index:9999;background:#c00;color:#fff;padding:14px 18px;border-radius:12px;font-size:0.82rem;";
+    el.textContent = "Cloud sync error: " + (e.message || "unknown");
+    document.body.appendChild(el);
+    setTimeout(function() { el.remove(); }, 15000);
+    console.warn("Cloud sync failed:", e.message);
   }
 }
 

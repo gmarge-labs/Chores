@@ -1673,22 +1673,29 @@ function renderKidPage(kidId) {
                 }</p>
               </article>
 
-              <section class="daily-adjustment-panel daily-adjustment-panel-v2">
-                <article class="daily-adjustment-card bonus ${todayBonus ? "has-update" : "is-empty"}">
-                  <span class="adj-icon adj-icon-bonus"></span>
-                  <p class="eyebrow">Today’s bonus</p>
-                  ${todayBonus
-                    ? `<h4>${escapeHtml(todayBonus.value)}</h4><p>${escapeHtml(todayBonus.reason || "A bonus was added today.")}</p>`
-                    : `<h4>No bonus yet</h4><p>Keep going — a bonus could be yours!</p>`}
-                </article>
-                <article class="daily-adjustment-card penalty ${todayPenalty ? "has-update" : "is-empty"}">
-                  <span class="adj-icon adj-icon-penalty"></span>
-                  <p class="eyebrow">Today’s penalty</p>
-                  ${todayPenalty
-                    ? `<h4>${escapeHtml(todayPenalty.value)}</h4><p>${escapeHtml(todayPenalty.reason || "A penalty was added today.")}</p>`
-                    : `<h4>All clear!</h4><p>No penalties today — great work!</p>`}
-                </article>
-              </section>
+              <div class="gold-bottom-row">
+                <div class="gold-tab bonus-tab">
+                  <div class="gold-dot">+</div>
+                  <div class="gold-tab-text">
+                    <span class="gold-tab-label">Bonus</span>
+                    <span class="gold-tab-title">${todayBonus ? escapeHtml(todayBonus.value) : "No bonus yet"}</span>
+                  </div>
+                </div>
+                <div class="gold-tab penalty-tab">
+                  <div class="gold-dot">-</div>
+                  <div class="gold-tab-text">
+                    <span class="gold-tab-label">Penalty</span>
+                    <span class="gold-tab-title">${todayPenalty ? escapeHtml(todayPenalty.value) : "All clear!"}</span>
+                  </div>
+                </div>
+                <button class="gold-tab favor-tab" type="button" data-view="favors">
+                  <div class="gold-dot gold-dot-star">&#9733;</div>
+                  <div class="gold-tab-text">
+                    <span class="gold-tab-label">Spend points</span>
+                    <span class="gold-tab-title">Buy favors</span>
+                  </div>
+                </button>
+              </div>
             </div>
 
             <section class="reward-stack">

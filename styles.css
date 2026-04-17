@@ -6292,3 +6292,388 @@ details[open] .template-accordion-chevron { transform:rotate(180deg); }
 .rewards-layout {
   gap: 10px !important;
 }
+
+
+/* ── REWARDS BOTTOM ROW — FULL GOLDEN THEME ─────────────────── */
+
+/* Bonus pill — dark amber matching points card */
+.daily-adjustment-panel-v2 .daily-adjustment-card.bonus {
+  background: linear-gradient(160deg,#0d0500 0%,#3d1c00 50%,#0d0500 100%) !important;
+  border: 1.5px solid rgba(255,200,50,0.45) !important;
+  box-shadow: 0 0 14px rgba(255,180,0,0.35),0 0 28px rgba(255,130,0,0.2) !important;
+  animation: glow-gold-tab 3s ease-in-out infinite !important;
+}
+
+/* Penalty pill — slightly darker amber */
+.daily-adjustment-panel-v2 .daily-adjustment-card.penalty {
+  background: linear-gradient(160deg,#0a0300 0%,#2e1400 50%,#0a0300 100%) !important;
+  border: 1.5px solid rgba(255,180,40,0.4) !important;
+  box-shadow: 0 0 14px rgba(255,150,0,0.3),0 0 28px rgba(200,90,0,0.18) !important;
+  animation: glow-gold-tab 3s ease-in-out infinite 0.8s !important;
+}
+
+@keyframes glow-gold-tab {
+  0%,100% { box-shadow: 0 0 14px rgba(255,180,0,0.35),0 0 28px rgba(255,130,0,0.2); }
+  50%      { box-shadow: 0 0 26px rgba(255,210,0,0.65),0 0 50px rgba(255,160,0,0.4),0 0 70px rgba(255,100,0,0.2); }
+}
+
+/* Eyebrow on adj cards */
+.daily-adjustment-panel-v2 .daily-adjustment-card .eyebrow {
+  color: rgba(255,200,80,0.65) !important;
+}
+
+/* Title on adj cards */
+.daily-adjustment-panel-v2 .daily-adjustment-card h4 {
+  color: #ffd700 !important;
+  text-shadow: 0 0 8px rgba(255,180,0,0.4) !important;
+}
+
+/* Subtitle on adj cards */
+.daily-adjustment-panel-v2 .daily-adjustment-card p:last-child {
+  color: rgba(255,200,100,0.65) !important;
+}
+
+/* Adj icon dots — gold */
+.adj-icon-bonus {
+  background: linear-gradient(135deg,#ffd700,#ffaa00) !important;
+  color: #3d1c00 !important;
+  box-shadow: 0 0 10px rgba(255,200,0,0.6) !important;
+}
+
+.adj-icon-penalty {
+  background: linear-gradient(135deg,#ffd700,#cc8800) !important;
+  color: #3d1c00 !important;
+  box-shadow: 0 0 10px rgba(255,180,0,0.5) !important;
+}
+
+/* Shimmer sweep on adj cards */
+.daily-adjustment-panel-v2 .daily-adjustment-card::before {
+  background: linear-gradient(90deg,transparent,rgba(255,220,100,0.18),transparent) !important;
+  animation: score-shine 2.8s ease-in-out infinite !important;
+}
+
+/* Buy favors button — dark amber matching */
+.favor-pill {
+  background: linear-gradient(160deg,#0d0500 0%,#5c2e00 40%,#3d1c00 70%,#0d0500 100%) !important;
+  background-size: 200% 200% !important;
+  border: 1.5px solid rgba(255,200,50,0.5) !important;
+  color: #ffd700 !important;
+  text-shadow: 0 0 12px rgba(255,200,0,0.5) !important;
+  box-shadow: 0 0 18px rgba(255,180,0,0.4),0 0 36px rgba(255,130,0,0.22) !important;
+  animation: glow-favor 3s ease-in-out infinite 1.5s !important;
+}
+
+.favor-pill span {
+  color: #ffd700 !important;
+}
+
+@keyframes glow-favor {
+  0%,100% { box-shadow: 0 0 18px rgba(255,180,0,0.4),0 0 36px rgba(255,130,0,0.22); }
+  50%      { box-shadow: 0 0 32px rgba(255,210,0,0.7),0 0 60px rgba(255,160,0,0.45),0 0 90px rgba(255,100,0,0.2); }
+}
+
+/* Score sparkles inside favor pill — gold star shape */
+.favor-pill .score-sparkles span {
+  background: #ffd700 !important;
+  box-shadow: 0 0 6px rgba(255,200,0,0.8) !important;
+}
+
+/* ── GOLD BOTTOM ROW ─────────────────────────────────── */
+.gold-bottom-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1.6fr;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.gold-tab {
+  border-radius: 14px;
+  padding: 9px 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(160deg, #0d0500 0%, #3d1c00 50%, #0d0500 100%);
+  border: 1.5px solid rgba(255,200,50,0.45);
+  cursor: pointer;
+  animation: gold-tab-glow 3s ease-in-out infinite;
+}
+
+.gold-tab:nth-child(2) { animation-delay: 0.6s; }
+.gold-tab:nth-child(3) { animation-delay: 1.2s; }
+
+@keyframes gold-tab-glow {
+  0%,100% { box-shadow: 0 0 14px rgba(255,180,0,0.35), 0 0 28px rgba(255,130,0,0.2); }
+  50%      { box-shadow: 0 0 26px rgba(255,210,0,0.65), 0 0 50px rgba(255,160,0,0.4), 0 0 70px rgba(255,100,0,0.2); }
+}
+
+.gold-tab::after {
+  content: "";
+  position: absolute;
+  top: 0; left: -60%;
+  width: 40%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,220,100,0.2), transparent);
+  animation: gold-shimmer 2.8s ease-in-out infinite;
+}
+.gold-tab:nth-child(2)::after { animation-delay: 0.9s; }
+.gold-tab:nth-child(3)::after { animation-delay: 1.8s; }
+@keyframes gold-shimmer { 0% { left: -60%; } 100% { left: 120%; } }
+
+.gold-dot {
+  width: 24px; height: 24px; min-width: 24px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 900; font-size: 1rem;
+  color: #3d1c00;
+  background: linear-gradient(135deg, #ffd700, #ffaa00);
+  box-shadow: 0 0 10px rgba(255,200,0,0.6);
+  flex-shrink: 0;
+  position: relative; z-index: 1;
+}
+
+.gold-tab-text {
+  display: flex; flex-direction: column;
+  min-width: 0;
+  position: relative; z-index: 1;
+}
+
+.gold-tab-label {
+  font-size: 0.52rem; font-weight: 900;
+  letter-spacing: 0.08em;
+  color: rgba(255,200,80,0.65);
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+.gold-tab-title {
+  font-size: 0.78rem; font-weight: 900;
+  color: #ffd700;
+  line-height: 1.2; margin-top: 1px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  text-shadow: 0 0 8px rgba(255,180,0,0.4);
+}
+
+/* ── GOLDEN TABS — BONUS / PENALTY / BUY FAVORS ─────── */
+.daily-adjustment-panel-v2 {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr 1.6fr !important;
+  gap: 8px !important;
+}
+
+.daily-adjustment-panel-v2 .daily-adjustment-card,
+.rewards-layout-v2 .favor-pill {
+  border-radius: 14px !important;
+  padding: 9px 10px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  position: relative !important;
+  overflow: hidden !important;
+  background: linear-gradient(160deg,#0d0500 0%,#3d1c00 50%,#0d0500 100%) !important;
+  border: 1.5px solid rgba(255,200,50,0.45) !important;
+  text-align: left !important;
+  animation: glow-gold-tab 3s ease-in-out infinite !important;
+}
+
+.daily-adjustment-panel-v2 .daily-adjustment-card.penalty {
+  animation-delay: 0.6s !important;
+}
+
+.rewards-layout-v2 .favor-pill {
+  animation-delay: 1.2s !important;
+  cursor: pointer !important;
+  width: 100% !important;
+}
+
+@keyframes glow-gold-tab {
+  0%,100% { box-shadow: 0 0 14px rgba(255,180,0,0.35), 0 0 28px rgba(255,130,0,0.2); }
+  50%      { box-shadow: 0 0 26px rgba(255,210,0,0.65), 0 0 50px rgba(255,160,0,0.4), 0 0 70px rgba(255,100,0,0.2); }
+}
+
+/* Shimmer on all three */
+.daily-adjustment-panel-v2 .daily-adjustment-card::before,
+.rewards-layout-v2 .favor-pill::before {
+  content: "" !important;
+  position: absolute !important;
+  top: 0 !important; left: -60% !important;
+  width: 40% !important; height: 100% !important;
+  background: linear-gradient(90deg, transparent, rgba(255,220,100,0.2), transparent) !important;
+  animation: shimmer-gold 2.8s ease-in-out infinite !important;
+  pointer-events: none !important;
+}
+
+.daily-adjustment-panel-v2 .daily-adjustment-card.penalty::before { animation-delay: 0.9s !important; }
+.rewards-layout-v2 .favor-pill::before { animation-delay: 1.8s !important; }
+
+@keyframes shimmer-gold { 0%{left:-60%;} 100%{left:120%;} }
+
+/* Gold dot */
+.adj-icon-bonus, .adj-icon-penalty {
+  width: 24px !important; height: 24px !important;
+  min-width: 24px !important;
+  border-radius: 50% !important;
+  background: linear-gradient(135deg,#ffd700,#ffaa00) !important;
+  box-shadow: 0 0 10px rgba(255,200,0,0.6) !important;
+  color: #3d1c00 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-weight: 900 !important;
+  font-size: 1rem !important;
+  flex-shrink: 0 !important;
+  position: relative !important;
+  z-index: 1 !important;
+  margin: 0 !important;
+  animation: none !important;
+}
+
+/* Labels and text */
+.daily-adjustment-panel-v2 .eyebrow {
+  font-size: 0.52rem !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.08em !important;
+  color: rgba(255,200,80,0.65) !important;
+  text-transform: uppercase !important;
+  line-height: 1 !important;
+  margin: 0 !important;
+  position: relative !important;
+  z-index: 1 !important;
+}
+
+.daily-adjustment-panel-v2 h4 {
+  font-size: 0.78rem !important;
+  font-weight: 900 !important;
+  color: #ffd700 !important;
+  line-height: 1.2 !important;
+  margin: 1px 0 0 !important;
+  text-shadow: 0 0 8px rgba(255,180,0,0.4) !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  position: relative !important;
+  z-index: 1 !important;
+}
+
+.daily-adjustment-panel-v2 p:last-child { display: none !important; }
+
+/* Buy favors pill — same gold style */
+.rewards-layout-v2 .favor-pill {
+  justify-content: flex-start !important;
+  font-size: 0 !important;
+}
+
+.rewards-layout-v2 .favor-pill .score-sparkles { display: none !important; }
+
+.rewards-layout-v2 .favor-pill span:not(.score-sparkles) {
+  font-size: 0.78rem !important;
+  font-weight: 900 !important;
+  color: #ffd700 !important;
+  text-shadow: 0 0 8px rgba(255,180,0,0.4) !important;
+  position: relative !important;
+  z-index: 1 !important;
+}
+
+/* Favor pill coin dot */
+.rewards-layout-v2 .favor-pill::after { content: none !important; }
+
+/* Adjust the daily-adjustment-panel layout to be side by side with favor pill */
+.rewards-layout-v2 .points-column {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+}
+
+.rewards-layout-v2 .reward-stack {
+  display: none !important;
+}
+
+/* Move favor pill into the bottom row */
+.daily-adjustment-panel-v2 {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr 1.6fr !important;
+}
+
+/* ── GOLD BOTTOM ROW — FINAL ─────────────────────────── */
+.gold-bottom-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1.6fr;
+  gap: 8px;
+}
+
+.gold-tab {
+  border-radius: 14px;
+  padding: 9px 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(160deg,#0d0500 0%,#3d1c00 50%,#0d0500 100%);
+  border: 1.5px solid rgba(255,200,50,0.45);
+  animation: glow-gold-tab 3s ease-in-out infinite;
+  cursor: default;
+}
+
+.gold-tab.favor-tab { cursor: pointer; }
+.gold-tab.penalty-tab { animation-delay: 0.6s; }
+.gold-tab.favor-tab { animation-delay: 1.2s; }
+
+@keyframes glow-gold-tab {
+  0%,100% { box-shadow: 0 0 14px rgba(255,180,0,0.35), 0 0 28px rgba(255,130,0,0.2); }
+  50%      { box-shadow: 0 0 26px rgba(255,210,0,0.65), 0 0 50px rgba(255,160,0,0.4), 0 0 70px rgba(255,100,0,0.2); }
+}
+
+.gold-tab::before {
+  content: "";
+  position: absolute;
+  top: 0; left: -60%;
+  width: 40%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,220,100,0.2), transparent);
+  animation: shimmer-gold-tab 2.8s ease-in-out infinite;
+  pointer-events: none;
+}
+.gold-tab.penalty-tab::before { animation-delay: 0.9s; }
+.gold-tab.favor-tab::before   { animation-delay: 1.8s; }
+@keyframes shimmer-gold-tab { 0%{left:-60%;} 100%{left:120%;} }
+
+.gold-dot {
+  width: 24px; height: 24px; min-width: 24px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 900; font-size: 1rem;
+  color: #3d1c00;
+  background: linear-gradient(135deg,#ffd700,#ffaa00);
+  box-shadow: 0 0 10px rgba(255,200,0,0.6);
+  flex-shrink: 0;
+  position: relative; z-index: 1;
+}
+
+.gold-dot-star { font-size: 0.85rem; }
+
+.gold-tab-text {
+  display: flex; flex-direction: column;
+  min-width: 0;
+  position: relative; z-index: 1;
+}
+
+.gold-tab-label {
+  font-size: 0.52rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  color: rgba(255,200,80,0.65);
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+.gold-tab-title {
+  font-size: 0.78rem;
+  font-weight: 900;
+  color: #ffd700;
+  line-height: 1.2;
+  margin-top: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-shadow: 0 0 8px rgba(255,180,0,0.4);
+}

@@ -3306,13 +3306,17 @@ async function cloudSyncOnLogin(email, plainPin, localFamily) {
   }
 
   var authPwd = "chores::" + email.toLowerCase().trim() + "::" + plainPin + "::v1";
+  console.log("Firebase auth attempt, email:", email, "pwd:", authPwd.slice(0,30));
   var user = null;
 
   // Try sign in first
   try {
+    console.log("Trying signIn...");
     var signInRes = await firebaseAuth.signInWithEmailAndPassword(email, authPwd);
     user = signInRes.user;
+    console.log("SignIn OK:", user.uid);
   } catch(signInErr) {
+    console.log("SignIn error code:", signInErr.code);
     if (signInErr.code === "auth/user-not-found" || signInErr.code === "auth/invalid-credential" || signInErr.code === "auth/wrong-password" || signInErr.code === "auth/invalid-login-credentials" || signInErr.code === "auth/invalid-email") {
       // New user — create account
       try {

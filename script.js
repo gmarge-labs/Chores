@@ -1,16 +1,30 @@
 const STORAGE_KEY = "chores-multi-family-state-v1";
 const cloudConfig = window.CHORES_FIREBASE_CONFIG || {};
-const cloudModeEnabled = Boolean(cloudConfig.enabled && cloudConfig.url && cloudConfig.anonKey);
-const cloudAuthEnabled = false;
-const supabaseClient = cloudModeEnabled && window.supabase?.createClient
-  ? window.supabase.createClient(cloudConfig.url, cloudConfig.anonKey, {
-      auth: {
-        persistSession: true,
-        autoRefreshToken: true,
-        detectSessionInUrl: true,
-      },
-    })
-  : null;
+const cloudModeEnabled = Boolean(cloudConfig.enabled && cloudConfig.apiKey);
+const cloudAuthEnabled = true;
+
+var firebaseApp  = null;
+var firebaseAuth = null;
+var firebaseDb   = null;
+
+if (cloudModeEnabled && typeof firebase !== "undefined") {
+  try {
+    firebaseApp  = firebase.initializeApp({
+      apiKey:            cloudConfig.apiKey,
+      authDomain:        cloudConfig.authDomain,
+      projectId:         cloudConfig.projectId,
+      storageBucket:     cloudConfig.storageBucket,
+      messagingSenderId: cloudConfig.messagingSenderId,
+      appId:             cloudConfig.appId,
+    });
+    firebaseAuth = firebase.auth(firebaseApp);
+    firebaseDb   = firebase.firestore(firebaseApp);
+  } catch(e) {
+    console.warn("Firebase init error:", e.message);
+  }
+}
+
+
 
 const emptyState = {
   families: [],

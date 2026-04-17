@@ -7,3 +7,4 @@ window.CHORES_FIREBASE_CONFIG = {
   messagingSenderId: "870197245532",
   appId: "1:870197245532:web:6dee276a2de32c1c331899",
 };
+console.log("Firebase config loaded, firebase available:", typeof firebase !== "undefined");

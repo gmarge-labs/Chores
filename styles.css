@@ -5929,9 +5929,9 @@ details[open] .template-accordion-chevron { transform:rotate(180deg); }
 
 /* â”€â”€ REWARDS PAGE V2 â€” GOLDEN TROPHY â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .points-card-v2 {
-  background: linear-gradient(160deg,#1a0a00 0%,#3d1c02 35%,#5c2e05 65%,#3d1c02 100%);
-  border: 3px solid rgba(255,200,50,0.4);
-  box-shadow: 0 0 0 1px rgba(255,180,0,0.15), 0 24px 60px rgba(80,30,0,0.6), inset 0 1px 0 rgba(255,220,80,0.3);
+  background: linear-gradient(160deg,#0d0500 0%,#2a1200 30%,#3d1c00 55%,#2a1200 80%,#0d0500 100%) !important;
+  border: 3px solid rgba(255,200,50,0.5) !important;
+  box-shadow: 0 0 0 1px rgba(255,180,0,0.2), 0 24px 60px rgba(80,30,0,0.7), inset 0 1px 0 rgba(255,220,80,0.4) !important;
   overflow: hidden;
   min-height: 300px;
 }
@@ -5943,24 +5943,28 @@ details[open] .template-accordion-chevron { transform:rotate(180deg); }
   inset: -50%;
   background: conic-gradient(
     from 0deg,
-    transparent 0deg, rgba(255,200,50,0.07) 10deg, transparent 20deg,
-    rgba(255,180,30,0.06) 30deg, transparent 40deg,
-    rgba(255,200,50,0.07) 50deg, transparent 60deg,
-    rgba(255,180,30,0.05) 70deg, transparent 80deg,
-    rgba(255,200,50,0.07) 90deg, transparent 100deg,
-    rgba(255,180,30,0.06) 110deg, transparent 120deg,
-    rgba(255,200,50,0.07) 130deg, transparent 140deg,
-    rgba(255,180,30,0.05) 150deg, transparent 160deg,
-    rgba(255,200,50,0.07) 170deg, transparent 180deg,
-    rgba(255,180,30,0.06) 190deg, transparent 200deg,
-    rgba(255,200,50,0.07) 210deg, transparent 220deg,
-    rgba(255,180,30,0.05) 230deg, transparent 240deg,
-    rgba(255,200,50,0.07) 250deg, transparent 260deg,
-    rgba(255,180,30,0.06) 270deg, transparent 280deg,
-    rgba(255,200,50,0.07) 290deg, transparent 300deg,
-    rgba(255,180,30,0.05) 310deg, transparent 320deg,
-    rgba(255,200,50,0.07) 330deg, transparent 340deg,
-    rgba(255,180,30,0.06) 350deg, transparent 360deg
+    transparent 0deg, rgba(255,210,60,0.22) 8deg, transparent 16deg,
+    rgba(255,180,30,0.18) 24deg, transparent 32deg,
+    rgba(255,210,60,0.22) 40deg, transparent 48deg,
+    rgba(255,180,30,0.16) 56deg, transparent 64deg,
+    rgba(255,210,60,0.22) 72deg, transparent 80deg,
+    rgba(255,180,30,0.18) 88deg, transparent 96deg,
+    rgba(255,210,60,0.22) 104deg, transparent 112deg,
+    rgba(255,180,30,0.16) 120deg, transparent 128deg,
+    rgba(255,210,60,0.22) 136deg, transparent 144deg,
+    rgba(255,180,30,0.18) 152deg, transparent 160deg,
+    rgba(255,210,60,0.22) 168deg, transparent 176deg,
+    rgba(255,180,30,0.16) 184deg, transparent 192deg,
+    rgba(255,210,60,0.22) 200deg, transparent 208deg,
+    rgba(255,180,30,0.18) 216deg, transparent 224deg,
+    rgba(255,210,60,0.22) 232deg, transparent 240deg,
+    rgba(255,180,30,0.16) 248deg, transparent 256deg,
+    rgba(255,210,60,0.22) 264deg, transparent 272deg,
+    rgba(255,180,30,0.18) 280deg, transparent 288deg,
+    rgba(255,210,60,0.22) 296deg, transparent 304deg,
+    rgba(255,180,30,0.16) 312deg, transparent 320deg,
+    rgba(255,210,60,0.22) 328deg, transparent 336deg,
+    rgba(255,180,30,0.18) 344deg, transparent 360deg
   );
   animation: spin-rays 20s linear infinite;
   pointer-events: none;
@@ -6061,3 +6065,14 @@ details[open] .template-accordion-chevron { transform:rotate(180deg); }
 .adj-icon { display:block;font-size:1.8rem;margin-bottom:6px;animation:coin-float 2.5s ease-in-out infinite; }
 .daily-adjustment-panel-v2 .daily-adjustment-card.bonus.has-update { background:linear-gradient(145deg,rgba(255,220,80,0.92),rgba(100,230,150,0.88)); }
 .daily-adjustment-panel-v2 .daily-adjustment-card.penalty.has-update { background:linear-gradient(145deg,rgba(255,160,80,0.92),rgba(255,100,120,0.88)); }
+/* Hide old star cloud on v2 card â€” replaced by coin trail */
+.points-card-v2 .points-star-cloud { display: none; }
+
+/* Eyebrow styling on v2 card */
+.points-card-v2 .eyebrow {
+  color: rgba(255,220,80,0.95);
+  text-shadow: 0 0 12px rgba(255,180,0,0.6);
+  letter-spacing: 0.1em;
+  position: relative;
+  z-index: 2;
+}

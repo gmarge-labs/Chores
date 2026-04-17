@@ -3347,7 +3347,7 @@ async function cloudSyncOnLogin(email, plainPin, localFamily) {
       state.session = { familyId: cloudFamily.id, role: "parent" };
       saveState({ skipCloud: true });
       renderApp();
-      showToast("Synced from cloud \u2713");
+      showToast("Synced from cloud ✓");
     } catch(e) {
       console.warn("Firebase pull failed:", e.message);
     }
@@ -3377,7 +3377,7 @@ async function cloudSyncOnLogin(email, plainPin, localFamily) {
     await batch.commit();
 
     saveState({ skipCloud: true });
-    showToast("Synced to cloud \u2713");
+    showToast("Synced to cloud ✓");
   } catch(e) {
     console.warn("Firebase push failed:", e.message);
     showToast("Cloud sync failed: " + (e.message || "unknown"));

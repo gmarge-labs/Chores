@@ -27,12 +27,9 @@ if (cloudModeEnabled && typeof firebase !== "undefined") {
     });
     firebaseAuth = firebase.auth(firebaseApp);
     firebaseDb   = firebase.firestore(firebaseApp);
-    console.log("Firebase initialised OK, projectId:", cloudConfig.projectId);
   } catch(e) {
     console.warn("Firebase init error:", e.message);
   }
-} else {
-  console.warn("Firebase NOT initialised. cloudModeEnabled:", cloudModeEnabled, "firebase available:", typeof firebase !== "undefined", "config:", JSON.stringify(cloudConfig));
 }
 
 const emptyState = {
@@ -3299,8 +3296,6 @@ function cloudSave(kidId) {
 
 // ── CLOUD SYNC ON LOGIN ───────────────────────────────────────
 async function cloudSyncOnLogin(email, plainPin, localFamily) {
-  console.log("cloudSyncOnLogin called, firebaseAuth:", !!firebaseAuth, "firebaseDb:", !!firebaseDb);
-  console.log("params - email:", typeof email, email, "pin:", typeof plainPin, "family:", typeof localFamily);
   if (!firebaseAuth || !firebaseDb) {
     console.warn("Firebase not ready - skipping sync");
     return;
@@ -3311,27 +3306,20 @@ async function cloudSyncOnLogin(email, plainPin, localFamily) {
   }
 
   var authPwd = "chores::" + String(email).toLowerCase().trim() + "::" + String(plainPin) + "::v1";
-  console.log("Firebase auth attempt, email:", email, "pwd:", authPwd.slice(0,30));
   var user = null;
 
   // Try sign in first
   try {
-    console.log("Trying signIn...");
-    var signInRes = await firebaseAuth.signInWithEmailAndPassword(email, authPwd);
+      var signInRes = await firebaseAuth.signInWithEmailAndPassword(email, authPwd);
     user = signInRes.user;
-    console.log("SignIn OK:", user.uid);
   } catch(signInErr) {
-    console.log("SignIn error code:", signInErr.code);
     if (signInErr.code === "auth/user-not-found" || signInErr.code === "auth/invalid-credential" || signInErr.code === "auth/wrong-password" || signInErr.code === "auth/invalid-login-credentials" || signInErr.code === "auth/invalid-email") {
       // New user — create account
       try {
-        console.log("Attempting Firebase signup for:", email, "pwd length:", authPwd.length);
         var signUpRes = await firebaseAuth.createUserWithEmailAndPassword(email, authPwd);
         user = signUpRes.user;
-        console.log("Firebase signup OK, uid:", user.uid);
       } catch(signUpErr) {
-        console.warn("Firebase signup failed:", signUpErr.code, signUpErr.message);
-        showToast("Cloud signup failed: " + signUpErr.code + " - " + signUpErr.message);
+        console.warn("Firebase signup failed:", signUpErr.code);
         return;
       }
     } else {

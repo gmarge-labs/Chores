@@ -1,3 +1,4 @@
+// v2.0.1 - Firebase sync + Golden Trophy rewards
 const STORAGE_KEY = "chores-multi-family-state-v1";
 const cloudConfig = window.CHORES_FIREBASE_CONFIG || {};
 const cloudModeEnabled = Boolean(cloudConfig.enabled && cloudConfig.apiKey);

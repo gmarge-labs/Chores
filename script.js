@@ -1755,8 +1755,8 @@ function renderKidPage(kidId) {
               "No favors yet. Ask a parent to add some in Settings."
             )}
           </section>
-        </articl
-        ` : ""}e>
+        </article>
+        ` : ""}
 
         <article class="section-card primary kid-view ${currentKidView === "report" && canSeeReports ? "active" : ""}" data-panel="report">
           <span class="panel-bubbles" aria-hidden="true"><span></span><span></span><span></span></span>

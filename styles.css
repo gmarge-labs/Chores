@@ -7011,3 +7011,13 @@ details[open] .existing-tasks-chevron { transform: rotate(180deg); }
   min-height: 0 !important;
   overflow: hidden auto !important;
 }
+
+/* ── FINAL: Make points card fill the full golden area ── */
+.section-card.primary.kid-view[data-panel="rewards"] {
+  min-height: 420px !important;
+}
+
+.section-card.primary.kid-view[data-panel="rewards"] .points-card,
+.section-card.primary.kid-view[data-panel="rewards"] .points-card-v2 {
+  min-height: 300px !important;
+}

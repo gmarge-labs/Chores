@@ -6134,9 +6134,11 @@ details[open] .template-accordion-chevron { transform:rotate(180deg); }
   display: none;
 }
 
-/* Make points number larger and centred */
+/* Make points number truly centred vertically */
 .points-card-v2 .points-total {
-  margin: 4px 0 !important;
+  margin: 0 !important;
+  position: relative;
+  z-index: 5;
 }
 
 /* Fix message to not show ?? prefix */
@@ -6154,3 +6156,86 @@ details[open] .template-accordion-chevron { transform:rotate(180deg); }
 .points-gem-ring span:nth-child(10){top:5%;left:46%;animation:coin-pour 2.0s ease-in 1.8s infinite;}
 .points-gem-ring span:nth-child(11){top:5%;left:78%;animation:coin-pour 2.9s ease-in 0.2s infinite;}
 .points-gem-ring span:nth-child(12){top:5%;left:95%;animation:coin-pour 2.3s ease-in 1.0s infinite;}
+
+/* ── ADJ ICON CSS-ONLY ───────────────────────────────── */
+.adj-icon {
+  display: block;
+  width: 32px;
+  height: 32px;
+  margin: 0 auto 6px;
+  border-radius: 50%;
+  position: relative;
+}
+
+.adj-icon-bonus {
+  background: linear-gradient(135deg, #ffd700, #ffa500);
+  box-shadow: 0 4px 12px rgba(255,180,0,0.4);
+}
+
+.adj-icon-bonus::after {
+  content: "+";
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+  font-weight: 900;
+  color: #fff;
+  line-height: 32px;
+  text-align: center;
+}
+
+.adj-icon-penalty {
+  background: linear-gradient(135deg, #ff6b6b, #ee2222);
+  box-shadow: 0 4px 12px rgba(255,50,50,0.4);
+}
+
+.adj-icon-penalty::after {
+  content: "-";
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  font-weight: 900;
+  color: #fff;
+  line-height: 32px;
+  text-align: center;
+}
+
+/* ── COMPACT REWARDS LAYOUT ─────────────────────────── */
+/* Make points card shorter */
+.kid-view[data-panel="rewards"] .points-card {
+  min-height: 240px !important;
+}
+
+.points-card-v2 {
+  min-height: 240px !important;
+}
+
+/* Smaller points number */
+.points-card-v2 .points-total {
+  font-size: 5rem !important;
+}
+
+/* Compact bonus/penalty cards */
+.daily-adjustment-panel-v2 .daily-adjustment-card {
+  padding: 12px 14px !important;
+}
+
+.daily-adjustment-panel-v2 .daily-adjustment-card h4 {
+  font-size: 1rem;
+  margin: 4px 0 0;
+}
+
+.daily-adjustment-panel-v2 .daily-adjustment-card p:last-child {
+  font-size: 0.78rem;
+  margin-top: 4px;
+}
+
+/* Compact reward stack */
+.rewards-layout-v2 .reward-stack {
+  padding: 12px !important;
+}

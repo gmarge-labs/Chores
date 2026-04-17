@@ -1682,14 +1682,14 @@ function renderKidPage(kidId) {
 
               <section class="daily-adjustment-panel daily-adjustment-panel-v2">
                 <article class="daily-adjustment-card bonus ${todayBonus ? "has-update" : "is-empty"}">
-                  <span class="adj-icon">${todayBonus ? "??" : "⭐"}</span>
+                  <span class="adj-icon adj-icon-bonus"></span>
                   <p class="eyebrow">Today’s bonus</p>
                   ${todayBonus
                     ? `<h4>${escapeHtml(todayBonus.value)}</h4><p>${escapeHtml(todayBonus.reason || "A bonus was added today.")}</p>`
                     : `<h4>No bonus yet</h4><p>Keep going — a bonus could be yours!</p>`}
                 </article>
                 <article class="daily-adjustment-card penalty ${todayPenalty ? "has-update" : "is-empty"}">
-                  <span class="adj-icon">${todayPenalty ? "⚡" : "??️"}</span>
+                  <span class="adj-icon adj-icon-penalty"></span>
                   <p class="eyebrow">Today’s penalty</p>
                   ${todayPenalty
                     ? `<h4>${escapeHtml(todayPenalty.value)}</h4><p>${escapeHtml(todayPenalty.reason || "A penalty was added today.")}</p>`

@@ -58,10 +58,6 @@ function createId(prefix) {
   return `${prefix}-${Math.random().toString(36).slice(2, 10)}-${Date.now().toString(36)}`;
 }
 
-function buildCloudAuthPassword(parentEmail, parentPin) {
-  return `chores::${String(parentEmail || "").trim().toLowerCase()}::${String(parentPin || "").trim()}::family-auth`;
-}
-
 function createEmptyCreateAccountDraft() {
   const draft = {
     familyName: "",
@@ -205,7 +201,6 @@ function saveState(options = {}) {
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 
   if (!options.skipCloud && cloudAuthEnabled && cloudModeEnabled && isParentSession()) {
-    void queueCloudSync();
   }
 }
 
@@ -219,7 +214,6 @@ let authResetPasscodeOpen = false;
 let createAccountStep = 1;
 let createAccountDraft = createEmptyCreateAccountDraft();
 let createAccountKidCompleteMode = false;
-let pendingCloudFamilyDraft = null;
 let currentSettingsSection = "";
 let currentFamilyControlsSection = "";
 function resetCreateAccountDraft() {
@@ -526,8 +520,6 @@ let currentFamilyMode = false;
 let currentAssignedKids = [];
 let currentRewardAssignedKids = [];
 let currentThresholdAssignedKids = [];
-let isAssignPopupOpen = false;
-let assignPopupPlacement = "task";
 
 function escapeHtml(value) {
   return String(value)
@@ -559,13 +551,6 @@ function upsertFamilyInState(family) {
   const normalized = normalizeFamily(family);
   state.families.push(normalized);
   return normalized;
-}
-
-function upsertLocalFamilyDraft({ familyName, parentName, parentEmail, parentPin, kids }) {
-  const existing = state.families.find((entry) => entry.parentEmailLower === parentEmail.trim().toLowerCase());
-  const family = createFamily({ familyName, parentName, parentEmail, parentPin, kids });
-  family.id = existing?.id || family.id;
-  return upsertFamilyInState(family);
 }
 
 function getFamilyKids() {
@@ -690,43 +675,6 @@ async function handleCreateFamilyAccount() {
 
   if (!kids.length) {
     showToast("Add at least one child with a 4-digit PIN.");
-    return;
-  }
-
-  if (cloudAuthEnabled && cloudModeEnabled) {
-    try {
-      const family = await createCloudFamilyAccount({ familyName, parentName, parentEmail, parentPin, kids });
-      upsertFamilyInState(family);
-      pendingCloudFamilyDraft = null;
-      authAccountReady = true;
-      authAccountJustCreated = true;
-      authStage = "login";
-      authView = "parent";
-      resetCreateAccountDraft();
-      state.session = null;
-      currentKidId = null;
-      currentKidView = "dashboard";
-      currentFamilyMode = false;
-      currentAssignedKids = [];
-      saveState({ skipCloud: true });
-      showToast("Account created. Log in as parent to continue.");
-      renderAuthHome();
-    } catch (error) {
-      const message = String(error?.message || "");
-      if (/rate limit/i.test(message) || /already registered/i.test(message)) {
-        upsertLocalFamilyDraft({ familyName, parentName, parentEmail, parentPin, kids });
-        pendingCloudFamilyDraft = { familyName, parentName, parentEmail, parentPin, kids };
-        authAccountReady = true;
-        authAccountJustCreated = false;
-        authStage = "login";
-        authView = "parent";
-        saveState({ skipCloud: true });
-        renderAuthHome();
-        showToast("Cloud signup is busy. You can log in on this device now, and sync can catch up later.");
-        return;
-      }
-      showToast(message || "Could not create the family account.");
-    }
     return;
   }
 
@@ -1247,8 +1195,6 @@ function deleteCurrentFamilyFromDevice() {
   currentKidView = "dashboard";
   currentFamilyMode = false;
   currentAssignedKids = [];
-  isAssignPopupOpen = false;
-  assignPopupPlacement = "task";
   authStage = "intro";
   authView = "";
   authAccountJustCreated = false;
@@ -1265,8 +1211,6 @@ async function logout() {
   currentKidView = "dashboard";
   currentFamilyMode = false;
   currentAssignedKids = [];
-  isAssignPopupOpen = false;
-  assignPopupPlacement = "task";
   saveState();
   renderApp();
 }
@@ -2115,8 +2059,6 @@ function renderKidPage(kidId) {
     currentKidId = null;
     currentFamilyMode = false;
     currentKidView = "dashboard";
-    isAssignPopupOpen = false;
-    assignPopupPlacement = "task";
     renderApp();
   });
 
@@ -2350,8 +2292,6 @@ document.body.addEventListener("click", async (event) => {
     currentFamilyControlsSection = view === "settings" ? "" : currentFamilyControlsSection;
     currentFamilyMode = view === "report" || view === "settings";
     currentProfileAvatarPickerOpen = false;
-    isAssignPopupOpen = false;
-    assignPopupPlacement = "task";
     renderKidPage(currentKidId);
     return;
   }
@@ -2369,8 +2309,6 @@ document.body.addEventListener("click", async (event) => {
     currentAssignedKids = [];
     currentRewardAssignedKids = [];
     currentThresholdAssignedKids = [];
-    isAssignPopupOpen = false;
-    assignPopupPlacement = "task";
     renderKidPage(firstKid.id);
     return;
   }
@@ -2383,8 +2321,6 @@ document.body.addEventListener("click", async (event) => {
     currentAssignedKids = [];
     currentRewardAssignedKids = [];
     currentThresholdAssignedKids = [];
-    isAssignPopupOpen = false;
-    assignPopupPlacement = "task";
     renderKidPage(currentKidId);
     return;
   }
@@ -2416,8 +2352,6 @@ document.body.addEventListener("click", async (event) => {
     currentAssignedKids = [];
     currentRewardAssignedKids = [];
     currentThresholdAssignedKids = [];
-    isAssignPopupOpen = false;
-    assignPopupPlacement = "task";
     renderKidPage(currentKidId);
   }
 });
@@ -2576,101 +2510,6 @@ document.body.addEventListener("submit", async (event) => {
   }
 
   const parentLoginForm = event.target.closest("#parent-login-form");
-  if (parentLoginForm) {
-    event.preventDefault();
-    const formData = new FormData(parentLoginForm);
-    const email = String(formData.get("parentEmail") || "").trim().toLowerCase();
-    const pin = String(formData.get("parentPin") || "").trim();
-
-    if (cloudAuthEnabled && cloudModeEnabled) {
-      try {
-        let family = await loginCloudParent(email, pin);
-        if (!family && pendingCloudFamilyDraft && pendingCloudFamilyDraft.parentEmail.toLowerCase() === email && pendingCloudFamilyDraft.parentPin === pin) {
-          if (data.session?.user) {
-            family = await createCloudFamilyDataForUser(data.session.user, pendingCloudFamilyDraft);
-            pendingCloudFamilyDraft = null;
-          }
-        }
-        if (!family) {
-          showToast("No family was found for this parent account yet.");
-          return;
-        }
-
-        upsertFamilyInState(family);
-        authStage = "login";
-        authAccountJustCreated = false;
-        state.session = { familyId: family.id, role: "parent" };
-        currentKidId = null;
-        currentKidView = "dashboard";
-        currentFamilyMode = false;
-        currentAssignedKids = [];
-        saveState({ skipCloud: true });
-        renderApp();
-      } catch (error) {
-        const localFamily = state.families.find((entry) => entry.parentEmailLower === email && entry.parentPin === pin);
-        if (localFamily) {
-          state.session = { familyId: localFamily.id, role: "parent" };
-          authStage = "login";
-          authAccountJustCreated = false;
-          currentKidId = null;
-          currentKidView = "dashboard";
-          currentFamilyMode = false;
-          currentAssignedKids = [];
-          saveState({ skipCloud: true });
-          showToast("Logged in on this device. Cloud sync will reconnect later.");
-          renderApp();
-          return;
-        }
-        showToast(error.message || "Incorrect parent login.");
-      }
-      return;
-    }
-
-    // Try cloud login first — works even if localStorage was cleared
-    if (cloudAuthEnabled && cloudModeEnabled) {
-      try {
-        showToast("Signing in…");
-        const authPwd = "chores::" + email + "::" + pin + "::v1";
-        const signInRes = await firebaseAuth.signInWithEmailAndPassword(email, authPwd);
-        if (signInRes.user) {
-          const uid = signInRes.user.uid;
-          const existingSnap = await firebaseDb.collection("families").where("ownerUid", "==", uid).limit(1).get();
-          if (!existingSnap.empty) {
-            const cloudFamily = await fbPullFamily(existingSnap.docs[0].id);
-            cloudFamily.parentEmail = email;
-            cloudFamily.parentEmailLower = email.toLowerCase();
-            upsertFamilyInState(cloudFamily);
-            authStage = "login"; authView = "parent"; authAccountJustCreated = false;
-            state.session = { familyId: cloudFamily.id, role: "parent" };
-            currentKidId = null; currentKidView = "dashboard"; currentFamilyMode = false; currentAssignedKids = [];
-            saveState({ skipCloud: true });
-            renderApp();
-            showToast("Welcome back!");
-            return;
-          }
-        }
-      } catch(cloudErr) {
-        console.warn("Cloud login failed:", cloudErr.message);
-      }
-    }
-    // Local fallback
-    const localFamily = state.families.find((entry) => entry.parentEmailLower === email);
-    if (!localFamily) { showToast("Incorrect login."); return; }
-    const pinOk = await verifyPin(pin, localFamily.parentPin);
-    if (!pinOk) { showToast("Incorrect PIN."); return; }
-    if (localFamily.parentPin && !/^[0-9a-f]{64}$/.test(localFamily.parentPin)) {
-      localFamily.parentPin = await hashPin(pin);
-    }
-    authStage = "login"; authView = "parent"; authAccountJustCreated = false;
-    state.session = { familyId: localFamily.id, role: "parent" };
-    currentKidId = null; currentKidView = "dashboard"; currentFamilyMode = false; currentAssignedKids = [];
-    saveState({ skipCloud: true });
-    renderApp();
-    if (cloudAuthEnabled && cloudModeEnabled) {
-      void cloudSyncOnLogin(email, pin, localFamily);
-    }
-    return;
-  }
 
   const returningLoginForm = event.target.closest("#returning-login-form");
   if (returningLoginForm) {
@@ -2681,48 +2520,26 @@ document.body.addEventListener("submit", async (event) => {
 
     if (cloudAuthEnabled && cloudModeEnabled) {
       try {
-        let family = await loginCloudParent(email, pin);
-        if (!family && pendingCloudFamilyDraft && pendingCloudFamilyDraft.parentEmail.toLowerCase() === email && pendingCloudFamilyDraft.parentPin === pin) {
-          if (data.session?.user) {
-            family = await createCloudFamilyDataForUser(data.session.user, pendingCloudFamilyDraft);
-            pendingCloudFamilyDraft = null;
+        const authPwd = "chores::" + email + "::" + pin + "::v1";
+        const signInRes = await firebaseAuth.signInWithEmailAndPassword(email, authPwd);
+        if (signInRes.user) {
+          const snap = await firebaseDb.collection("families").where("ownerUid", "==", signInRes.user.uid).limit(1).get();
+          if (!snap.empty) {
+            const cloudFamily = await fbPullFamily(snap.docs[0].id);
+            cloudFamily.parentEmail = email;
+            cloudFamily.parentEmailLower = email;
+            upsertFamilyInState(cloudFamily);
+            authStage = "login"; authView = "parent"; authAccountJustCreated = false;
+            state.session = { familyId: cloudFamily.id, role: "parent" };
+            currentKidId = null; currentKidView = "dashboard"; currentFamilyMode = false; currentAssignedKids = [];
+            saveState({ skipCloud: true });
+            renderApp();
+            return;
           }
         }
-        if (!family) {
-          showToast("No family was found for this account.");
-          return;
-        }
-
-        upsertFamilyInState(family);
-        authStage = "login";
-        authView = "parent";
-        authAccountJustCreated = false;
-        state.session = { familyId: family.id, role: "parent" };
-        currentKidId = null;
-        currentKidView = "dashboard";
-        currentFamilyMode = false;
-        currentAssignedKids = [];
-        saveState({ skipCloud: true });
-        renderApp();
-      } catch (error) {
-        const localFamily = state.families.find((entry) => entry.parentEmailLower === email && entry.parentPin === pin);
-        if (localFamily) {
-          authStage = "login";
-          authView = "parent";
-          authAccountJustCreated = false;
-          state.session = { familyId: localFamily.id, role: "parent" };
-          currentKidId = null;
-          currentKidView = "dashboard";
-          currentFamilyMode = false;
-          currentAssignedKids = [];
-          saveState({ skipCloud: true });
-          showToast("Logged in on this device. Cloud sync will reconnect later.");
-          renderApp();
-          return;
-        }
-        showToast(error.message || "Incorrect login.");
+      } catch (cloudErr) {
+        console.warn("Cloud login failed:", cloudErr.message);
       }
-      return;
     }
 
     const family = state.families.find((entry) => entry.parentEmailLower === email && entry.parentPin === pin);

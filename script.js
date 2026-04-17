@@ -1,16 +1,29 @@
 const STORAGE_KEY = "chores-multi-family-state-v1";
-const cloudConfig = window.CHORES_SUPABASE_CONFIG || {};
-const cloudModeEnabled = Boolean(cloudConfig.enabled && cloudConfig.url && cloudConfig.anonKey);
+const cloudConfig = window.CHORES_FIREBASE_CONFIG || {};
+const cloudModeEnabled = Boolean(cloudConfig.enabled && cloudConfig.apiKey);
 const cloudAuthEnabled = true;
-const supabaseClient = cloudModeEnabled && window.supabase?.createClient
-  ? window.supabase.createClient(cloudConfig.url, cloudConfig.anonKey, {
-      auth: {
-        persistSession: true,
-        autoRefreshToken: true,
-        detectSessionInUrl: true,
-      },
-    })
-  : null;
+
+// Firebase services — initialised below after SDK check
+var firebaseApp  = null;
+var firebaseAuth = null;
+var firebaseDb   = null;
+
+if (cloudModeEnabled && typeof firebase !== "undefined") {
+  try {
+    firebaseApp  = firebase.initializeApp({
+      apiKey:            cloudConfig.apiKey,
+      authDomain:        cloudConfig.authDomain,
+      projectId:         cloudConfig.projectId,
+      storageBucket:     cloudConfig.storageBucket,
+      messagingSenderId: cloudConfig.messagingSenderId,
+      appId:             cloudConfig.appId,
+    });
+    firebaseAuth = firebase.auth(firebaseApp);
+    firebaseDb   = firebase.firestore(firebaseApp);
+  } catch(e) {
+    console.warn("Firebase init error:", e.message);
+  }
+}
 
 const emptyState = {
   families: [],
@@ -2941,34 +2954,22 @@ document.body.addEventListener("submit", async (event) => {
     const pin = String(formData.get("password") || "").trim();
 
     // Try cloud login first, fall back to local
-    if (cloudAuthEnabled && cloudModeEnabled) {
-      try {
-        showToast("Signing in…");
-        const cloudFamily = await cloudLogin(email, pin);
-        if (cloudFamily) {
-          upsertFamilyInState(cloudFamily);
-          authStage = "login"; authView = "parent"; authAccountJustCreated = false;
-          state.session = { familyId: cloudFamily.id, role: "parent" };
-          currentKidId = null; currentKidView = "dashboard"; currentFamilyMode = false; currentAssignedKids = [];
-          saveState({ skipCloud: true });
-          renderApp();
-          return;
-        }
-      } catch (cloudErr) {
-        // Cloud failed - try local fallback
-        console.warn("Cloud login failed, trying local:", cloudErr.message);
-      }
-    }
-    // Local fallback
     const family = state.families.find((entry) => entry.parentEmailLower === email);
-    if (!family) { showToast("Incorrect login."); return; }
+    if (!family) { showToast("No account found for that email."); return; }
     const pinOk = await verifyPin(pin, family.parentPin);
-    if (!pinOk) { showToast("Incorrect login."); return; }
-    if (family.parentPin && !/^[0-9a-f]{64}$/.test(family.parentPin)) { family.parentPin = await hashPin(pin); saveState({ skipCloud: true }); }
+    if (!pinOk) { showToast("Incorrect PIN."); return; }
+    if (family.parentPin && !/^[0-9a-f]{64}$/.test(family.parentPin)) {
+      family.parentPin = await hashPin(pin);
+    }
     authStage = "login"; authView = "parent"; authAccountJustCreated = false;
     state.session = { familyId: family.id, role: "parent" };
     currentKidId = null; currentKidView = "dashboard"; currentFamilyMode = false; currentAssignedKids = [];
-    saveState({ skipCloud: true }); renderApp(); return;
+    saveState({ skipCloud: true });
+    renderApp();
+    if (cloudAuthEnabled && cloudModeEnabled) {
+      void cloudSyncOnLogin(email, pin, family);
+    }
+    return;
   }
 
   const resetPasscodeForm = event.target.closest("#reset-passcode-form");
@@ -3163,6 +3164,233 @@ if ("serviceWorker" in navigator) {
 }
 
 renderApp();
+
+// ============================================================
+// FIREBASE SYNC LAYER
+// Firestore is source of truth. localStorage is cache.
+// Data model:
+//   families/{familyId}          — family doc (name, ownerUid, parentPin, parentName)
+//   families/{familyId}/kids/{kidId} — each kid's full state as one doc
+// ============================================================
+
+// ── WRITE QUEUE ───────────────────────────────────────────────
+var _fbWriteQueue = Promise.resolve();
+function fbEnqueue(fn) {
+  _fbWriteQueue = _fbWriteQueue.then(fn).catch(function(err) {
+    console.warn("Firebase write failed:", err.message || err);
+  });
+  return _fbWriteQueue;
+}
+
+// ── KID → FIRESTORE DOC ───────────────────────────────────────
+function kidToFirestoreDoc(kid) {
+  return {
+    id: kid.id,
+    name: kid.name,
+    kidPin: kid.kidPin || "",
+    avatar: kid.avatar || "",
+    accentColour: kid.accentColour || "#6dafff",
+    accentColourDeep: kid.accentColourDeep || "#3f84db",
+    points: kid.points || 0,
+    pointsPerDollarReward: kid.pointsPerDollarReward || 100,
+    dollarRewardValue: kid.dollarRewardValue || 20,
+    celebrationThreshold: kid.celebrationThreshold || 100,
+    lastCelebratedThreshold: kid.lastCelebratedThreshold || 0,
+    missedDaysInARow: kid.missedDaysInARow || 0,
+    lastMissedCheckDate: kid.lastMissedCheckDate || null,
+    lastTaskRefreshDate: kid.lastTaskRefreshDate || getTodayDateKey(),
+    due: kid.due || [],
+    awaiting: kid.awaiting || [],
+    completed: kid.completed || [],
+    taskTemplates: kid.taskTemplates || [],
+    rewards: kid.rewards || [],
+    bonusPenalty: kid.bonusPenalty || [],
+    bonusReasons: kid.bonusReasons || [],
+    penaltyReasons: kid.penaltyReasons || [],
+    pointsHistory: (kid.pointsHistory || []).slice(-200),
+  };
+}
+
+// ── FIRESTORE DOC → KID ───────────────────────────────────────
+function firestoreDocToKid(doc) {
+  return normalizeKid(doc);
+}
+
+// ── PUSH SINGLE KID ───────────────────────────────────────────
+async function fbPushKid(familyId, kid) {
+  if (!firebaseDb) return;
+  await firebaseDb
+    .collection("families").doc(familyId)
+    .collection("kids").doc(kid.id)
+    .set(kidToFirestoreDoc(kid), { merge: true });
+}
+
+// ── PUSH FULL FAMILY ──────────────────────────────────────────
+async function fbPushFamily(family) {
+  if (!firebaseDb) return;
+  var famRef = firebaseDb.collection("families").doc(family.id);
+
+  // Push family doc
+  await famRef.set({
+    familyName: family.familyName,
+    parentName: family.parentName || "Parent",
+    parentPin: family.parentPin || "",
+    ownerUid: family.ownerUid || "",
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+  }, { merge: true });
+
+  // Push all kids
+  var batch = firebaseDb.batch();
+  (family.kids || []).forEach(function(kid) {
+    var kidRef = famRef.collection("kids").doc(kid.id);
+    batch.set(kidRef, kidToFirestoreDoc(kid), { merge: true });
+  });
+  await batch.commit();
+}
+
+// ── PULL FAMILY FROM FIRESTORE ────────────────────────────────
+async function fbPullFamily(familyId) {
+  if (!firebaseDb) throw new Error("Firebase not initialised");
+
+  var famSnap = await firebaseDb.collection("families").doc(familyId).get();
+  if (!famSnap.exists) throw new Error("Family not found in Firestore");
+
+  var famData = famSnap.data();
+  var kidsSnap = await firebaseDb.collection("families").doc(familyId).collection("kids").get();
+  var kids = kidsSnap.docs.map(function(d) { return firestoreDocToKid(d.data()); });
+
+  return normalizeFamily({
+    id: familyId,
+    familyName: famData.familyName || "",
+    parentName: famData.parentName || "Parent",
+    parentPin: famData.parentPin || "",
+    parentEmail: famData.parentEmail || "",
+    parentEmailLower: famData.parentEmailLower || "",
+    ownerUid: famData.ownerUid || "",
+    kids: kids,
+    favorClaims: famData.favorClaims || [],
+  });
+}
+
+// ── CLOUD SAVE ────────────────────────────────────────────────
+function cloudSave(kidId) {
+  if (!cloudAuthEnabled || !cloudModeEnabled || !firebaseDb) return;
+  var family = getCurrentFamily();
+  if (!family) return;
+
+  if (kidId) {
+    var kid = getKid(kidId);
+    if (kid) {
+      fbEnqueue(function() { return fbPushKid(family.id, kid); });
+      return;
+    }
+  }
+  fbEnqueue(function() { return fbPushFamily(family); });
+}
+
+// ── CLOUD SYNC ON LOGIN ───────────────────────────────────────
+async function cloudSyncOnLogin(email, plainPin, localFamily) {
+  if (!firebaseAuth || !firebaseDb) return;
+
+  var authPwd = "chores::" + email.toLowerCase().trim() + "::" + plainPin + "::v1";
+  var user = null;
+
+  // Try sign in first
+  try {
+    var signInRes = await firebaseAuth.signInWithEmailAndPassword(email, authPwd);
+    user = signInRes.user;
+  } catch(signInErr) {
+    if (signInErr.code === "auth/user-not-found" || signInErr.code === "auth/invalid-credential" || signInErr.code === "auth/wrong-password") {
+      // New user — create account
+      try {
+        var signUpRes = await firebaseAuth.createUserWithEmailAndPassword(email, authPwd);
+        user = signUpRes.user;
+      } catch(signUpErr) {
+        console.warn("Firebase signup failed:", signUpErr.message);
+        return;
+      }
+    } else {
+      console.warn("Firebase sign in failed:", signInErr.message);
+      return;
+    }
+  }
+
+  if (!user) return;
+
+  // Check if family doc exists in Firestore for this user
+  var existingSnap = await firebaseDb.collection("families")
+    .where("ownerUid", "==", user.uid)
+    .limit(1)
+    .get();
+
+  if (!existingSnap.empty) {
+    // Pull existing family from cloud
+    try {
+      var cloudFamilyId = existingSnap.docs[0].id;
+      var cloudFamily = await fbPullFamily(cloudFamilyId);
+      cloudFamily.parentEmail = localFamily.parentEmail;
+      cloudFamily.parentEmailLower = localFamily.parentEmailLower;
+      upsertFamilyInState(cloudFamily);
+      state.session = { familyId: cloudFamily.id, role: "parent" };
+      saveState({ skipCloud: true });
+      renderApp();
+      showToast("Synced from cloud \u2713");
+    } catch(e) {
+      console.warn("Firebase pull failed:", e.message);
+    }
+    return;
+  }
+
+  // No cloud family — push local family up
+  try {
+    localFamily.ownerUid = user.uid;
+    await firebaseDb.collection("families").doc(localFamily.id).set({
+      familyName: localFamily.familyName,
+      parentName: localFamily.parentName || "Parent",
+      parentPin: localFamily.parentPin || "",
+      parentEmail: localFamily.parentEmail || "",
+      parentEmailLower: localFamily.parentEmailLower || "",
+      ownerUid: user.uid,
+      favorClaims: localFamily.favorClaims || [],
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+    });
+
+    // Push all kids
+    var batch = firebaseDb.batch();
+    (localFamily.kids || []).forEach(function(kid) {
+      var kidRef = firebaseDb.collection("families").doc(localFamily.id).collection("kids").doc(kid.id);
+      batch.set(kidRef, kidToFirestoreDoc(kid));
+    });
+    await batch.commit();
+
+    saveState({ skipCloud: true });
+    showToast("Synced to cloud \u2713");
+  } catch(e) {
+    console.warn("Firebase push failed:", e.message);
+    showToast("Cloud sync failed: " + (e.message || "unknown"));
+  }
+}
+
+
+(function initOfflineIndicator() {
+  let banner = null;
+  function showOfflineBanner() {
+    if (banner) return;
+    banner = document.createElement("div");
+    banner.className = "offline-banner";
+    banner.textContent = "You\u2019re offline \u2014 changes are saved on this device";
+    document.body.appendChild(banner);
+  }
+  function hideOfflineBanner() {
+    if (!banner) return;
+    banner.classList.add("offline-banner--hide");
+    setTimeout(function() { if (banner) { banner.remove(); banner = null; } }, 400);
+  }
+  if (!navigator.onLine) showOfflineBanner();
+  window.addEventListener("offline", showOfflineBanner);
+  window.addEventListener("online", function() { hideOfflineBanner(); showToast("Back online \u2713"); });
+})();
+
 
 (function initOfflineIndicator() {
   let banner = null;
@@ -3534,10 +3762,21 @@ async function cloudSyncOnLogin(email, plainPin, localFamily) {
   if (!user?.id || !session?.access_token) return;
 
   // Set session on client so all subsequent calls use the JWT
-  await supabaseClient.auth.setSession({
+  var setRes = await supabaseClient.auth.setSession({
     access_token: session.access_token,
     refresh_token: session.refresh_token,
   });
+  console.log("setSession result:", setRes.error ? setRes.error.message : "ok", "user:", setRes.data?.session?.user?.id || "none");
+
+  // Verify session is active
+  var getRes = await supabaseClient.auth.getSession();
+  var activeUserId = getRes.data?.session?.user?.id;
+  console.log("getSession after set:", activeUserId || "NO ACTIVE SESSION");
+
+  if (!activeUserId) {
+    showToast("Cloud: session not active, sync skipped");
+    return;
+  }
 
   // Check if family already exists for this user
   var memberRes = await supabaseClient
@@ -3545,6 +3784,7 @@ async function cloudSyncOnLogin(email, plainPin, localFamily) {
     .select("family_id")
     .eq("user_id", user.id)
     .maybeSingle();
+  console.log("membership check:", memberRes.error?.message || "ok", "family_id:", memberRes.data?.family_id || "none");
 
   if (memberRes.data?.family_id) {
     // Pull existing cloud family and merge

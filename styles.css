@@ -5938,7 +5938,7 @@ details[open] .template-accordion-chevron { transform:rotate(180deg); }
 
 /* Spinning gold rays */
 .points-card-v2::before {
-  content: "";
+  content: "" !important;
   position: absolute;
   inset: -50%;
   background: conic-gradient(
@@ -6108,3 +6108,6 @@ details[open] .template-accordion-chevron { transform:rotate(180deg); }
 .points-card-v2 .points-message::before {
   content: none !important;
 }
+
+/* Hide garbled star on v2 card after pseudo-element */
+.points-card-v2::after { content: "" !important; background: none !important; }

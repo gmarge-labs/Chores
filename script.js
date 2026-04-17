@@ -1674,12 +1674,12 @@ function renderKidPage(kidId) {
                 <h3 class="points-total">${escapeHtml(kid.points)}</h3>
                 <div class="points-coin-trail" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span></div>
                 <p class="points-message is-changing">${
-                  kid.points === 0 ? "?? Ready to launch, " + escapeHtml(kid.name) + "!"
-                  : kid.points < 20 ? "?? Growing strong, " + escapeHtml(kid.name) + "!"
-                  : kid.points < 50 ? "?? On fire, " + escapeHtml(kid.name) + "!"
-                  : kid.points < 100 ? "?? Smashing it, " + escapeHtml(kid.name) + "!"
-                  : kid.points < 200 ? "?? Royalty, " + escapeHtml(kid.name) + "!"
-                  : "✨ Legend, " + escapeHtml(kid.name) + "!"
+                  kid.points === 0 ? "Ready to launch, " + escapeHtml(kid.name) + "!"
+                  : kid.points < 20 ? "Growing strong, " + escapeHtml(kid.name) + "!"
+                  : kid.points < 50 ? "On fire, " + escapeHtml(kid.name) + "!"
+                  : kid.points < 100 ? "Smashing it, " + escapeHtml(kid.name) + "!"
+                  : kid.points < 200 ? "Royalty vibes, " + escapeHtml(kid.name) + "!"
+                  : "Legend status, " + escapeHtml(kid.name) + "!"
                 }</p>
               </article>
 

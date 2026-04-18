@@ -500,7 +500,7 @@ button {
 
 .kid-card::before,
 .kid-card::after {
-  content: "âœ¦";
+  content: "✦";
   position: absolute;
   color: rgba(255, 255, 255, 0.92);
   text-shadow: 0 2px 10px rgba(109, 175, 255, 0.5);
@@ -509,7 +509,7 @@ button {
 }
 
 .kid-card .kid-card-top::after {
-  content: "â€¢";
+  content: "•";
   margin-left: auto;
   color: rgba(255, 255, 255, 0.92);
   font-size: 2.2rem;
@@ -762,7 +762,7 @@ button {
 
 .score-sparkles::before,
 .score-sparkles::after {
-  content: "â˜…";
+  content: "★";
   position: absolute;
   color: #ffffff;
   text-shadow: 0 2px 8px rgba(255, 122, 76, 0.55);
@@ -1134,7 +1134,7 @@ button {
 
 .task-lane::before,
 .task-lane::after {
-  content: "âœ¦";
+  content: "✦";
   position: absolute;
   color: rgba(255, 255, 255, 0.9);
   pointer-events: none;
@@ -1482,7 +1482,7 @@ button {
 
 .kid-view[data-panel="rewards"] .points-card .eyebrow::before,
 .kid-view[data-panel="rewards"] .points-card .eyebrow::after {
-  content: "âœ¦";
+  content: "✦";
   display: inline-block;
   margin: 0 10px;
   color: rgba(255, 255, 255, 0.95);
@@ -1691,7 +1691,7 @@ button {
 .kid-view[data-panel="rewards"] .reward-stack::before,
 .adjustment-grid::before,
 .reason-list::before {
-  content: "âœ¦";
+  content: "✦";
   position: absolute;
   top: 18px;
   right: 22px;
@@ -1900,7 +1900,7 @@ button {
 }
 
 .kid-view[data-panel="rewards"] .points-card::before {
-  content: "âœ¦";
+  content: "✦";
   font-size: 1.75rem;
   color: rgba(255, 248, 230, 0.88);
   text-shadow:
@@ -2220,7 +2220,7 @@ button {
 
 .kid-view[data-panel="rewards"] .favor-pill > span::before,
 .kid-view[data-panel="rewards"] .favor-pill > span::after {
-  content: "âœ¦";
+  content: "✦";
   display: inline-block;
   margin: 0 12px;
   color: rgba(255, 255, 255, 0.95);
@@ -3009,7 +3009,7 @@ button {
 
 .settings-tile::before,
 .settings-tile::after {
-  content: "âœ¦";
+  content: "✦";
   position: absolute;
   z-index: 0;
   color: rgba(255, 255, 255, 0.92);
@@ -5873,21 +5873,21 @@ button {
   }
 }
 
-/* â”€â”€ OFFLINE BANNER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── OFFLINE BANNER ─────────────────────────────────── */
 .offline-banner { position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:999;padding:10px 22px;border-radius:999px;background:rgba(47,42,58,0.92);backdrop-filter:blur(10px);color:#fff8ea;font-size:0.85rem;font-weight:700;border:1.5px solid rgba(255,255,255,0.12);box-shadow:0 8px 24px rgba(0,0,0,0.3);animation:rise-in 300ms ease both;white-space:nowrap; }
 .offline-banner--hide { animation:rise-in 300ms ease reverse both; }
 
-/* â”€â”€ FORM ERROR MESSAGES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── FORM ERROR MESSAGES ────────────────────────────── */
 .form-error-msg { margin:8px 0 0;padding:9px 14px;border-radius:var(--radius-md);background:rgba(235,124,141,0.14);border:1.5px solid rgba(235,124,141,0.4);color:#c0394e;font-size:0.84rem;font-weight:700;animation:rise-in 220ms ease both; }
 
-/* â”€â”€ LOGIN PICKER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── LOGIN PICKER ────────────────────────────────────── */
 .login-picker { display:flex;flex-direction:column;align-items:center;gap:14px;padding:8px 0 4px; }
 .login-picker-btn { position:relative;overflow:hidden;width:100%;max-width:340px;padding:20px 28px;border-radius:999px;border:3px solid rgba(255,255,255,0.7);font-family:"Baloo 2",cursive;font-size:1.3rem;font-weight:800;color:#fff8ea;cursor:pointer;text-shadow:0 2px 0 rgba(0,0,0,0.12);box-shadow:0 14px 30px rgba(0,0,0,0.18),inset 0 2px 0 rgba(255,255,255,0.3);transition:transform 200ms ease,box-shadow 200ms ease; }
 .login-picker-btn:hover { transform:translateY(-3px);box-shadow:0 20px 36px rgba(0,0,0,0.22),inset 0 2px 0 rgba(255,255,255,0.3); }
 .login-picker-parent { background:linear-gradient(135deg,#5b9fff,#3d7de8); }
 .login-picker-kid { background:linear-gradient(135deg,#ffb347,#e8842a); }
 
-/* â”€â”€ TASK TEMPLATE ACCORDION â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── TASK TEMPLATE ACCORDION ────────────────────────── */
 .template-accordion { width:100%; }
 .template-accordion-summary { display:flex;align-items:center;gap:8px;cursor:pointer;list-style:none;padding:4px 0;user-select:none; }
 .template-accordion-summary::-webkit-details-marker { display:none; }
@@ -5896,17 +5896,17 @@ button {
 details[open] .template-accordion-chevron { transform:rotate(180deg); }
 .template-accordion-body { margin-top:12px;display:flex;flex-direction:column;gap:8px;max-height:420px;overflow-y:auto;scrollbar-width:thin; }
 
-/* â”€â”€ KID SELECTOR PILL TEXT FIX â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── KID SELECTOR PILL TEXT FIX ──────────────────────── */
 .assign-option { background:rgba(255,255,255,0.85);cursor:pointer;transition:background 140ms ease,border-color 140ms ease; }
 .assign-option span { font-weight:800;font-size:0.88rem;color:#2f2419; }
 .assign-option:has(input:checked) { background:linear-gradient(135deg,var(--kid-accent,#6dafff),var(--kid-accent-deep,#3f84db));border-color:rgba(255,255,255,0.6); }
 .assign-option:has(input:checked) span { color:#fff8ea; }
 
-/* â”€â”€ TASK LANE SCROLLABLE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── TASK LANE SCROLLABLE ────────────────────────────── */
 .task-lane { max-height:520px; }
 .task-lane .task-stack { overflow-y:auto;overflow-x:hidden;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,0.35) transparent;padding-right:4px;margin-right:-4px; }
 
-/* â”€â”€ REWARDS PAGE V2 â€” MAGICAL â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── REWARDS PAGE V2 — MAGICAL ───────────────────────── */
 
 .points-gem-ring { position:absolute;width:260px;height:260px;top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none;animation:gem-orbit 8s linear infinite; }
 .points-gem-ring span { position:absolute;font-size:1.1rem;top:50%;left:50%; }
@@ -5929,7 +5929,7 @@ details[open] .template-accordion-chevron { transform:rotate(180deg); }
 .daily-adjustment-panel-v2 .daily-adjustment-card.bonus.has-update { background:linear-gradient(145deg,rgba(255,230,100,0.92),rgba(100,230,180,0.88)); }
 .daily-adjustment-panel-v2 .daily-adjustment-card.penalty.has-update { background:linear-gradient(145deg,rgba(255,160,120,0.92),rgba(255,100,160,0.88)); }
 
-/* â”€â”€ REWARDS PAGE V2 â€” GOLDEN TROPHY â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── REWARDS PAGE V2 — GOLDEN TROPHY ────────────────── */
 .points-card-v2 {
   background: linear-gradient(160deg,#0d0500 0%,#2a1200 30%,#3d1c00 55%,#2a1200 80%,#0d0500 100%) !important;
   border: 3px solid rgba(255,200,50,0.5) !important;
@@ -6073,7 +6073,7 @@ details[open] .template-accordion-chevron { transform:rotate(180deg); }
 .adj-icon { display:block;font-size:1.8rem;margin-bottom:6px;animation:coin-float 2.5s ease-in-out infinite; }
 .daily-adjustment-panel-v2 .daily-adjustment-card.bonus.has-update { background:linear-gradient(145deg,rgba(255,220,80,0.92),rgba(100,230,150,0.88)); }
 .daily-adjustment-panel-v2 .daily-adjustment-card.penalty.has-update { background:linear-gradient(145deg,rgba(255,160,80,0.92),rgba(255,100,120,0.88)); }
-/* Hide old star cloud on v2 card â€” replaced by coin trail */
+/* Hide old star cloud on v2 card — replaced by coin trail */
 .points-card-v2 .points-star-cloud { display: none; }
 
 /* Eyebrow styling on v2 card */
@@ -6085,9 +6085,9 @@ details[open] .template-accordion-chevron { transform:rotate(180deg); }
   z-index: 2;
 }
 
-/* â”€â”€ POINTS CARD V2 FIXES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── POINTS CARD V2 FIXES ───────────────────────────────────── */
 
-/* Hide the âœ¦ stars pseudo-elements on v2 card (they render garbled) */
+/* Hide the ✦ stars pseudo-elements on v2 card (they render garbled) */
 .points-card-v2 .eyebrow::before,
 .points-card-v2 .eyebrow::after {
   display: none !important;
@@ -6149,7 +6149,7 @@ details[open] .template-accordion-chevron { transform:rotate(180deg); }
   align-self: end;
 }
 
-/* Hide tile-bubbles on v2 card â€” they show as garbled circles */
+/* Hide tile-bubbles on v2 card — they show as garbled circles */
 .points-card-v2 .tile-bubbles {
   display: none;
 }
@@ -6177,7 +6177,7 @@ details[open] .template-accordion-chevron { transform:rotate(180deg); }
 .points-gem-ring span:nth-child(11){top:5%;left:78%;animation:coin-pour 2.9s ease-in 0.2s infinite;}
 .points-gem-ring span:nth-child(12){top:5%;left:95%;animation:coin-pour 2.3s ease-in 1.0s infinite;}
 
-/* â”€â”€ ADJ ICON CSS-ONLY â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── ADJ ICON CSS-ONLY ───────────────────────────────── */
 .adj-icon {
   display: block;
   width: 32px;
@@ -6225,8 +6225,8 @@ details[open] .template-accordion-chevron { transform:rotate(180deg); }
   text-align: center;
 }
 
-/* â”€â”€ COMPACT REWARDS LAYOUT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-/* Points card â€” fill available space, no white gap */
+/* ── COMPACT REWARDS LAYOUT ─────────────────────────── */
+/* Points card — fill available space, no white gap */
 .kid-view[data-panel="rewards"] .points-card,
 .points-card-v2 {
   min-height: 0 !important;
@@ -6259,7 +6259,7 @@ details[open] .template-accordion-chevron { transform:rotate(180deg); }
   padding: 12px !important;
 }
 
-/* â”€â”€ COMPACT REWARDS PAGE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── COMPACT REWARDS PAGE ────────────────────────────── */
 /* Remove extra padding from rewards panel */
 .kid-view[data-panel="rewards"] {
   padding-top: 14px !important;
@@ -6313,9 +6313,9 @@ details[open] .template-accordion-chevron { transform:rotate(180deg); }
 }
 
 
-/* â”€â”€ REWARDS BOTTOM ROW â€” FULL GOLDEN THEME â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── REWARDS BOTTOM ROW — FULL GOLDEN THEME ─────────────────── */
 
-/* Bonus pill â€” dark amber matching points card */
+/* Bonus pill — dark amber matching points card */
 .daily-adjustment-panel-v2 .daily-adjustment-card.bonus {
   background: linear-gradient(160deg,#0d0500 0%,#3d1c00 50%,#0d0500 100%) !important;
   border: 1.5px solid rgba(255,200,50,0.45) !important;
@@ -6323,7 +6323,7 @@ details[open] .template-accordion-chevron { transform:rotate(180deg); }
   animation: glow-gold-tab 3s ease-in-out infinite !important;
 }
 
-/* Penalty pill â€” slightly darker amber */
+/* Penalty pill — slightly darker amber */
 .daily-adjustment-panel-v2 .daily-adjustment-card.penalty {
   background: linear-gradient(160deg,#0a0300 0%,#2e1400 50%,#0a0300 100%) !important;
   border: 1.5px solid rgba(255,180,40,0.4) !important;
@@ -6352,7 +6352,7 @@ details[open] .template-accordion-chevron { transform:rotate(180deg); }
   color: rgba(255,200,100,0.65) !important;
 }
 
-/* Adj icon dots â€” gold */
+/* Adj icon dots — gold */
 .adj-icon-bonus {
   background: linear-gradient(135deg,#ffd700,#ffaa00) !important;
   color: #3d1c00 !important;
@@ -6371,7 +6371,7 @@ details[open] .template-accordion-chevron { transform:rotate(180deg); }
   animation: score-shine 2.8s ease-in-out infinite !important;
 }
 
-/* Buy favors button â€” dark amber matching */
+/* Buy favors button — dark amber matching */
 .favor-pill {
   background: linear-gradient(160deg,#0d0500 0%,#5c2e00 40%,#3d1c00 70%,#0d0500 100%) !important;
   background-size: 200% 200% !important;
@@ -6391,13 +6391,13 @@ details[open] .template-accordion-chevron { transform:rotate(180deg); }
   50%      { box-shadow: 0 0 32px rgba(255,210,0,0.7),0 0 60px rgba(255,160,0,0.45),0 0 90px rgba(255,100,0,0.2); }
 }
 
-/* Score sparkles inside favor pill â€” gold star shape */
+/* Score sparkles inside favor pill — gold star shape */
 .favor-pill .score-sparkles span {
   background: #ffd700 !important;
   box-shadow: 0 0 6px rgba(255,200,0,0.8) !important;
 }
 
-/* â”€â”€ GOLD BOTTOM ROW â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── GOLD BOTTOM ROW ─────────────────────────────────── */
 .gold-bottom-row {
   display: grid;
   grid-template-columns: 1fr 1fr 1.6fr;
@@ -6473,7 +6473,7 @@ details[open] .template-accordion-chevron { transform:rotate(180deg); }
   text-shadow: 0 0 8px rgba(255,180,0,0.4);
 }
 
-/* â”€â”€ GOLDEN TABS â€” BONUS / PENALTY / BUY FAVORS â”€â”€â”€â”€â”€â”€â”€ */
+/* ── GOLDEN TABS — BONUS / PENALTY / BUY FAVORS ─────── */
 .daily-adjustment-panel-v2 {
   display: grid !important;
   grid-template-columns: 1fr 1fr 1.6fr !important;
@@ -6576,7 +6576,7 @@ details[open] .template-accordion-chevron { transform:rotate(180deg); }
 
 .daily-adjustment-panel-v2 p:last-child { display: none !important; }
 
-/* Buy favors pill â€” same gold style */
+/* Buy favors pill — same gold style */
 .rewards-layout-v2 .favor-pill {
   justify-content: flex-start !important;
   font-size: 0 !important;
@@ -6613,7 +6613,7 @@ details[open] .template-accordion-chevron { transform:rotate(180deg); }
   grid-template-columns: 1fr 1fr 1.6fr !important;
 }
 
-/* â”€â”€ GOLD BOTTOM ROW â€” FINAL â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── GOLD BOTTOM ROW — FINAL ─────────────────────────── */
 .gold-bottom-row {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
@@ -6699,7 +6699,7 @@ details[open] .template-accordion-chevron { transform:rotate(180deg); }
   text-shadow: 0 0 8px rgba(255,180,0,0.4);
 }
 
-/* â”€â”€ SETTINGS: EXISTING TASKS LIST â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── SETTINGS: EXISTING TASKS LIST ──────────────────── */
 .existing-tasks-list { margin-top: 8px; display: flex; flex-direction: column; gap: 8px; }
 
 .existing-task-row {
@@ -6716,7 +6716,7 @@ details[open] .template-accordion-chevron { transform:rotate(180deg); }
 .existing-task-actions { display: flex; gap: 6px; flex-shrink: 0; }
 .btn-sm { padding: 4px 10px !important; font-size: 0.75rem !important; border-radius: 8px !important; }
 
-/* â”€â”€ REMOVE CHILD ROW â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── REMOVE CHILD ROW ────────────────────────────────── */
 .remove-child-list { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
 .remove-child-row {
   display: flex; align-items: center; justify-content: space-between;
@@ -6726,7 +6726,7 @@ details[open] .template-accordion-chevron { transform:rotate(180deg); }
   font-weight: 700; font-size: 0.9rem;
 }
 
-/* â”€â”€ APP CONFIRM MODAL â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── APP CONFIRM MODAL ───────────────────────────────── */
 .app-modal-overlay {
   position: fixed; inset: 0; z-index: 9999;
   background: rgba(20,15,40,0.55);
@@ -6754,7 +6754,7 @@ details[open] .template-accordion-chevron { transform:rotate(180deg); }
 
 .app-modal-buttons { display: flex; gap: 10px; justify-content: center; }
 
-/* â”€â”€ REWARDS LAYOUT: NO WHITE SPACE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── REWARDS LAYOUT: NO WHITE SPACE ─────────────────── */
 .rewards-layout-v2,
 .kid-view[data-panel="rewards"] .rewards-layout {
   display: flex !important;
@@ -6782,7 +6782,7 @@ details[open] .template-accordion-chevron { transform:rotate(180deg); }
   flex-direction: column !important;
 }
 
-/* â”€â”€ EXISTING TASKS DROPDOWN â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── EXISTING TASKS DROPDOWN ─────────────────────────── */
 .existing-tasks-dropdown {
   margin-top: 14px;
   border-radius: 14px;
@@ -6833,7 +6833,7 @@ details[open] .existing-tasks-chevron { transform: rotate(180deg); }
   gap: 6px;
 }
 
-/* â”€â”€ REWARDS PANEL: FILL HEIGHT, NO WHITE SPACE â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── REWARDS PANEL: FILL HEIGHT, NO WHITE SPACE ──────── */
 .section-card.primary.kid-view[data-panel="rewards"] {
   height: auto !important;
   min-height: 0 !important;
@@ -6922,7 +6922,7 @@ details[open] .existing-tasks-chevron { transform: rotate(180deg); }
   display: none !important;
 }
 
-/* â”€â”€ FAVORS PANEL: SEPARATE PAGE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── FAVORS PANEL: SEPARATE PAGE ─────────────────────── */
 .section-card.primary.kid-view[data-panel="favors"] {
   height: auto !important;
   min-height: 0 !important;
@@ -6936,7 +6936,7 @@ details[open] .existing-tasks-chevron { transform: rotate(180deg); }
   display: flex !important;
 }
 
-/* â”€â”€ GOLD TABS: EQUAL WIDTH + CENTRED â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── GOLD TABS: EQUAL WIDTH + CENTRED ────────────────── */
 .gold-bottom-row {
   grid-template-columns: 1fr 1fr 1fr !important;
 }
@@ -6951,7 +6951,7 @@ details[open] .existing-tasks-chevron { transform: rotate(180deg); }
   text-align: center !important;
 }
 
-/* â”€â”€ FINAL REWARDS FIX â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── FINAL REWARDS FIX ───────────────────────────────── */
 
 /* Points card: strict 3-row grid, number in exact centre */
 .points-card-v2 {
@@ -6975,7 +6975,7 @@ details[open] .existing-tasks-chevron { transform: rotate(180deg); }
   transform: none !important;
 }
 
-/* Number row 2 â€” dead centre */
+/* Number row 2 — dead centre */
 .points-card-v2 > .points-total {
   grid-row: 2 !important;
   grid-column: 1 !important;
@@ -7006,7 +7006,7 @@ details[open] .existing-tasks-chevron { transform: rotate(180deg); }
   position: absolute !important;
 }
 
-/* Fix favors panel â€” only show when active */
+/* Fix favors panel — only show when active */
 .kid-view[data-panel="favors"] {
   display: none !important;
 }
@@ -7018,7 +7018,7 @@ details[open] .existing-tasks-chevron { transform: rotate(180deg); }
   overflow: hidden auto !important;
 }
 
-/* â”€â”€ FINAL: Make points card fill the full golden area â”€â”€ */
+/* ── FINAL: Make points card fill the full golden area ── */
 .section-card.primary.kid-view[data-panel="rewards"] {
   min-height: 420px !important;
 }
@@ -7028,7 +7028,7 @@ details[open] .existing-tasks-chevron { transform: rotate(180deg); }
   min-height: 300px !important;
 }
 
-/* Hide all garbled âœ§ pseudo-element text on tile cards */
+/* Hide all garbled ✧ pseudo-element text on tile cards */
 .task-lane::before, .task-lane::after,
 .section-card::before, .section-card::after,
 .kid-card::before, .kid-card::after,
@@ -7039,7 +7039,7 @@ details[open] .existing-tasks-chevron { transform: rotate(180deg); }
 .points-card-v2::before { font-size: 0 !important; content: "" !important; }
 .points-card-v2::after { content: "" !important; }
 
-/* â”€â”€ APP EDIT MODAL FORM â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── APP EDIT MODAL FORM ─────────────────────────────── */
 .app-modal-form {
   display: flex;
   flex-direction: column;
@@ -7065,12 +7065,12 @@ details[open] .existing-tasks-chevron { transform: rotate(180deg); }
   background: #fff;
 }
 
-/* â”€â”€ FINE-TUNE: nudge 80 to exact ray convergence â”€â”€â”€â”€â”€â”€ */
+/* ── FINE-TUNE: nudge 80 to exact ray convergence ────── */
 .points-card-v2 > .points-total {
   transform: translateY(9px) !important;
 }
 
-/* â”€â”€ MOBILE RESPONSIVE FIXES (@390px) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── MOBILE RESPONSIVE FIXES (@390px) ───────────────── */
 @media (max-width: 600px) {
 
   /* Nav: wrap cleanly, Back to family on same row */
@@ -7128,7 +7128,7 @@ details[open] .existing-tasks-chevron { transform: rotate(180deg); }
   }
 }
 
-/* Fix garbled âœ¦ on task tiles */
+/* Fix garbled ✦ on task tiles */
 .task-lane::after {
   content: "\2726" !important;
   font-size: 0.95rem !important;
@@ -7139,7 +7139,7 @@ details[open] .existing-tasks-chevron { transform: rotate(180deg); }
   font-size: 1.2rem !important;
 }
 
-/* â”€â”€ MOBILE NAV FIX: 700px breakpoint â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── MOBILE NAV FIX: 700px breakpoint ───────────────── */
 @media (max-width: 700px) {
   .kid-header {
     gap: 5px !important;
@@ -7184,7 +7184,7 @@ details[open] .existing-tasks-chevron { transform: rotate(180deg); }
     color: transparent !important;
   }
   #back-home::after {
-    content: "â†" !important;
+    content: "←" !important;
     font-size: 1rem !important;
     color: var(--color-text-primary, #333) !important;
     position: absolute !important;
@@ -7196,5 +7196,28 @@ details[open] .existing-tasks-chevron { transform: rotate(180deg); }
   .family-grid {
     grid-template-columns: 1fr !important;
     gap: 12px !important;
+  }
+}
+
+/* ── BACK BUTTON: hide label on mobile, show arrow only ─ */
+@media (max-width: 700px) {
+  .back-label {
+    display: none !important;
+  }
+  #back-home {
+    width: 34px !important;
+    height: 34px !important;
+    min-width: 34px !important;
+    max-width: 34px !important;
+    padding: 0 !important;
+    border-radius: 50% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex-shrink: 0 !important;
+  }
+  .back-arrow {
+    font-size: 1rem !important;
+    line-height: 1 !important;
   }
 }

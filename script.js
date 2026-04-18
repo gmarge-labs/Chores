@@ -1608,7 +1608,7 @@ function renderKidPage(kidId) {
               : ""
           }
         </div>
-        <button class="back-button" type="button" id="back-home">${isParentSession() ? "← Back to family" : "Log out"}</button>
+        <button class="back-button" type="button" id="back-home" aria-label="${isParentSession() ? "Back to family" : "Log out"}"><span class="back-arrow">←</span><span class="back-label">${isParentSession() ? " Back to family" : " Log out"}</span></button>
       </header>
 
       <section class="kid-layout">

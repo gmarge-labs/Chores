@@ -632,6 +632,39 @@ function showFieldError(form, message) {
   setTimeout(() => err?.remove(), 3200);
 }
 
+function showAppEdit(task, onSave) {
+  const existing = document.getElementById("app-edit-modal");
+  if (existing) existing.remove();
+  const modal = document.createElement("div");
+  modal.id = "app-edit-modal";
+  modal.className = "app-modal-overlay";
+  modal.innerHTML = `
+    <div class="app-modal">
+      <p class="app-modal-message">Edit task</p>
+      <div class="app-modal-form">
+        <input class="app-modal-input" id="edit-task-title" type="text" value="${task.title.replace(/"/g,'&quot;')}" placeholder="Task title" />
+        <input class="app-modal-input" id="edit-task-points" type="number" value="${task.points}" placeholder="Points" min="1" />
+      </div>
+      <div class="app-modal-buttons">
+        <button class="action-button secondary app-modal-cancel">Cancel</button>
+        <button class="action-button primary app-modal-save">Save</button>
+      </div>
+    </div>
+  `;
+  modal.querySelector(".app-modal-cancel").addEventListener("click", () => modal.remove());
+  modal.querySelector(".app-modal-save").addEventListener("click", () => {
+    const title = modal.querySelector("#edit-task-title").value.trim();
+    const points = Number(modal.querySelector("#edit-task-points").value);
+    if (!title) { modal.querySelector("#edit-task-title").focus(); return; }
+    if (!points || points < 1) { modal.querySelector("#edit-task-points").focus(); return; }
+    modal.remove();
+    onSave(title, points);
+  });
+  modal.addEventListener("click", (e) => { if (e.target === modal) modal.remove(); });
+  document.body.appendChild(modal);
+  setTimeout(() => modal.querySelector("#edit-task-title").focus(), 50);
+}
+
 function showAppConfirm(message, onConfirm) {
   const existing = document.getElementById("app-confirm-modal");
   if (existing) existing.remove();
@@ -2301,15 +2334,13 @@ document.body.addEventListener("click", async (event) => {
     if (!kid) return;
     const task = kid.taskTemplates.find(t => t.id === taskId);
     if (!task) return;
-    const newTitle = window.prompt("Edit task title:", task.title);
-    if (newTitle === null) return;
-    const newPoints = window.prompt("Edit points:", task.points);
-    if (newPoints === null) return;
-    if (newTitle.trim()) task.title = newTitle.trim();
-    if (!isNaN(Number(newPoints)) && Number(newPoints) > 0) task.points = Number(newPoints);
-    saveState({ kidId });
-    showToast("Task updated.");
-    renderApp();
+    showAppEdit(task, (newTitle, newPoints) => {
+      task.title = newTitle;
+      task.points = newPoints;
+      saveState({ kidId });
+      showToast("Task updated.");
+      renderApp();
+    });
     return;
   }
 

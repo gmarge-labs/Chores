@@ -7172,6 +7172,7 @@ details[open] .existing-tasks-chevron { transform: rotate(180deg); }
     width: 30px !important;
     height: 30px !important;
     min-width: 30px !important;
+    max-width: 30px !important;
     padding: 0 !important;
     border-radius: 50% !important;
     display: flex !important;
@@ -7179,11 +7180,18 @@ details[open] .existing-tasks-chevron { transform: rotate(180deg); }
     justify-content: center !important;
     flex-shrink: 0 !important;
     overflow: hidden !important;
+    position: relative !important;
+    color: transparent !important;
   }
-  #back-home::before {
-    content: "\2190" !important;
+  #back-home::after {
+    content: "â†" !important;
     font-size: 1rem !important;
-    display: block !important;
+    color: var(--color-text-primary, #333) !important;
+    position: absolute !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    line-height: 1 !important;
   }
   .family-grid {
     grid-template-columns: 1fr !important;

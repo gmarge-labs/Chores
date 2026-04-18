@@ -2118,23 +2118,25 @@ button {
 
 .kid-view[data-panel="rewards"] .points-total::before,
 .kid-view[data-panel="rewards"] .points-total::after {
-  content: "âœ§";
+  content: "";
   position: absolute;
   top: 50%;
-  color: rgba(255, 248, 230, 0.82);
-  font-size: 2.2rem;
-  text-shadow: 0 0 10px rgba(255, 248, 230, 0.5), 0 0 18px rgba(232, 158, 44, 0.34);
+  width: 18px;
+  height: 18px;
+  background: rgba(255, 248, 230, 0.82);
+  clip-path: polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 92%,50% 70%,21% 92%,32% 57%,2% 35%,39% 35%);
+  filter: drop-shadow(0 0 6px rgba(232,158,44,0.6));
   pointer-events: none;
   animation: magic-number-sparkle 1.9s ease-in-out infinite;
 }
 
 .kid-view[data-panel="rewards"] .points-total::before {
-  left: -72px;
+  left: -32px;
   transform: translateY(-50%);
 }
 
 .kid-view[data-panel="rewards"] .points-total::after {
-  right: -72px;
+  right: -32px;
   transform: translateY(-50%);
   animation-delay: 520ms;
 }
@@ -7025,3 +7027,14 @@ details[open] .existing-tasks-chevron { transform: rotate(180deg); }
 .section-card.primary.kid-view[data-panel="rewards"] .points-card-v2 {
   min-height: 300px !important;
 }
+
+/* Hide all garbled âœ§ pseudo-element text on tile cards */
+.task-lane::before, .task-lane::after,
+.section-card::before, .section-card::after,
+.kid-card::before, .kid-card::after,
+.points-card::before, .points-card::after {
+  font-size: 0 !important;
+}
+.task-lane::before, .task-lane::after { font-size: 1.2rem !important; }
+.points-card-v2::before { font-size: 0 !important; content: "" !important; }
+.points-card-v2::after { content: "" !important; }

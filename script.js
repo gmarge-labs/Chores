@@ -216,6 +216,30 @@ function saveState(options = {}) {
   }
 }
 
+const _loginAttempts = {};
+function checkLoginRateLimit(email) {
+  const now = Date.now();
+  const key = email.toLowerCase();
+  if (!_loginAttempts[key]) _loginAttempts[key] = { count: 0, lockedUntil: 0 };
+  const rec = _loginAttempts[key];
+  if (rec.lockedUntil > now) {
+    const secsLeft = Math.ceil((rec.lockedUntil - now) / 1000);
+    showToast(`Too many attempts. Try again in ${secsLeft} seconds.`);
+    return false;
+  }
+  rec.count++;
+  if (rec.count >= 5) {
+    rec.lockedUntil = now + 30000; // 30 second lockout
+    rec.count = 0;
+    showToast("Too many failed attempts. Please wait 30 seconds.");
+    return false;
+  }
+  return true;
+}
+function clearLoginRateLimit(email) {
+  delete _loginAttempts[email.toLowerCase()];
+}
+
 let authStage = "intro";
 let authView = "";
 let authAccountReady = state.families.length > 0;
@@ -321,6 +345,32 @@ function isValidKidPin(value) {
   return /^\d{4}$/.test(String(value || "").trim());
 }
 
+const WEAK_PINS = new Set([
+  "0000","1111","2222","3333","4444","5555","6666","7777","8888","9999",
+  "1234","2345","3456","4567","5678","6789","0123","9876","8765","7654",
+  "6543","5432","4321","3210","1212","2121","1313","3131","1010","0101",
+  "1122","2211","1221","2112","1231","1232","1230"
+]);
+
+function isStrongPin(value) {
+  const pin = String(value || "").trim();
+  if (!/^\d{4}$/.test(pin)) return false;
+  if (WEAK_PINS.has(pin)) return false;
+  return true;
+}
+
+function isValidParentPin(value) {
+  return isStrongPin(value);
+}
+
+function getParentPinGuidance(value) {
+  const pin = String(value || "").trim();
+  if (!pin) return "";
+  if (!/^\d{4}$/.test(pin)) return `<p class="create-guidance-pill create-guidance-pill--warning">PIN must be exactly 4 digits.</p>`;
+  if (WEAK_PINS.has(pin)) return `<p class="create-guidance-pill create-guidance-pill--warning">That PIN is too easy to guess. Try something less predictable.</p>`;
+  return `<p class="create-guidance-pill create-guidance-pill--success">Strong PIN.</p>`;
+}
+
 function isValidEmail(value) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || "").trim());
 }
@@ -335,6 +385,12 @@ function isValidCreateFieldValue(field, value) {
   if (field.name === "parentEmail") {
     return isValidEmail(trimmedValue);
   }
+  if (field.name === "parentPin") {
+    return isValidParentPin(trimmedValue);
+  }
+  if (field.name === "confirmParentPin") {
+    return trimmedValue.length > 0;
+  }
   return true;
 }
 
@@ -347,6 +403,17 @@ function getCreateFieldGuidance(field, value) {
       return `<p class="create-guidance-pill create-guidance-pill--warning">Please enter a valid email address (e.g. name@example.com).</p>`;
     }
     return `<p class="create-guidance-pill create-guidance-pill--success">Email looks good.</p>`;
+  }
+  if (field.name === "parentPin") {
+    return getParentPinGuidance(trimmedValue);
+  }
+  if (field.name === "confirmParentPin") {
+    if (!trimmedValue) return "";
+    const parentPinValue = (typeof createAccountDraft !== "undefined" ? createAccountDraft.parentPin : "") || "";
+    if (trimmedValue !== parentPinValue) {
+      return `<p class="create-guidance-pill create-guidance-pill--warning">PINs don\'t match.</p>`;
+    }
+    return `<p class="create-guidance-pill create-guidance-pill--success">PINs match.</p>`;
   }
   if (/^kidPin\d+$/.test(field.name)) {
     if (!trimmedValue) {
@@ -744,6 +811,11 @@ async function handleCreateFamilyAccount() {
   const confirmParentPin = String(createAccountDraft.confirmParentPin || "").trim();
 
   if (!familyName || !parentName || !parentEmail || !parentPin) return;
+  if (!isValidParentPin(parentPin)) {
+    showToast("Please choose a stronger PIN — avoid sequences like 1234 or repeated digits like 1111.");
+    return;
+  }
+
   if (parentPin !== confirmParentPin) {
     showToast("Parent PINs do not match.");
     return;
@@ -796,7 +868,68 @@ async function handleCreateFamilyAccount() {
     return;
   }
 
-  const family = createFamily({ familyName, parentName, parentEmail, parentPin, kids });
+  // Hash parent PIN before storing
+  const hashedParentPin = await hashPin(parentPin);
+  const family = createFamily({ familyName, parentName, parentEmail, parentPin: hashedParentPin, kids });
+
+  // Create Firebase Auth account immediately at signup
+  if (cloudAuthEnabled && cloudModeEnabled && firebaseAuth) {
+    // Show loading state
+    const submitBtn = document.querySelector("[data-create-submit]");
+    if (submitBtn) { submitBtn.textContent = "Creating account..."; submitBtn.disabled = true; }
+
+    try {
+      const authPwd = "chores::" + parentEmail.toLowerCase() + "::" + parentPin + "::v1";
+      const signUpRes = await firebaseAuth.createUserWithEmailAndPassword(parentEmail, authPwd);
+      if (signUpRes.user) {
+        family.ownerUid = signUpRes.user.uid;
+        const trialEnd = new Date();
+        trialEnd.setDate(trialEnd.getDate() + 30);
+        family.trialEndsAt = trialEnd.toISOString();
+        try {
+          // Write family doc to Firestore
+          await firebaseDb.collection("families").doc(family.id).set({
+            familyName: family.familyName,
+            parentName: family.parentName,
+            parentPin: family.parentPin,
+            parentEmail: family.parentEmail,
+            parentEmailLower: family.parentEmailLower,
+            ownerUid: signUpRes.user.uid,
+            favorClaims: [],
+            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+            trialEndsAt: family.trialEndsAt,
+            isPro: false,
+            proTier: null,
+          });
+          // Write kids subcollection
+          const batch = firebaseDb.batch();
+          family.kids.forEach(kid => {
+            batch.set(
+              firebaseDb.collection("families").doc(family.id).collection("kids").doc(kid.id),
+              kidToFirestoreDoc(kid)
+            );
+          });
+          await batch.commit();
+        } catch(firestoreErr) {
+          // Auth succeeded but Firestore failed — delete the Auth account to avoid orphan
+          console.warn("Firestore write failed, rolling back Auth:", firestoreErr.message);
+          try { await signUpRes.user.delete(); } catch(e) {}
+          if (submitBtn) { submitBtn.textContent = "Create account"; submitBtn.disabled = false; }
+          showToast("Account creation failed. Please check your connection and try again.");
+          return;
+        }
+      }
+    } catch(signUpErr) {
+      if (submitBtn) { submitBtn.textContent = "Create account"; submitBtn.disabled = false; }
+      if (signUpErr.code === "auth/email-already-in-use") {
+        showToast("That email already has an account. Please log in instead.");
+        return;
+      }
+      console.warn("Firebase signup failed:", signUpErr.message);
+      // Continue with local-only account if Firebase fails
+    }
+  }
+
   state.families.push(family);
   authAccountReady = true;
   authAccountJustCreated = true;
@@ -808,7 +941,7 @@ async function handleCreateFamilyAccount() {
   currentKidView = "dashboard";
   currentFamilyMode = false;
   currentAssignedKids = [];
-  saveState();
+  saveState({ skipCloud: true });
   showToast("Account created. Log in as parent to continue.");
   renderAuthHome();
 }
@@ -946,7 +1079,7 @@ function buildTaskInstanceFromTemplate(template, dateKey) {
     id: createId("task"),
     templateId: template.id,
     title: template.title,
-    detail: buildTaskDetail(template.recurring, template.time, template.customDate ? formatCustomDate(template.customDate) : ""),
+    detail: buildTaskDetail(template.recurring, formatTaskTimeValue(template.time) || template.time, template.customDate ? formatCustomDate(template.customDate) : ""),
     points: Number(template.points) || 0,
     recurring: template.recurring,
     time: template.time,
@@ -1055,6 +1188,25 @@ function refreshAllTasksForToday() {
     });
   });
   if (didUpdate) saveState();
+}
+
+function timeToMinutes(timeValue) {
+  const str = String(timeValue || "").trim();
+  if (!str) return 9999;
+  // Handle raw 24h format: "05:30" or "17:30"
+  const raw = str.match(/^(\d{1,2}):(\d{2})$/);
+  if (raw) return parseInt(raw[1], 10) * 60 + parseInt(raw[2], 10);
+  // Handle display format: "5:30 AM" or "5:30 PM"
+  const disp = str.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+  if (disp) {
+    let h = parseInt(disp[1], 10);
+    const m = parseInt(disp[2], 10);
+    const isPM = disp[3].toUpperCase() === "PM";
+    if (isPM && h !== 12) h += 12;
+    if (!isPM && h === 12) h = 0;
+    return h * 60 + m;
+  }
+  return 9999;
 }
 
 function formatTaskTimeValue(timeValue) {
@@ -1303,9 +1455,36 @@ function resetAllTasksAndPoints() {
   });
 }
 
-function deleteCurrentFamilyFromDevice() {
+async function deleteCurrentFamilyFromDevice() {
   const family = getCurrentFamily();
   if (!family) return false;
+
+  // Cancel Stripe subscription if active
+  if (family.isPro && family.stripeCustomerId && family.ownerUid) {
+    try {
+      await fetch("https://us-central1-chores-c605d.cloudfunctions.net/cancelSubscription", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ownerUid: family.ownerUid })
+      });
+    } catch(e) { console.warn("Subscription cancel failed:", e.message); }
+  }
+
+  // Delete Firestore family doc and kids subcollection
+  if (firebaseDb && family.id) {
+    try {
+      const kidsSnap = await firebaseDb.collection("families").doc(family.id).collection("kids").get();
+      const batch = firebaseDb.batch();
+      kidsSnap.docs.forEach(doc => batch.delete(doc.ref));
+      batch.delete(firebaseDb.collection("families").doc(family.id));
+      await batch.commit();
+    } catch(e) { console.warn("Firestore deletion failed:", e.message); }
+  }
+
+  // Delete Firebase Auth account
+  if (firebaseAuth?.currentUser) {
+    try { await firebaseAuth.currentUser.delete(); } catch(e) { console.warn("Auth deletion failed:", e.message); }
+  }
 
   state.families = state.families.filter((entry) => entry.id !== family.id);
   state.session = null;
@@ -1323,13 +1502,16 @@ function deleteCurrentFamilyFromDevice() {
 }
 
 async function logout() {
-
+  // Sign out of Firebase Auth
+  if (firebaseAuth) {
+    try { await firebaseAuth.signOut(); } catch(e) { console.warn("Firebase signOut failed:", e.message); }
+  }
   state.session = null;
   currentKidId = null;
   currentKidView = "dashboard";
   currentFamilyMode = false;
   currentAssignedKids = [];
-  saveState();
+  saveState({ skipCloud: true });
   renderApp();
 }
 
@@ -1504,12 +1686,13 @@ function renderAuthHome() {
               authResetPasscodeOpen
                 ? `
                   <form class="reward-form auth-form auth-reset-form" id="reset-passcode-form">
-                    <input type="email" name="username" placeholder="Username" required />
-                    <input type="password" name="newPassword" placeholder="New passcode" required />
+                    <input type="email" name="username" placeholder="Your email" required />
+                    <input type="password" name="currentPassword" placeholder="Current PIN" inputmode="numeric" maxlength="4" required />
+                    <input type="password" name="newPassword" placeholder="New PIN (4 digits, not 1234 etc)" inputmode="numeric" maxlength="4" required />
                     <div class="button-row create-progress-actions">
-                      <button class="action-button primary" type="submit">Save new passcode</button>
+                      <button class="action-button primary" type="submit">Save new PIN</button>
                       <button class="action-button secondary" type="button" data-auth-view="back-intro">Back to home</button>
-                      <button class="action-button secondary" type="button" data-reset-passcode-toggle="true">Cancel reset</button>
+                      <button class="action-button secondary" type="button" data-reset-passcode-toggle="true">Cancel</button>
                     </div>
                   </form>
                 `
@@ -1697,7 +1880,7 @@ function renderKidPage(kidId) {
               <h3>Due</h3>
               <div class="task-stack">
                 ${renderCardList(
-                  [...kid.due].sort((a, b) => (a.time || "").localeCompare(b.time || "")),
+                  [...kid.due].sort((a, b) => timeToMinutes(a.time) - timeToMinutes(b.time)),
                   (task, taskIndex) => `
                     <article class="task-card">
                       <h4>${escapeHtml(task.title)}</h4>
@@ -1718,7 +1901,7 @@ function renderKidPage(kidId) {
               <h3>Awaiting approval</h3>
               <div class="task-stack">
                 ${renderCardList(
-                  [...kid.awaiting].sort((a, b) => (a.time || "").localeCompare(b.time || "")),
+                  [...kid.awaiting].sort((a, b) => timeToMinutes(a.time) - timeToMinutes(b.time)),
                   (task, taskIndex) => `
                     <article class="task-card">
                       <h4>${escapeHtml(task.title)}</h4>
@@ -1740,7 +1923,7 @@ function renderKidPage(kidId) {
               <h3>Completed</h3>
               <div class="task-stack">
                 ${renderCardList(
-                  [...kid.completed].sort((a, b) => (a.time || "").localeCompare(b.time || "")),
+                  [...kid.completed].sort((a, b) => timeToMinutes(a.time) - timeToMinutes(b.time)),
                   (task, taskIndex) => `
                     <article class="task-card">
                       <h4>${escapeHtml(task.title)}</h4>
@@ -1882,7 +2065,7 @@ function renderKidPage(kidId) {
                     </div>
                     <div class="report-list">
                       ${renderCardList(
-                        [...child.due].sort((a, b) => (a.time || "").localeCompare(b.time || "")),
+                        [...child.due].sort((a, b) => timeToMinutes(a.time) - timeToMinutes(b.time)),
                         (task) => `
                           <article class="task-card report-task">
                             <h4>${escapeHtml(task.title)}</h4>
@@ -2926,6 +3109,12 @@ document.body.addEventListener("submit", async (event) => {
     const email = String(formData.get("parentEmail") || "").trim().toLowerCase();
     const pin = String(formData.get("parentPin") || "").trim();
 
+    if (!checkLoginRateLimit(email)) return;
+
+    const loginBtn = parentLoginForm.querySelector("button[type='submit']");
+    if (loginBtn) { loginBtn.textContent = "Logging in..."; loginBtn.disabled = true; }
+    const resetLoginBtn = () => { if (loginBtn) { loginBtn.textContent = "Log in as parent"; loginBtn.disabled = false; } };
+
     if (cloudAuthEnabled && cloudModeEnabled) {
       try {
         const authPwd = "chores::" + email + "::" + pin + "::v1";
@@ -2940,13 +3129,20 @@ document.body.addEventListener("submit", async (event) => {
             authStage = "login"; authView = "parent"; authAccountJustCreated = false;
             state.session = { familyId: cloudFamily.id, role: "parent" };
             currentKidId = null; currentKidView = "dashboard"; currentFamilyMode = false; currentAssignedKids = [];
+            clearLoginRateLimit(email);
             saveState({ skipCloud: true });
             renderApp();
+            return;
+          } else {
+            // Auth account exists but no Firestore doc — reset button and show error
+            resetLoginBtn();
+            showToast("Account not found. Please create a new account.");
             return;
           }
         }
       } catch (cloudErr) {
         // Cloud login failed — try local then cloudSyncOnLogin
+        resetLoginBtn();
         console.warn("Cloud parent login failed:", cloudErr.message);
       }
     }
@@ -2956,7 +3152,7 @@ document.body.addEventListener("submit", async (event) => {
     const family = state.families.find((entry) =>
       entry.parentEmailLower === email && (entry.parentPin === pin || entry.parentPin === hashedPin)
     );
-    if (!family) { showToast("Incorrect login."); return; }
+    if (!family) { resetLoginBtn(); showToast("Incorrect login."); return; }
 
     // Sync new account to Firestore/Firebase Auth
     await cloudSyncOnLogin(email, pin, family);
@@ -2976,6 +3172,10 @@ document.body.addEventListener("submit", async (event) => {
     const email = String(formData.get("username") || "").trim().toLowerCase();
     const pin = String(formData.get("password") || "").trim();
 
+    const retLoginBtn = returningLoginForm.querySelector("button[type='submit']");
+    if (retLoginBtn) { retLoginBtn.textContent = "Logging in..."; retLoginBtn.disabled = true; }
+    const resetRetLoginBtn = () => { if (retLoginBtn) { retLoginBtn.textContent = "Log in"; retLoginBtn.disabled = false; } };
+
     if (cloudAuthEnabled && cloudModeEnabled) {
       try {
         const authPwd = "chores::" + email + "::" + pin + "::v1";
@@ -2993,15 +3193,22 @@ document.body.addEventListener("submit", async (event) => {
             saveState({ skipCloud: true });
             renderApp();
             return;
+          } else {
+            resetRetLoginBtn();
+            showToast("Account not found. Please create a new account.");
+            return;
           }
         }
       } catch (cloudErr) {
+        resetRetLoginBtn();
         console.warn("Cloud login failed:", cloudErr.message);
       }
     }
 
-    const family = state.families.find((entry) => entry.parentEmailLower === email && entry.parentPin === pin);
+    const retHashedPin = await hashPin(pin);
+    const family = state.families.find((entry) => entry.parentEmailLower === email && (entry.parentPin === pin || entry.parentPin === retHashedPin));
     if (!family) {
+      resetRetLoginBtn();
       showToast("Incorrect login.");
       return;
     }
@@ -3039,49 +3246,65 @@ document.body.addEventListener("submit", async (event) => {
   if (resetPasscodeForm) {
     event.preventDefault();
     const usernameInput = resetPasscodeForm.querySelector('input[name="username"]');
+    const currentPasswordInput = resetPasscodeForm.querySelector('input[name="currentPassword"]');
     const newPasswordInput = resetPasscodeForm.querySelector('input[name="newPassword"]');
     const email = String(usernameInput?.value || "").trim().toLowerCase();
+    const currentPassword = String(currentPasswordInput?.value || "").trim();
     const newPassword = String(newPasswordInput?.value || "").trim();
 
-    if (!email) {
-      showToast("Enter your username first.");
-      return;
-    }
-
-    if (!newPassword) {
-      showToast("Enter a new passcode.");
+    if (!email) { showToast("Enter your email first."); return; }
+    if (!currentPassword) { showToast("Enter your current PIN."); return; }
+    if (!newPassword) { showToast("Enter a new PIN."); return; }
+    if (!isValidParentPin(newPassword)) {
+      showToast("New PIN is too weak — avoid sequences like 1234 or repeated digits.");
       return;
     }
 
     const family = state.families.find((entry) => entry.parentEmailLower === email);
-    if (!family) {
-      showToast("No account was found for that username.");
-      return;
+    if (!family) { showToast("No account found for that email."); return; }
+
+    // Verify current PIN
+    const currentPinOk = await verifyPin(currentPassword, family.parentPin);
+    if (!currentPinOk) { showToast("Current PIN is incorrect."); return; }
+
+    const hashedNew = await hashPin(newPassword);
+    family.parentPin = hashedNew;
+
+    // Update Firebase Auth password too
+    if (cloudAuthEnabled && cloudModeEnabled && firebaseAuth) {
+      try {
+        const oldAuthPwd = "chores::" + email + "::" + currentPassword + "::v1";
+        const newAuthPwd = "chores::" + email + "::" + newPassword + "::v1";
+        const signInRes = await firebaseAuth.signInWithEmailAndPassword(email, oldAuthPwd);
+        if (signInRes.user) await signInRes.user.updatePassword(newAuthPwd);
+      } catch(e) { console.warn("Firebase password update failed:", e.message); }
     }
 
-    family.parentPin = newPassword;
-    saveState();
+    saveState({ skipCloud: true });
     authResetPasscodeOpen = false;
     renderAuthHome();
-    showToast("Passcode updated.");
+    showToast("PIN updated successfully.");
     return;
   }
 
   const kidLoginForm = event.target.closest("#kid-login-form");
   if (kidLoginForm) {
     event.preventDefault();
+    const kidLoginBtn = kidLoginForm.querySelector("button[type='submit']");
+    if (kidLoginBtn) { kidLoginBtn.textContent = "Logging in..."; kidLoginBtn.disabled = true; }
+    const resetKidLoginBtn = () => { if (kidLoginBtn) { kidLoginBtn.textContent = "Log in as kid"; kidLoginBtn.disabled = false; } };
     const formData = new FormData(kidLoginForm);
     const email = String(formData.get("familyEmail") || "").trim().toLowerCase();
     const kidName = String(formData.get("kidName") || "").trim().toLowerCase();
     const kidPin = String(formData.get("kidPin") || "").trim();
     if (!isValidKidPin(kidPin)) {
-      showToast("Kid PIN must be exactly 4 digits.");
-      return;
+      resetKidLoginBtn(); showToast("Kid PIN must be exactly 4 digits."); return;
     }
+    if (!checkLoginRateLimit(email + ":" + kidName)) { resetKidLoginBtn(); return; }
     const family = state.families.find((entry) => entry.parentEmailLower === email);
     const kidCandidate = family?.kids.find((entry) => entry.name.trim().toLowerCase() === kidName);
     const kidPinOk = kidCandidate ? await verifyPin(kidPin, kidCandidate.kidPin) : false;
-    if (!family || !kidCandidate || !kidPinOk) { showToast("Incorrect kid login."); return; }
+    if (!family || !kidCandidate || !kidPinOk) { resetKidLoginBtn(); showToast("Incorrect kid login."); return; }
     if (kidCandidate.kidPin && !/^[0-9a-f]{64}$/.test(kidCandidate.kidPin)) { kidCandidate.kidPin = await hashPin(kidPin); saveState({ skipCloud: true }); }
     const kid = kidCandidate;
 
@@ -3182,9 +3405,7 @@ document.body.addEventListener("submit", async (event) => {
       return;
     }
 
-    const displayTime = formatTaskTimeValue(timeValue);
-
-    addTask(assignedKids, title, points, recurring, displayTime, customDate);
+    addTask(assignedKids, title, points, recurring, timeValue, customDate);
     saveState();
     currentAssignedKids = [];
     renderKidPage(currentKidId || getFamilyKids()[0]?.id);
@@ -3286,7 +3507,7 @@ async function fbPushKid(familyId, kid) {
 async function fbPushFamily(family) {
   if (!firebaseDb) return;
   var famRef = firebaseDb.collection("families").doc(family.id);
-  await famRef.set({ familyName: family.familyName, parentName: family.parentName || "Parent", parentPin: family.parentPin || "", ownerUid: family.ownerUid || "", updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+  await famRef.set({ familyName: family.familyName, parentName: family.parentName || "Parent", parentPin: family.parentPin || "", ownerUid: family.ownerUid || "", updatedAt: firebase.firestore.FieldValue.serverTimestamp(), isPro: family.isPro || false, proTier: family.proTier || null, trialEndsAt: family.trialEndsAt || null }, { merge: true });
   var batch = firebaseDb.batch();
   (family.kids || []).forEach(function(kid) { batch.set(famRef.collection("kids").doc(kid.id), kidToFirestoreDoc(kid), { merge: true }); });
   await batch.commit();

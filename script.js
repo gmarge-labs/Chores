@@ -177,6 +177,12 @@ function normalizeFamily(family) {
     createdAt: family.createdAt || new Date().toISOString(),
     kids: Array.isArray(family.kids) ? family.kids.map(normalizeKid) : [],
     favorClaims: Array.isArray(family.favorClaims) ? family.favorClaims : [],
+    ownerUid: family.ownerUid || "",
+    isPro: family.isPro || false,
+    proTier: family.proTier || null,
+    trialEndsAt: family.trialEndsAt || null,
+    stripeCustomerId: family.stripeCustomerId || null,
+    haWebhookUrl: family.haWebhookUrl || null,
   };
 }
 

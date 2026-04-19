@@ -2860,6 +2860,54 @@ document.body.addEventListener("submit", async (event) => {
   }
 
   const parentLoginForm = event.target.closest("#parent-login-form");
+  if (parentLoginForm) {
+    event.preventDefault();
+    const formData = new FormData(parentLoginForm);
+    const email = String(formData.get("parentEmail") || "").trim().toLowerCase();
+    const pin = String(formData.get("parentPin") || "").trim();
+
+    if (cloudAuthEnabled && cloudModeEnabled) {
+      try {
+        const authPwd = "chores::" + email + "::" + pin + "::v1";
+        const signInRes = await firebaseAuth.signInWithEmailAndPassword(email, authPwd);
+        if (signInRes.user) {
+          const snap = await firebaseDb.collection("families").where("ownerUid", "==", signInRes.user.uid).limit(1).get();
+          if (!snap.empty) {
+            const cloudFamily = await fbPullFamily(snap.docs[0].id);
+            cloudFamily.parentEmail = email;
+            cloudFamily.parentEmailLower = email;
+            upsertFamilyInState(cloudFamily);
+            authStage = "login"; authView = "parent"; authAccountJustCreated = false;
+            state.session = { familyId: cloudFamily.id, role: "parent" };
+            currentKidId = null; currentKidView = "dashboard"; currentFamilyMode = false; currentAssignedKids = [];
+            saveState({ skipCloud: true });
+            renderApp();
+            return;
+          }
+        }
+      } catch (cloudErr) {
+        // Cloud login failed — try local then cloudSyncOnLogin
+        console.warn("Cloud parent login failed:", cloudErr.message);
+      }
+    }
+
+    // Local lookup + cloud sync for new accounts
+    const hashedPin = await hashPin(pin);
+    const family = state.families.find((entry) =>
+      entry.parentEmailLower === email && (entry.parentPin === pin || entry.parentPin === hashedPin)
+    );
+    if (!family) { showToast("Incorrect login."); return; }
+
+    // Sync new account to Firestore/Firebase Auth
+    await cloudSyncOnLogin(email, pin, family);
+
+    authStage = "login"; authView = "parent"; authAccountJustCreated = false;
+    state.session = { familyId: family.id, role: "parent" };
+    currentKidId = null; currentKidView = "dashboard"; currentFamilyMode = false; currentAssignedKids = [];
+    saveState({ skipCloud: true });
+    renderApp();
+    return;
+  }
 
   const returningLoginForm = event.target.closest("#returning-login-form");
   if (returningLoginForm) {

@@ -2874,7 +2874,23 @@ document.body.addEventListener("submit", async (event) => {
     currentKidView = "dashboard";
     currentFamilyMode = false;
     currentAssignedKids = [];
-    saveState();
+
+    // Always pull fresh from Firestore so isPro/proTier are never stale
+    if (firebaseDb && family.id) {
+      try {
+        const freshSnap = await firebaseDb.collection("families").doc(family.id).get();
+        if (freshSnap.exists) {
+          const d = freshSnap.data();
+          family.isPro = d.isPro || false;
+          family.proTier = d.proTier || null;
+          family.trialEndsAt = d.trialEndsAt || null;
+          family.ownerUid = d.ownerUid || family.ownerUid || "";
+          family.haWebhookUrl = d.haWebhookUrl || null;
+        }
+      } catch(e) { console.warn("Firestore refresh on login failed:", e.message); }
+    }
+
+    saveState({ skipCloud: true });
     renderApp();
     return;
   }
@@ -3077,6 +3093,24 @@ if ("serviceWorker" in navigator) {
 
 renderApp();
 void bootstrapCloudSessionIfAvailable();
+
+async function bootstrapCloudSessionIfAvailable() {
+  if (!firebaseDb || !state.session) return;
+  const family = getCurrentFamily();
+  if (!family || !family.id) return;
+  try {
+    const snap = await firebaseDb.collection("families").doc(family.id).get();
+    if (!snap.exists) return;
+    const d = snap.data();
+    family.isPro = d.isPro || false;
+    family.proTier = d.proTier || null;
+    family.trialEndsAt = d.trialEndsAt || null;
+    family.ownerUid = d.ownerUid || family.ownerUid || "";
+    family.haWebhookUrl = d.haWebhookUrl || null;
+    saveState({ skipCloud: true });
+    renderApp();
+  } catch(e) { console.warn("Bootstrap Firestore refresh failed:", e.message); }
+}
 
 // ── FIREBASE SYNC LAYER ───────────────────────────────────────
 var _fbWriteQueue = Promise.resolve();

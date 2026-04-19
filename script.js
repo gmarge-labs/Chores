@@ -1627,7 +1627,7 @@ function renderKidPage(kidId) {
               <h3>Due</h3>
               <div class="task-stack">
                 ${renderCardList(
-                  kid.due,
+                  [...kid.due].sort((a, b) => (a.time || "").localeCompare(b.time || "")),
                   (task, taskIndex) => `
                     <article class="task-card">
                       <h4>${escapeHtml(task.title)}</h4>
@@ -1648,7 +1648,7 @@ function renderKidPage(kidId) {
               <h3>Awaiting approval</h3>
               <div class="task-stack">
                 ${renderCardList(
-                  kid.awaiting,
+                  [...kid.awaiting].sort((a, b) => (a.time || "").localeCompare(b.time || "")),
                   (task, taskIndex) => `
                     <article class="task-card">
                       <h4>${escapeHtml(task.title)}</h4>
@@ -1670,7 +1670,7 @@ function renderKidPage(kidId) {
               <h3>Completed</h3>
               <div class="task-stack">
                 ${renderCardList(
-                  kid.completed,
+                  [...kid.completed].sort((a, b) => (a.time || "").localeCompare(b.time || "")),
                   (task, taskIndex) => `
                     <article class="task-card">
                       <h4>${escapeHtml(task.title)}</h4>
@@ -1812,7 +1812,7 @@ function renderKidPage(kidId) {
                     </div>
                     <div class="report-list">
                       ${renderCardList(
-                        child.due,
+                        [...child.due].sort((a, b) => (a.time || "").localeCompare(b.time || "")),
                         (task) => `
                           <article class="task-card report-task">
                             <h4>${escapeHtml(task.title)}</h4>
@@ -1893,7 +1893,30 @@ function renderKidPage(kidId) {
                             ${renderTileBubbles()}
                             <p class="eyebrow">Add task</p>
                             <form class="reward-form" id="task-form">
-                              <input type="text" name="title" placeholder="Task title" required />
+                              ${(() => {
+                                const allTasks = getFamilyKids().flatMap(k => k.taskTemplates || []);
+                                const unique = [...new Map(allTasks.map(t => [t.title.toLowerCase(), t])).values()]
+                                  .sort((a, b) => a.title.localeCompare(b.title));
+                                if (!unique.length) return `<input type="text" name="title" placeholder="Task title" required />`;
+                                return `
+                                  <div class="task-library-wrapper">
+                                    <input type="text" name="title" placeholder="Task title" required />
+                                    <button class="task-library-toggle" type="button" data-toggle-library="true" title="Pick from history">
+                                      <span>&#128196;</span> Pick from history
+                                    </button>
+                                    <div class="task-library-dropdown hidden" id="task-library-dropdown">
+                                      ${unique.map(t => `
+                                        <button class="task-library-item" type="button"
+                                          data-library-title="${escapeHtml(t.title)}"
+                                          data-library-points="${escapeHtml(String(t.points))}">
+                                          <span class="task-library-item-title">${escapeHtml(t.title)}</span>
+                                          <span class="task-library-item-pts">${escapeHtml(String(t.points))} pts</span>
+                                        </button>
+                                      `).join("")}
+                                    </div>
+                                  </div>
+                                `;
+                              })()}
                               ${renderAssignedKidsBlock()}
                               ${renderTaskRecurringBlock()}
                               <input type="number" name="points" placeholder="Points" min="1" required />
@@ -2322,6 +2345,28 @@ document.body.addEventListener("click", async (event) => {
     saveState();
     renderKidPage(currentKidId);
     showToast("Tasks and points reset.");
+    return;
+  }
+
+  // ── Task library toggle ───────────────────────────────────
+  const libraryToggle = event.target.closest("[data-toggle-library]");
+  if (libraryToggle) {
+    const dropdown = document.getElementById("task-library-dropdown");
+    if (dropdown) dropdown.classList.toggle("hidden");
+    return;
+  }
+
+  // ── Task library item select ──────────────────────────────
+  const libraryItem = event.target.closest("[data-library-title]");
+  if (libraryItem) {
+    const form = document.getElementById("task-form");
+    if (!form) return;
+    const titleInput = form.querySelector("input[name='title']");
+    const pointsInput = form.querySelector("input[name='points']");
+    if (titleInput) titleInput.value = libraryItem.dataset.libraryTitle;
+    if (pointsInput) pointsInput.value = libraryItem.dataset.libraryPoints;
+    const dropdown = document.getElementById("task-library-dropdown");
+    if (dropdown) dropdown.classList.add("hidden");
     return;
   }
 

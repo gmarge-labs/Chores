@@ -2283,6 +2283,10 @@ function showUpgradeModal(status) {
 }
 
 function renderApp() {
+  // Always clear upgrade modal first so login flow is never blocked
+  const existingModal = document.getElementById("upgrade-modal-overlay");
+  if (existingModal) existingModal.remove();
+
   const family = getCurrentFamily();
 
   if (!state.session || !family) {

@@ -1521,6 +1521,15 @@ function renderParentHome() {
           <span class="title-star" aria-hidden="true">✦</span>
         </h1>
       </header>
+      ${(() => {
+        const sub = getSubscriptionStatus(family);
+        if (sub.startsWith("trial:")) {
+          const days = sub.split(":")[1];
+          return `<div class="trial-banner">${escapeHtml(days)} day${days === "1" ? "" : "s"} left in your free trial — <button class="trial-banner-link" type="button" data-show-upgrade="true">Subscribe now</button></div>`;
+        }
+        if (family.isPro) return `<div class="trial-banner trial-banner--pro">Chores Pro ${family.proTier === "tier2" ? "✦ Home Assistant included" : ""}</div>`;
+        return "";
+      })()}
 
       <section class="kid-grid" id="home-kids">
         ${kids
@@ -2180,12 +2189,100 @@ function renderKidPage(kidId) {
   updateTaskSchedulePreview(document.querySelector("#task-form"));
 }
 
+function getSubscriptionStatus(family) {
+  if (!family) return "expired";
+  if (family.isPro) return "pro";
+  const trial = family.trialEndsAt;
+  if (!trial) return "expired";
+  const trialDate = new Date(trial);
+  if (isNaN(trialDate.getTime())) return "expired";
+  const now = new Date();
+  const daysLeft = Math.ceil((trialDate - now) / (1000 * 60 * 60 * 24));
+  if (daysLeft > 0) return "trial:" + daysLeft;
+  return "expired";
+}
+
+function showUpgradeModal(status) {
+  const existing = document.getElementById("upgrade-modal-overlay");
+  if (existing) existing.remove();
+
+  const isExpired = status === "expired";
+  const headline = isExpired
+    ? "Your free trial has ended"
+    : "Subscribe to keep using Chores";
+  const subtext = isExpired
+    ? "Subscribe now to continue managing your family's tasks, points, and rewards."
+    : "Your trial has ended. Choose a plan to keep going.";
+
+  const CHECKOUT_URL = "https://us-central1-chores-c605d.cloudfunctions.net/createCheckoutSession";
+
+  const overlay = document.createElement("div");
+  overlay.id = "upgrade-modal-overlay";
+  overlay.innerHTML = `
+    <div class="upgrade-modal">
+      <div class="upgrade-modal-header">
+        <h2 class="upgrade-modal-title">${escapeHtml(headline)}</h2>
+        <p class="upgrade-modal-sub">${escapeHtml(subtext)}</p>
+      </div>
+      <div class="upgrade-plans">
+        <div class="upgrade-plan">
+          <div class="upgrade-plan-name">Tier 1 — App</div>
+          <div class="upgrade-plan-price">$4.99<span>/month</span></div>
+          <div class="upgrade-plan-desc">Full access to tasks, points, rewards and reports for your whole family.</div>
+          <button class="upgrade-plan-btn" id="upgrade-tier1-btn">Subscribe — $4.99/mo</button>
+        </div>
+        <div class="upgrade-plan upgrade-plan-featured">
+          <div class="upgrade-plan-badge">Recommended</div>
+          <div class="upgrade-plan-name">Tier 2 — App + Home Assistant</div>
+          <div class="upgrade-plan-price">$9.99<span>/month</span></div>
+          <div class="upgrade-plan-desc">Everything in Tier 1, plus voice announcements through your smart speakers via Home Assistant.</div>
+          <button class="upgrade-plan-btn upgrade-plan-btn-featured" id="upgrade-tier2-btn">Subscribe — $9.99/mo</button>
+        </div>
+      </div>
+      <p class="upgrade-modal-footer">Cancel anytime. Secure payment via Stripe.</p>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+
+  const family = getCurrentFamily();
+  const ownerUid = family?.ownerUid || "";
+  const appUrl = window.location.href.split("?")[0];
+
+  async function startCheckout(priceId) {
+    const btn = document.getElementById(priceId === "price_1TNmlH2NkhDmsnu9Bi89HjTg" ? "upgrade-tier1-btn" : "upgrade-tier2-btn");
+    if (btn) { btn.textContent = "Loading..."; btn.disabled = true; }
+    try {
+      const res = await fetch(CHECKOUT_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ownerUid, priceId, successUrl: appUrl + "?subscribed=true", cancelUrl: appUrl + "?cancelled=true" })
+      });
+      const data = await res.json();
+      if (data.url) window.location.href = data.url;
+      else throw new Error(data.error || "No URL returned");
+    } catch (err) {
+      if (btn) { btn.textContent = "Try again"; btn.disabled = false; }
+      showToast("Payment error: " + err.message);
+    }
+  }
+
+  document.getElementById("upgrade-tier1-btn").addEventListener("click", () => startCheckout("price_1TNmlH2NkhDmsnu9Bi89HjTg"));
+  document.getElementById("upgrade-tier2-btn").addEventListener("click", () => startCheckout("price_1TNmqb2NkhDmsnu9TgCMw25u"));
+}
+
 function renderApp() {
   const family = getCurrentFamily();
 
   if (!state.session || !family) {
     state.session = null;
     renderAuthHome();
+    return;
+  }
+
+  // ── Subscription / trial check ───────────────────────────
+  const subStatus = getSubscriptionStatus(family);
+  if (subStatus === "expired") {
+    showUpgradeModal("expired");
     return;
   }
 
@@ -2336,6 +2433,12 @@ document.body.addEventListener("click", async (event) => {
   const pointsCard = event.target.closest("[data-points-card]");
   if (pointsCard) {
     triggerPointsBurst(pointsCard);
+    return;
+  }
+
+  const showUpgradeBtn = event.target.closest("[data-show-upgrade]");
+  if (showUpgradeBtn) {
+    showUpgradeModal("manual");
     return;
   }
 
@@ -2937,6 +3040,19 @@ if ("serviceWorker" in navigator) {
   });
 }
 
+// ── Handle Stripe redirect ────────────────────────────────────
+(function handleStripeRedirect() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("subscribed") === "true") {
+    history.replaceState({}, "", window.location.pathname);
+    showToast("Welcome to Chores Pro! Your subscription is active.");
+  }
+  if (params.get("cancelled") === "true") {
+    history.replaceState({}, "", window.location.pathname);
+    showToast("Subscription cancelled — you can try again anytime.");
+  }
+})();
+
 renderApp();
 void bootstrapCloudSessionIfAvailable();
 
@@ -2987,7 +3103,7 @@ async function fbPullFamily(familyId) {
   var famData = famSnap.data();
   var kidsSnap = await firebaseDb.collection("families").doc(familyId).collection("kids").get();
   var kids = kidsSnap.docs.map(function(d) { return firestoreDocToKid(d.data()); });
-  return normalizeFamily({ id: familyId, familyName: famData.familyName || "", parentName: famData.parentName || "Parent", parentPin: famData.parentPin || "", parentEmail: famData.parentEmail || "", parentEmailLower: famData.parentEmailLower || "", ownerUid: famData.ownerUid || "", kids: kids, favorClaims: famData.favorClaims || [] });
+  return normalizeFamily({ id: familyId, familyName: famData.familyName || "", parentName: famData.parentName || "Parent", parentPin: famData.parentPin || "", parentEmail: famData.parentEmail || "", parentEmailLower: famData.parentEmailLower || "", ownerUid: famData.ownerUid || "", kids: kids, favorClaims: famData.favorClaims || [], isPro: famData.isPro || false, proTier: famData.proTier || null, trialEndsAt: famData.trialEndsAt || null, stripeCustomerId: famData.stripeCustomerId || null, haWebhookUrl: famData.haWebhookUrl || null });
 }
 
 function cloudSave(kidId) {
@@ -3029,7 +3145,8 @@ async function cloudSyncOnLogin(email, plainPin, localFamily) {
   }
   try {
     localFamily.ownerUid = user.uid;
-    await firebaseDb.collection("families").doc(localFamily.id).set({ familyName: localFamily.familyName, parentName: localFamily.parentName || "Parent", parentPin: localFamily.parentPin || "", parentEmail: localFamily.parentEmail || "", parentEmailLower: localFamily.parentEmailLower || "", ownerUid: user.uid, favorClaims: localFamily.favorClaims || [], createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+    var trialEnd = new Date(); trialEnd.setDate(trialEnd.getDate() + 30);
+    await firebaseDb.collection("families").doc(localFamily.id).set({ familyName: localFamily.familyName, parentName: localFamily.parentName || "Parent", parentPin: localFamily.parentPin || "", parentEmail: localFamily.parentEmail || "", parentEmailLower: localFamily.parentEmailLower || "", ownerUid: user.uid, favorClaims: localFamily.favorClaims || [], createdAt: firebase.firestore.FieldValue.serverTimestamp(), trialEndsAt: trialEnd.toISOString(), isPro: false, proTier: null });
     var batch = firebaseDb.batch();
     (localFamily.kids || []).forEach(function(kid) { batch.set(firebaseDb.collection("families").doc(localFamily.id).collection("kids").doc(kid.id), kidToFirestoreDoc(kid)); });
     await batch.commit();

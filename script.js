@@ -2211,7 +2211,7 @@ function showUpgradeModal(status) {
     ? "Your free trial has ended"
     : "Subscribe to keep using Chores";
   const subtext = isExpired
-    ? "Subscribe now to continue managing your family's tasks, points, and rewards."
+    ? "Subscribe to keep managing your family's tasks, points, and rewards."
     : "Your trial has ended. Choose a plan to keep going.";
 
   const CHECKOUT_URL = "https://us-central1-chores-c605d.cloudfunctions.net/createCheckoutSession";
@@ -2220,26 +2220,34 @@ function showUpgradeModal(status) {
   overlay.id = "upgrade-modal-overlay";
   overlay.innerHTML = `
     <div class="upgrade-modal">
-      <div class="upgrade-modal-header">
+      <div class="upgrade-modal-blobs">
+        <div class="upgrade-blob upgrade-blob-1"></div>
+        <div class="upgrade-blob upgrade-blob-2"></div>
+        <div class="upgrade-blob upgrade-blob-3"></div>
+      </div>
+      <div class="upgrade-modal-card">
+        <div class="upgrade-modal-app-label">Family Task Tracker</div>
         <h2 class="upgrade-modal-title">${escapeHtml(headline)}</h2>
         <p class="upgrade-modal-sub">${escapeHtml(subtext)}</p>
-      </div>
-      <div class="upgrade-plans">
-        <div class="upgrade-plan">
-          <div class="upgrade-plan-name">Tier 1 — App</div>
-          <div class="upgrade-plan-price">$4.99<span>/month</span></div>
-          <div class="upgrade-plan-desc">Full access to tasks, points, rewards and reports for your whole family.</div>
-          <button class="upgrade-plan-btn" id="upgrade-tier1-btn">Subscribe — $4.99/mo</button>
+        <div class="upgrade-plans">
+          <div class="upgrade-plan">
+            <div class="upgrade-plan-tier">Tier 1</div>
+            <div class="upgrade-plan-name">App only</div>
+            <div class="upgrade-plan-price">$4.99<span>/mo</span></div>
+            <div class="upgrade-plan-desc">Full access to tasks, points, rewards and reports for your whole family.</div>
+            <button class="upgrade-plan-btn" id="upgrade-tier1-btn">Subscribe — $4.99/mo</button>
+          </div>
+          <div class="upgrade-plan upgrade-plan-featured">
+            <div class="upgrade-plan-badge">Recommended</div>
+            <div class="upgrade-plan-tier">Tier 2</div>
+            <div class="upgrade-plan-name">App + Home Assistant</div>
+            <div class="upgrade-plan-price">$9.99<span>/mo</span></div>
+            <div class="upgrade-plan-desc">Everything in Tier 1, plus voice announcements via your smart speakers.</div>
+            <button class="upgrade-plan-btn upgrade-plan-btn-featured" id="upgrade-tier2-btn">Subscribe — $9.99/mo</button>
+          </div>
         </div>
-        <div class="upgrade-plan upgrade-plan-featured">
-          <div class="upgrade-plan-badge">Recommended</div>
-          <div class="upgrade-plan-name">Tier 2 — App + Home Assistant</div>
-          <div class="upgrade-plan-price">$9.99<span>/month</span></div>
-          <div class="upgrade-plan-desc">Everything in Tier 1, plus voice announcements through your smart speakers via Home Assistant.</div>
-          <button class="upgrade-plan-btn upgrade-plan-btn-featured" id="upgrade-tier2-btn">Subscribe — $9.99/mo</button>
-        </div>
+        <p class="upgrade-modal-footer">🔒 Cancel anytime. Secure payment via Stripe.</p>
       </div>
-      <p class="upgrade-modal-footer">Cancel anytime. Secure payment via Stripe.</p>
     </div>
   `;
   document.body.appendChild(overlay);

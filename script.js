@@ -321,6 +321,10 @@ function isValidKidPin(value) {
   return /^\d{4}$/.test(String(value || "").trim());
 }
 
+function isValidEmail(value) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || "").trim());
+}
+
 function isValidCreateFieldValue(field, value) {
   if (!field) return false;
   const trimmedValue = String(value || "").trim();
@@ -328,12 +332,22 @@ function isValidCreateFieldValue(field, value) {
   if (/^kidPin\d+$/.test(field.name)) {
     return isValidKidPin(trimmedValue);
   }
+  if (field.name === "parentEmail") {
+    return isValidEmail(trimmedValue);
+  }
   return true;
 }
 
 function getCreateFieldGuidance(field, value) {
   if (!field) return "";
   const trimmedValue = String(value || "").trim();
+  if (field.name === "parentEmail") {
+    if (!trimmedValue) return "";
+    if (!isValidEmail(trimmedValue)) {
+      return `<p class="create-guidance-pill create-guidance-pill--warning">Please enter a valid email address (e.g. name@example.com).</p>`;
+    }
+    return `<p class="create-guidance-pill create-guidance-pill--success">Email looks good.</p>`;
+  }
   if (/^kidPin\d+$/.test(field.name)) {
     if (!trimmedValue) {
       return `<p class="create-guidance-pill">Choose a 4-digit password for this child.</p>`;
@@ -715,6 +729,11 @@ async function handleCreateFamilyAccount() {
   if (!familyName || !parentName || !parentEmail || !parentPin) return;
   if (parentPin !== confirmParentPin) {
     showToast("Parent PINs do not match.");
+    return;
+  }
+
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(parentEmail)) {
+    showToast("Please enter a valid email address.");
     return;
   }
 

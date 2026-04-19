@@ -2252,13 +2252,17 @@ function showUpgradeModal(status) {
   `;
   document.body.appendChild(overlay);
 
-  const family = getCurrentFamily();
-  const ownerUid = family?.ownerUid || "";
   const appUrl = window.location.href.split("?")[0];
 
   async function startCheckout(priceId) {
     const btn = document.getElementById(priceId === "price_1TNmlH2NkhDmsnu9Bi89HjTg" ? "upgrade-tier1-btn" : "upgrade-tier2-btn");
     if (btn) { btn.textContent = "Loading..."; btn.disabled = true; }
+    const ownerUid = getCurrentFamily()?.ownerUid || "";
+    if (!ownerUid) {
+      if (btn) { btn.textContent = "Try again"; btn.disabled = false; }
+      showToast("Please log in again before subscribing.");
+      return;
+    }
     try {
       const res = await fetch(CHECKOUT_URL, {
         method: "POST",

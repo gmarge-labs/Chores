@@ -755,8 +755,22 @@ async function handleCreateFamilyAccount() {
   }
 
   if (state.families.some((family) => family.parentEmailLower === parentEmail.toLowerCase())) {
-    showToast("That parent email already has an account.");
+    showToast("That email already has an account. Please log in instead.");
     return;
+  }
+
+  // Also check Firestore for duplicate email
+  if (firebaseDb) {
+    try {
+      const snap = await firebaseDb.collection("families")
+        .where("parentEmailLower", "==", parentEmail.toLowerCase())
+        .limit(1)
+        .get();
+      if (!snap.empty) {
+        showToast("That email already has an account. Please log in instead.");
+        return;
+      }
+    } catch(e) { console.warn("Duplicate email check failed:", e.message); }
   }
 
   const kids = [];

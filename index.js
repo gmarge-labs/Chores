@@ -210,3 +210,4 @@ exports.taskReminders = onSchedule("every 1 minutes", async () => {
 
   return null;
 });
+exports.createPortalSession = require("./createPortalSession").createPortalSession;

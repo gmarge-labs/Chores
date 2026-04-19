@@ -391,6 +391,19 @@ function isKidPinCreateStep(field = getCurrentCreateField()) {
   return Boolean(field && /^kidPin\d+$/.test(field.name));
 }
 
+function getBlockedMessage(field, value) {
+  if (!field) return "";
+  const trimmedValue = String(value || "").trim();
+  if (!trimmedValue) return `Enter your ${field.placeholder || "details"} to continue.`;
+  if (field.name === "parentEmail" && !isValidEmail(trimmedValue)) {
+    return "Please enter a valid email address (e.g. name@example.com).";
+  }
+  if (/^kidPin\d+$/.test(field.name) && !isValidKidPin(trimmedValue)) {
+    return "Kid PIN must be exactly 4 digits.";
+  }
+  return "";
+}
+
 function renderCreateAccountActions() {
   const currentField = getCurrentCreateField();
   if (!currentField) return "";
@@ -398,12 +411,15 @@ function renderCreateAccountActions() {
   const currentValue = createAccountDraft[currentField.name] || "";
   const canAdvance = isValidCreateFieldValue(currentField, currentValue);
   const disabledAttr = canAdvance ? "" : "disabled";
+  const blockedMsg = !canAdvance ? getBlockedMessage(currentField, currentValue) : "";
+  const hintHtml = blockedMsg ? `<p class="create-guidance-pill create-guidance-pill--warning" style="margin-top:8px;">${blockedMsg}</p>` : "";
 
   if (!/^kid/.test(currentField.name)) {
     return `
       <div class="button-row create-progress-actions">
         <button class="action-button primary" type="button" data-create-next="true" ${disabledAttr}>Next</button>
       </div>
+      ${hintHtml}
     `;
   }
 
@@ -412,6 +428,7 @@ function renderCreateAccountActions() {
       <div class="button-row create-progress-actions">
         <button class="action-button primary" type="button" data-create-next="true" ${disabledAttr}>Next</button>
       </div>
+      ${hintHtml}
     `;
   }
 
@@ -2815,8 +2832,18 @@ document.body.addEventListener("input", (event) => {
 
   if (currentField && currentField.name === name) {
     const guidanceNode = document.querySelector(".create-guidance-pill");
+    const newGuidance = getCreateFieldGuidance(currentField, value);
     if (guidanceNode) {
-      guidanceNode.outerHTML = getCreateFieldGuidance(currentField, value);
+      guidanceNode.outerHTML = newGuidance || "";
+    } else if (newGuidance) {
+      const actionsEl = document.querySelector(".create-progress-actions");
+      if (actionsEl) actionsEl.insertAdjacentHTML("afterend", newGuidance);
+    }
+    // Also update the blocked hint below the button
+    const blockedHint = document.querySelector(".create-guidance-pill--warning");
+    const blockedMsg = !canAdvance ? getBlockedMessage(currentField, value) : "";
+    if (blockedHint && !newGuidance) {
+      blockedHint.textContent = blockedMsg;
     }
   }
 });

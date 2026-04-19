@@ -105,6 +105,8 @@ function createKid(name, kidPin, avatar = "") {
 }
 
 function createFamily({ familyName, parentName, parentEmail, parentPin, kids }) {
+  const trialEnd = new Date();
+  trialEnd.setDate(trialEnd.getDate() + 30);
   return {
     id: createId("family"),
     familyName,
@@ -115,6 +117,9 @@ function createFamily({ familyName, parentName, parentEmail, parentPin, kids }) 
     kids,
     favorClaims: [],
     createdAt: new Date().toISOString(),
+    isPro: false,
+    proTier: null,
+    trialEndsAt: trialEnd.toISOString(),
   };
 }
 
@@ -1533,7 +1538,7 @@ function renderParentHome() {
           const days = sub.split(":")[1];
           return `<div class="trial-banner">${escapeHtml(days)} day${days === "1" ? "" : "s"} left in your free trial — <button class="trial-banner-link" type="button" data-show-upgrade="true">Subscribe now</button></div>`;
         }
-        if (family.isPro) return `<div class="trial-banner trial-banner--pro">Chores Pro ${family.proTier === "tier2" ? "✦ Home Assistant included" : ""}</div>`;
+        if (family.isPro) return `<div class="trial-banner trial-banner--pro">Chores Pro ${family.proTier === "tier2" ? "✦ Home Assistant included" : ""} — <button class="trial-banner-link" type="button" data-manage-subscription="true">Manage subscription</button></div>`;
         return "";
       })()}
 
@@ -2288,6 +2293,27 @@ function showUpgradeModal(status) {
   document.getElementById("upgrade-tier2-btn").addEventListener("click", () => startCheckout("price_1TNmqb2NkhDmsnu9TgCMw25u"));
 }
 
+async function manageSubscription() {
+  const family = getCurrentFamily();
+  const stripeCustomerId = family?.stripeCustomerId || "";
+  const ownerUid = family?.ownerUid || "";
+  if (!ownerUid) { showToast("Could not identify account."); return; }
+  const PORTAL_URL = "https://us-central1-chores-c605d.cloudfunctions.net/createPortalSession";
+  showToast("Opening subscription portal...");
+  try {
+    const res = await fetch(PORTAL_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ownerUid, returnUrl: window.location.href.split("?")[0] })
+    });
+    const data = await res.json();
+    if (data.url) window.location.href = data.url;
+    else throw new Error(data.error || "No portal URL returned");
+  } catch(err) {
+    showToast("Portal error: " + err.message);
+  }
+}
+
 function renderApp() {
   // Always clear upgrade modal first so login flow is never blocked
   const existingModal = document.getElementById("upgrade-modal-overlay");
@@ -2461,6 +2487,12 @@ document.body.addEventListener("click", async (event) => {
   const showUpgradeBtn = event.target.closest("[data-show-upgrade]");
   if (showUpgradeBtn) {
     showUpgradeModal("manual");
+    return;
+  }
+
+  const manageSubBtn = event.target.closest("[data-manage-subscription]");
+  if (manageSubBtn) {
+    manageSubscription();
     return;
   }
 

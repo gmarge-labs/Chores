@@ -886,6 +886,12 @@ async function handleCreateFamilyAccount() {
         const trialEnd = new Date();
         trialEnd.setDate(trialEnd.getDate() + 30);
         family.trialEndsAt = trialEnd.toISOString();
+        // Send email verification
+        try {
+          await signUpRes.user.sendEmailVerification({
+            url: "https://choreheroes.app"
+          });
+        } catch(e) { console.warn("Verification email failed:", e.message); }
         try {
           // Write family doc to Firestore
           await firebaseDb.collection("families").doc(family.id).set({
@@ -942,7 +948,7 @@ async function handleCreateFamilyAccount() {
   currentFamilyMode = false;
   currentAssignedKids = [];
   saveState({ skipCloud: true });
-  showToast("Account created. Log in as parent to continue.");
+  showToast("Account created! Check your email to verify your address, then log in.");
   renderAuthHome();
 }
 
@@ -3127,6 +3133,21 @@ document.body.addEventListener("submit", async (event) => {
         const authPwd = "chores::" + email + "::" + pin + "::v1";
         const signInRes = await firebaseAuth.signInWithEmailAndPassword(email, authPwd);
         if (signInRes.user) {
+          // Check email verification
+          if (!signInRes.user.emailVerified) {
+            resetLoginBtn();
+            showToast("Please verify your email first. Check your inbox for a verification link.");
+            // Offer resend
+            const resendToast = document.createElement("div");
+            resendToast.className = "pin-toast";
+            resendToast.innerHTML = `Didn\'t get the email? <button onclick="this.closest('.pin-toast').remove();window._resendVerification('${email.replace(/'/g,"\\'")}${''}" style="background:none;border:none;color:#fff;text-decoration:underline;cursor:pointer;font-size:inherit;">Resend it</button>`;
+            document.body.appendChild(resendToast);
+            setTimeout(() => resendToast?.remove(), 8000);
+            window._resendVerification = async (e) => {
+              try { await signInRes.user.sendEmailVerification({ url: "https://choreheroes.app" }); showToast("Verification email sent!"); } catch(err) { showToast("Could not resend — try again later."); }
+            };
+            return;
+          }
           const snap = await firebaseDb.collection("families").where("ownerUid", "==", signInRes.user.uid).limit(1).get();
           if (!snap.empty) {
             const cloudFamily = await fbPullFamily(snap.docs[0].id);
@@ -3188,6 +3209,12 @@ document.body.addEventListener("submit", async (event) => {
         const authPwd = "chores::" + email + "::" + pin + "::v1";
         const signInRes = await firebaseAuth.signInWithEmailAndPassword(email, authPwd);
         if (signInRes.user) {
+          if (!signInRes.user.emailVerified) {
+            resetRetLoginBtn();
+            showToast("Please verify your email first. Check your inbox for a verification link.");
+            try { await signInRes.user.sendEmailVerification({ url: "https://choreheroes.app" }); } catch(e) {}
+            return;
+          }
           const snap = await firebaseDb.collection("families").where("ownerUid", "==", signInRes.user.uid).limit(1).get();
           if (!snap.empty) {
             const cloudFamily = await fbPullFamily(snap.docs[0].id);

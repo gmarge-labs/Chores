@@ -1674,6 +1674,7 @@ function renderAuthHome() {
                 ? `
                   <div class="auth-next-card">
                     <p>${authAccountJustCreated ? "Your account is ready." : "Already created your account?"}</p>
+                    ${authAccountJustCreated ? `<p style="font-size:0.75rem;color:#888;margin-top:4px;">By creating an account you agree to our <a href="/terms.html" target="_blank" style="color:#534AB7;">Terms</a> and <a href="/privacy.html" target="_blank" style="color:#534AB7;">Privacy Policy</a>.</p>` : ""}
                     <button class="action-button primary" type="button" data-auth-stage="login">Next</button>
                   </div>
                 `
@@ -1738,6 +1739,11 @@ function renderAuthHome() {
           </div>
         </article>
       </section>
+      <p style="text-align:center;font-size:0.75rem;color:rgba(255,255,255,0.5);padding:16px 0 8px;">
+        <a href="/privacy.html" target="_blank" style="color:rgba(255,255,255,0.6);">Privacy Policy</a>
+        &nbsp;·&nbsp;
+        <a href="/terms.html" target="_blank" style="color:rgba(255,255,255,0.6);">Terms of Service</a>
+      </p>
     </div>
   `;
 
@@ -2491,6 +2497,7 @@ function showUpgradeModal(status) {
           </div>
         </div>
         <p class="upgrade-modal-footer">🔒 Cancel anytime. Secure payment via Stripe.</p>
+        <p class="upgrade-modal-footer" style="margin-top:8px;font-size:0.72rem;">By subscribing you agree to our <a href="/terms.html" target="_blank" style="color:#534AB7;">Terms of Service</a> and <a href="/privacy.html" target="_blank" style="color:#534AB7;">Privacy Policy</a>.</p>
       </div>
     </div>
   `;

@@ -2499,7 +2499,7 @@ function showUpgradeModal(status) {
   const appUrl = window.location.href.split("?")[0];
 
   async function startCheckout(priceId) {
-    const btn = document.getElementById(priceId === "price_1TNmlH2NkhDmsnu9Bi89HjTg" ? "upgrade-tier1-btn" : "upgrade-tier2-btn");
+    const btn = document.getElementById(priceId === "price_1TO5E9Rt74M3AjXKT7mRnvyE" ? "upgrade-tier1-btn" : "upgrade-tier2-btn");
     if (btn) { btn.textContent = "Loading..."; btn.disabled = true; }
     const ownerUid = getCurrentFamily()?.ownerUid || "";
     if (!ownerUid) {
@@ -2522,8 +2522,8 @@ function showUpgradeModal(status) {
     }
   }
 
-  document.getElementById("upgrade-tier1-btn").addEventListener("click", () => startCheckout("price_1TNmlH2NkhDmsnu9Bi89HjTg"));
-  document.getElementById("upgrade-tier2-btn").addEventListener("click", () => startCheckout("price_1TNmqb2NkhDmsnu9TgCMw25u"));
+  document.getElementById("upgrade-tier1-btn").addEventListener("click", () => startCheckout("price_1TO5E9Rt74M3AjXKT7mRnvyE"));
+  document.getElementById("upgrade-tier2-btn").addEventListener("click", () => startCheckout("price_1TO5JPRt74M3AjXK2gfE7BXv"));
 }
 
 async function manageSubscription() {

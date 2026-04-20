@@ -3452,25 +3452,61 @@ if ("serviceWorker" in navigator) {
   }
 })();
 
-renderApp();
-void bootstrapCloudSessionIfAvailable();
+// Show brief loading screen then boot — prevents stale localStorage flash
+async function bootApp() {
+  // If no session, render immediately (login screen, no Firestore needed)
+  if (!state.session || !firebaseDb) {
+    renderApp();
+    return;
+  }
 
-async function bootstrapCloudSessionIfAvailable() {
-  if (!firebaseDb || !state.session) return;
   const family = getCurrentFamily();
-  if (!family || !family.id) return;
+  if (!family || !family.id) {
+    renderApp();
+    return;
+  }
+
+  // Show a minimal loading indicator while we fetch fresh subscription state
+  const loader = document.createElement("div");
+  loader.id = "boot-loader";
+  loader.innerHTML = `
+    <div style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+      background:linear-gradient(135deg,#1a1240 0%,#2d1b69 45%,#1a3a5c 100%);z-index:99999;">
+      <div style="text-align:center;">
+        <h1 style="color:#fff;font-size:2rem;font-weight:700;letter-spacing:0.05em;margin:0 0 12px;">CHORES</h1>
+        <div style="width:40px;height:4px;background:rgba(255,255,255,0.3);border-radius:2px;margin:0 auto;overflow:hidden;">
+          <div style="width:40%;height:100%;background:#fff;border-radius:2px;animation:bootSlide 1s ease-in-out infinite alternate;"></div>
+        </div>
+      </div>
+    </div>
+    <style>@keyframes bootSlide{from{transform:translateX(0)}to{transform:translateX(150%)}}</style>
+  `;
+  document.body.appendChild(loader);
+
   try {
     const snap = await firebaseDb.collection("families").doc(family.id).get();
-    if (!snap.exists) return;
-    const d = snap.data();
-    family.isPro = d.isPro || false;
-    family.proTier = d.proTier || null;
-    family.trialEndsAt = d.trialEndsAt || null;
-    family.ownerUid = d.ownerUid || family.ownerUid || "";
-    family.haWebhookUrl = d.haWebhookUrl || null;
-    saveState({ skipCloud: true });
+    if (snap.exists) {
+      const d = snap.data();
+      family.isPro = d.isPro || false;
+      family.proTier = d.proTier || null;
+      family.trialEndsAt = d.trialEndsAt || null;
+      family.ownerUid = d.ownerUid || family.ownerUid || "";
+      family.haWebhookUrl = d.haWebhookUrl || null;
+      family.stripeCustomerId = d.stripeCustomerId || null;
+      saveState({ skipCloud: true });
+    }
+  } catch(e) {
+    console.warn("Boot Firestore refresh failed:", e.message);
+  } finally {
+    loader.remove();
     renderApp();
-  } catch(e) { console.warn("Bootstrap Firestore refresh failed:", e.message); }
+  }
+}
+
+bootApp();
+
+async function bootstrapCloudSessionIfAvailable() {
+  // No-op — replaced by bootApp() above
 }
 
 // ── FIREBASE SYNC LAYER ───────────────────────────────────────

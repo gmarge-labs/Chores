@@ -120,6 +120,7 @@ function createFamily({ familyName, parentName, parentEmail, parentPin, kids }) 
     isPro: false,
     proTier: null,
     trialEndsAt: trialEnd.toISOString(),
+    cloudAuthKey: null,
   };
 }
 
@@ -188,6 +189,7 @@ function normalizeFamily(family) {
     trialEndsAt: family.trialEndsAt || null,
     stripeCustomerId: family.stripeCustomerId || null,
     haWebhookUrl: family.haWebhookUrl || null,
+    cloudAuthKey: family.cloudAuthKey || null,
   };
 }
 
@@ -3133,7 +3135,7 @@ document.body.addEventListener("submit", async (event) => {
 
     if (cloudAuthEnabled && cloudModeEnabled) {
       try {
-        const authPwd = "chores::" + email + "::" + pin + "::v1";
+        const authPwd = buildCloudAuthPassword(email, pin);
         const signInRes = await firebaseAuth.signInWithEmailAndPassword(email, authPwd);
         if (signInRes.user) {
           // Check email verification
@@ -3156,6 +3158,7 @@ document.body.addEventListener("submit", async (event) => {
             const cloudFamily = await fbPullFamily(snap.docs[0].id);
             cloudFamily.parentEmail = email;
             cloudFamily.parentEmailLower = email;
+            cloudFamily.cloudAuthKey = authPwd;
             upsertFamilyInState(cloudFamily);
             authStage = "login"; authView = "parent"; authAccountJustCreated = false;
             state.session = { familyId: cloudFamily.id, role: "parent" };
@@ -3209,7 +3212,7 @@ document.body.addEventListener("submit", async (event) => {
 
     if (cloudAuthEnabled && cloudModeEnabled) {
       try {
-        const authPwd = "chores::" + email + "::" + pin + "::v1";
+        const authPwd = buildCloudAuthPassword(email, pin);
         const signInRes = await firebaseAuth.signInWithEmailAndPassword(email, authPwd);
         if (signInRes.user) {
           if (!signInRes.user.emailVerified) {
@@ -3223,6 +3226,7 @@ document.body.addEventListener("submit", async (event) => {
             const cloudFamily = await fbPullFamily(snap.docs[0].id);
             cloudFamily.parentEmail = email;
             cloudFamily.parentEmailLower = email;
+            cloudFamily.cloudAuthKey = authPwd;
             upsertFamilyInState(cloudFamily);
             authStage = "login"; authView = "parent"; authAccountJustCreated = false;
             state.session = { familyId: cloudFamily.id, role: "parent" };
@@ -3490,6 +3494,10 @@ if ("serviceWorker" in navigator) {
 })();
 
 let initialAuthStatePromise = null;
+function buildCloudAuthPassword(email, plainPin) {
+  return "chores::" + String(email || "").trim().toLowerCase() + "::" + String(plainPin || "").trim() + "::v1";
+}
+
 function waitForInitialAuthState(timeoutMs = 3000) {
   if (!firebaseAuth) return Promise.resolve(null);
   if (firebaseAuth.currentUser) return Promise.resolve(firebaseAuth.currentUser);
@@ -3516,6 +3524,21 @@ function waitForInitialAuthState(timeoutMs = 3000) {
   });
 
   return initialAuthStatePromise;
+}
+
+async function ensureCloudSessionForFamily(family) {
+  if (!firebaseAuth || !cloudAuthEnabled || !cloudModeEnabled) return null;
+  const currentUser = await waitForInitialAuthState();
+  if (currentUser) return currentUser;
+  if (!family || !family.parentEmail || !family.cloudAuthKey) return null;
+
+  try {
+    const signInRes = await firebaseAuth.signInWithEmailAndPassword(family.parentEmail, family.cloudAuthKey);
+    return signInRes.user || firebaseAuth.currentUser || null;
+  } catch (err) {
+    console.warn("Firebase session restore failed:", err.message || err);
+    return null;
+  }
 }
 
 // Show brief loading screen then boot — prevents stale localStorage flash
@@ -3550,7 +3573,7 @@ async function bootApp() {
   document.body.appendChild(loader);
 
   try {
-    const currentUser = await waitForInitialAuthState();
+    const currentUser = await ensureCloudSessionForFamily(family);
     if (!currentUser) {
       return;
     }
@@ -3643,13 +3666,27 @@ async function fbPullFamily(familyId) {
 function cloudSave(kidId) {
   if (!cloudAuthEnabled || !cloudModeEnabled || !firebaseDb) return;
   var family = getCurrentFamily(); if (!family) return;
-  if (kidId) { var kid = getKid(kidId); if (kid) { fbEnqueue(function() { return fbPushKid(family.id, kid); }); return; } }
-  fbEnqueue(function() { return fbPushFamily(family); });
+  if (kidId) {
+    var kid = getKid(kidId);
+    if (kid) {
+      fbEnqueue(async function() {
+        var readyUser = await ensureCloudSessionForFamily(family);
+        if (!readyUser) throw new Error("Missing Firebase auth session for kid sync");
+        return fbPushKid(family.id, kid);
+      });
+      return;
+    }
+  }
+  fbEnqueue(async function() {
+    var readyUser = await ensureCloudSessionForFamily(family);
+    if (!readyUser) throw new Error("Missing Firebase auth session for family sync");
+    return fbPushFamily(family);
+  });
 }
 
 async function cloudSyncOnLogin(email, plainPin, localFamily) {
   if (!firebaseAuth || !firebaseDb) return;
-  var authPwd = "chores::" + email.toLowerCase().trim() + "::" + plainPin + "::v1";
+  var authPwd = buildCloudAuthPassword(email, plainPin);
   var user = null;
   try {
     var signInRes = await firebaseAuth.signInWithEmailAndPassword(email, authPwd);
@@ -3663,6 +3700,7 @@ async function cloudSyncOnLogin(email, plainPin, localFamily) {
     } else { console.warn("Firebase sign in failed:", signInErr.message); return; }
   }
   if (!user) return;
+  localFamily.cloudAuthKey = authPwd;
   var existingSnap = await firebaseDb.collection("families").where("ownerUid", "==", user.uid).limit(1).get();
   if (!existingSnap.empty) {
     try {
@@ -3670,6 +3708,7 @@ async function cloudSyncOnLogin(email, plainPin, localFamily) {
       var cloudFamily = await fbPullFamily(cloudFamilyId);
       cloudFamily.parentEmail = localFamily.parentEmail;
       cloudFamily.parentEmailLower = localFamily.parentEmailLower;
+      cloudFamily.cloudAuthKey = authPwd;
       upsertFamilyInState(cloudFamily);
       state.session = { familyId: cloudFamily.id, role: "parent" };
       saveState({ skipCloud: true }); renderApp();

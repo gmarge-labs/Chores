@@ -2914,7 +2914,7 @@ document.body.addEventListener("click", async (event) => {
       toStatus,
       Number(taskMoveButton.dataset.taskIndex)
     );
-    saveState();
+    saveState({ kidId: currentKidId });
     renderKidPage(currentKidId);
     return;
   }

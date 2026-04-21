@@ -212,7 +212,10 @@ refreshAllTasksForToday();
 function saveState(options = {}) {
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 
-  if (!options.skipCloud && cloudAuthEnabled && cloudModeEnabled && isParentSession()) {
+  const canSyncKidDoc = Boolean(options.kidId && state.session?.familyId);
+  const canSyncFamilyDoc = Boolean(options.forceCloudFamily && state.session?.familyId);
+  if (!options.skipCloud && cloudAuthEnabled && cloudModeEnabled && (isParentSession() || canSyncKidDoc || canSyncFamilyDoc)) {
+    cloudSave(options.kidId);
   }
 }
 
@@ -2853,7 +2856,7 @@ document.body.addEventListener("click", async (event) => {
       toStatus,
       Number(taskMoveButton.dataset.taskIndex)
     );
-    saveState();
+    saveState({ kidId: currentKidId });
     renderKidPage(currentKidId);
     return;
   }
@@ -2872,7 +2875,7 @@ document.body.addEventListener("click", async (event) => {
       return;
     }
     showToast(`${result.kidName} successfully claimed ${result.rewardTitle}.`);
-    saveState();
+    saveState({ forceCloudFamily: true });
     renderKidPage(currentKidId);
     return;
   }
@@ -3486,6 +3489,35 @@ if ("serviceWorker" in navigator) {
   }
 })();
 
+let initialAuthStatePromise = null;
+function waitForInitialAuthState(timeoutMs = 3000) {
+  if (!firebaseAuth) return Promise.resolve(null);
+  if (firebaseAuth.currentUser) return Promise.resolve(firebaseAuth.currentUser);
+  if (initialAuthStatePromise) return initialAuthStatePromise;
+
+  initialAuthStatePromise = new Promise((resolve) => {
+    let settled = false;
+    let unsubscribe = null;
+
+    const finish = (user) => {
+      if (settled) return;
+      settled = true;
+      if (unsubscribe) unsubscribe();
+      clearTimeout(timer);
+      resolve(user || null);
+    };
+
+    unsubscribe = firebaseAuth.onAuthStateChanged(
+      (user) => finish(user),
+      () => finish(null)
+    );
+
+    const timer = window.setTimeout(() => finish(firebaseAuth.currentUser || null), timeoutMs);
+  });
+
+  return initialAuthStatePromise;
+}
+
 // Show brief loading screen then boot — prevents stale localStorage flash
 async function bootApp() {
   // If no session, render immediately (login screen, no Firestore needed)
@@ -3518,6 +3550,11 @@ async function bootApp() {
   document.body.appendChild(loader);
 
   try {
+    const currentUser = await waitForInitialAuthState();
+    if (!currentUser) {
+      return;
+    }
+
     const snap = await firebaseDb.collection("families").doc(family.id).get();
     if (snap.exists) {
       const d = snap.data();
@@ -3577,7 +3614,17 @@ async function fbPushKid(familyId, kid) {
 async function fbPushFamily(family) {
   if (!firebaseDb) return;
   var famRef = firebaseDb.collection("families").doc(family.id);
-  await famRef.set({ familyName: family.familyName, parentName: family.parentName || "Parent", parentPin: family.parentPin || "", ownerUid: family.ownerUid || "", updatedAt: firebase.firestore.FieldValue.serverTimestamp(), isPro: family.isPro || false, proTier: family.proTier || null, trialEndsAt: family.trialEndsAt || null }, { merge: true });
+  await famRef.set({
+    familyName: family.familyName,
+    parentName: family.parentName || "Parent",
+    parentPin: family.parentPin || "",
+    ownerUid: family.ownerUid || "",
+    favorClaims: Array.isArray(family.favorClaims) ? family.favorClaims : [],
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+    isPro: family.isPro || false,
+    proTier: family.proTier || null,
+    trialEndsAt: family.trialEndsAt || null,
+  }, { merge: true });
   var batch = firebaseDb.batch();
   (family.kids || []).forEach(function(kid) { batch.set(famRef.collection("kids").doc(kid.id), kidToFirestoreDoc(kid), { merge: true }); });
   await batch.commit();

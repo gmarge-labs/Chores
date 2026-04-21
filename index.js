@@ -25,6 +25,55 @@ async function announceToHA(webhookUrl, message) {
   }
 }
 
+async function getFamilyAnnouncementConfig(familyId) {
+  const familySnap = await db.collection("families").doc(familyId).get();
+  if (!familySnap.exists) return null;
+
+  const family = familySnap.data() || {};
+  if (!family.haWebhookUrl) return null;
+  if (family.proTier !== "tier2") return null;
+
+  return {
+    webhookUrl: family.haWebhookUrl,
+  };
+}
+
+function buildTaskMap(tasks) {
+  return new Map(
+    (Array.isArray(tasks) ? tasks : [])
+      .filter((task) => task && task.id)
+      .map((task) => [task.id, task])
+  );
+}
+
+function findNewAdjustment(beforeEntries, afterEntries, type) {
+  const beforeKeys = new Set(
+    (Array.isArray(beforeEntries) ? beforeEntries : [])
+      .filter((entry) => (entry?.type || "").toLowerCase() === type)
+      .map((entry) => JSON.stringify([
+        entry.type || "",
+        entry.createdAt || "",
+        entry.value || "",
+        entry.reason || "",
+        entry.title || "",
+        entry.dateKey || "",
+      ]))
+  );
+
+  return (Array.isArray(afterEntries) ? afterEntries : []).find((entry) => {
+    if ((entry?.type || "").toLowerCase() !== type) return false;
+    const key = JSON.stringify([
+      entry.type || "",
+      entry.createdAt || "",
+      entry.value || "",
+      entry.reason || "",
+      entry.title || "",
+      entry.dateKey || "",
+    ]);
+    return !beforeKeys.has(key);
+  }) || null;
+}
+
 // ── Stripe webhook handler ────────────────────────────────────
 exports.stripeWebhook = onRequest(
   { secrets: ["STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET"] },
@@ -127,55 +176,48 @@ exports.createCheckoutSession = onRequest(
 );
 
 // ── Task done / bonus / penalty announcements ─────────────────
-exports.onTaskDone = onDocumentUpdated("families/{familyId}", async (event) => {
-  const before = event.data.before.data();
-  const after = event.data.after.data();
-  const webhookUrl = after.haWebhookUrl;
-  if (!webhookUrl) return null;
-  if (after.proTier !== "tier2") return null;
+exports.onTaskDone = onDocumentUpdated("families/{familyId}/kids/{kidId}", async (event) => {
+  const beforeKid = event.data.before.data() || {};
+  const afterKid = event.data.after.data() || {};
+  const familyId = event.params.familyId;
 
-  const beforeKids = before.kids || [];
-  const afterKids = after.kids || [];
+  const familyConfig = await getFamilyAnnouncementConfig(familyId);
+  if (!familyConfig) return null;
 
-  for (const afterKid of afterKids) {
-    const beforeKid = beforeKids.find((k) => k.id === afterKid.id);
-    if (!beforeKid) continue;
+  const beforeDue = buildTaskMap(beforeKid.due);
+  const beforeAwaiting = buildTaskMap(beforeKid.awaiting);
+  const beforeCompleted = buildTaskMap(beforeKid.completed);
+  const afterAwaiting = buildTaskMap(afterKid.awaiting);
+  const afterCompleted = buildTaskMap(afterKid.completed);
+  const kidName = afterKid.name || beforeKid.name || "kiddo";
 
-    const beforeInstances = beforeKid.taskInstances || [];
-    const afterInstances = afterKid.taskInstances || [];
+  for (const [taskId, afterTask] of afterAwaiting.entries()) {
+    if (beforeAwaiting.has(taskId)) continue;
+    if (!beforeDue.has(taskId)) continue;
 
-    for (const afterTask of afterInstances) {
-      const beforeTask = beforeInstances.find((t) => t.id === afterTask.id);
-      if (!beforeTask) continue;
+    const message = "Heads up! " + kidName + " just finished " + afterTask.title + " and is sitting there patiently waiting for her task to be approved!";
+    await announceToHA(familyConfig.webhookUrl, message);
+  }
 
-      if (beforeTask.status !== "done" && afterTask.status === "done") {
-        const message = "Woohoo " + afterKid.name + "! You just " + afterTask.title + " and bagged " + afterTask.points + " points! Keep that energy going!";
-        await announceToHA(webhookUrl, message);
-      }
+  for (const [taskId, afterTask] of afterCompleted.entries()) {
+    if (beforeCompleted.has(taskId)) continue;
 
-      if (beforeTask.status === "due" && afterTask.status === "pending") {
-        const message = "Heads up! " + afterKid.name + " just finished " + afterTask.title + " and is sitting there patiently waiting for her task to be approved!";
-        await announceToHA(webhookUrl, message);
-      }
+    if (beforeAwaiting.has(taskId)) {
+      const message = "Woohoo " + kidName + "! You just " + afterTask.title + " and bagged " + afterTask.points + " points! Keep that energy going!";
+      await announceToHA(familyConfig.webhookUrl, message);
     }
+  }
 
-    const beforeBonus = (beforeKid.adjustments || []).find((a) => a.type === "bonus");
-    const afterBonus = (afterKid.adjustments || []).find((a) => a.type === "bonus");
-    if (afterBonus && beforeBonus &&
-        afterBonus.createdAt !== beforeBonus.createdAt &&
-        afterBonus.value && afterBonus.value !== "+0 points") {
-      const message = afterKid.name + ", you legend! Someone thinks you deserve a bonus of " + afterBonus.value + " and honestly, I also think you do. Keep shining!";
-      await announceToHA(webhookUrl, message);
-    }
+  const afterBonus = findNewAdjustment(beforeKid.bonusPenalty, afterKid.bonusPenalty, "bonus");
+  if (afterBonus && afterBonus.value && afterBonus.value !== "+0 points") {
+    const message = kidName + ", you legend! Someone thinks you deserve a bonus of " + afterBonus.value + " and honestly, I also think you do. Keep shining!";
+    await announceToHA(familyConfig.webhookUrl, message);
+  }
 
-    const beforePenalty = (beforeKid.adjustments || []).find((a) => a.type === "penalty");
-    const afterPenalty = (afterKid.adjustments || []).find((a) => a.type === "penalty");
-    if (afterPenalty && beforePenalty &&
-        afterPenalty.createdAt !== beforePenalty.createdAt &&
-        afterPenalty.value && afterPenalty.value !== "-0 points") {
-      const message = "Uh oh " + afterKid.name + "... a penalty of " + afterPenalty.value + " just landed on your account. You nutty nutty nutty little munchichi! Do better next time OKAY!";
-      await announceToHA(webhookUrl, message);
-    }
+  const afterPenalty = findNewAdjustment(beforeKid.bonusPenalty, afterKid.bonusPenalty, "penalty");
+  if (afterPenalty && afterPenalty.value && afterPenalty.value !== "-0 points") {
+    const message = "Uh oh " + kidName + "... a penalty of " + afterPenalty.value + " just landed on your account. You nutty nutty nutty little munchichi! Do better next time OKAY!";
+    await announceToHA(familyConfig.webhookUrl, message);
   }
 
   return null;
@@ -188,20 +230,20 @@ exports.taskReminders = onSchedule("every 1 minutes", async () => {
   const minutes = now.getMinutes().toString().padStart(2, "0");
   const currentTime = hours + ":" + minutes;
 
-  const snapshot = await db.collection("families").get();
+  const snapshot = await db.collection("families").where("proTier", "==", "tier2").get();
 
   for (const doc of snapshot.docs) {
     const family = doc.data();
     const webhookUrl = family.haWebhookUrl;
     if (!webhookUrl) continue;
-    if (family.proTier !== "tier2") continue;
 
-    const kids = family.kids || [];
-    for (const kid of kids) {
-      const instances = kid.taskInstances || [];
-      for (const task of instances) {
-        if (task.status === "due" && task.time === currentTime) {
-          const message = "Hey " + kid.name + "! Just a nudge — you really need to " + task.title + ". Knock it out and grab those " + task.points + " points!";
+    const kidsSnap = await doc.ref.collection("kids").get();
+    for (const kidDoc of kidsSnap.docs) {
+      const kid = kidDoc.data() || {};
+      const dueTasks = Array.isArray(kid.due) ? kid.due : [];
+      for (const task of dueTasks) {
+        if (task && task.time === currentTime) {
+          const message = "Hey " + (kid.name || "kiddo") + "! Just a nudge — you really need to " + task.title + ". Knock it out and grab those " + task.points + " points!";
           await announceToHA(webhookUrl, message);
         }
       }

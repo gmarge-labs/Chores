@@ -190,6 +190,7 @@ function normalizeFamily(family) {
     stripeCustomerId: family.stripeCustomerId || null,
     haWebhookUrl: family.haWebhookUrl || null,
     cloudAuthKey: family.cloudAuthKey || null,
+    subscriptionEndsAt: family.subscriptionEndsAt || null,
   };
 }
 
@@ -213,7 +214,6 @@ refreshAllTasksForToday();
 
 function saveState(options = {}) {
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-
   const canSyncKidDoc = Boolean(options.kidId && state.session?.familyId);
   const canSyncFamilyDoc = Boolean(options.forceCloudFamily && state.session?.familyId);
   if (!options.skipCloud && cloudAuthEnabled && cloudModeEnabled && (isParentSession() || canSyncKidDoc || canSyncFamilyDoc)) {
@@ -884,7 +884,7 @@ async function handleCreateFamilyAccount() {
     if (submitBtn) { submitBtn.textContent = "Creating account..."; submitBtn.disabled = true; }
 
     try {
-      const authPwd = "chores::" + parentEmail.toLowerCase() + "::" + parentPin + "::v1";
+      const authPwd = buildCloudAuthPassword(parentEmail, parentPin);
       const signUpRes = await firebaseAuth.createUserWithEmailAndPassword(parentEmail, authPwd);
       if (signUpRes.user) {
         family.ownerUid = signUpRes.user.uid;
@@ -945,7 +945,7 @@ async function handleCreateFamilyAccount() {
   authAccountReady = true;
   authAccountJustCreated = true;
   authStage = "login";
-  authView = "parent";
+  authView = "verify-email";
   resetCreateAccountDraft();
   state.session = null;
   currentKidId = null;
@@ -953,7 +953,6 @@ async function handleCreateFamilyAccount() {
   currentFamilyMode = false;
   currentAssignedKids = [];
   saveState({ skipCloud: true });
-  showToast("Account created! Check your email to verify your address, then log in.");
   renderAuthHome();
 }
 
@@ -1586,7 +1585,7 @@ function renderAuthHome() {
     authView = "";
   }
 
-  if (authStage === "login" && !["parent", "kid", "returning"].includes(authView)) {
+  if (authStage === "login" && !["parent", "kid", "returning", "verify-email"].includes(authView)) {
     authView = "";
   }
 
@@ -1644,6 +1643,8 @@ function renderAuthHome() {
                       <button class="action-button secondary" type="button" data-auth-stage="intro" style="margin-top:8px;">Back to home</button>
                     </div>
                   `
+                  : authView === "verify-email"
+                    ? `<button class="action-button secondary auth-back-button" type="button" data-auth-view="parent">← Back to login</button>`
                   : `
                     <button class="action-button secondary auth-back-button" type="button" data-auth-view="login-picker">← Back</button>
                     <button class="view-button active" type="button">${authView === "parent" ? "Parent login" : "Kid login"}</button>
@@ -1710,10 +1711,10 @@ function renderAuthHome() {
                 `
                 : `
                   <form class="reward-form auth-form" id="returning-login-form">
-                    <input type="email" name="username" placeholder="Username" required />
-                    <input type="password" name="password" placeholder="Password" required />
+                    <input type="email" name="username" placeholder="Username" autocomplete="email" required />
+                    <input type="password" name="password" placeholder="Password" autocomplete="current-password" required />
                     <div class="button-row create-progress-actions">
-                      <button class="action-button primary" type="submit">Log in</button>
+                      <button class="action-button primary" type="submit" form="returning-login-form">Log in</button>
                       <button class="action-button secondary" type="button" data-auth-view="back-intro">Back to home</button>
                       <button class="action-button secondary" type="button" data-reset-passcode-toggle="true">Reset passcode</button>
                     </div>
@@ -1747,6 +1748,32 @@ function renderAuthHome() {
                 <button class="action-button primary" type="submit">Log in as kid</button>
               </div>
             </form>
+          </div>
+
+          <div class="auth-panel ${authView === "verify-email" ? "active" : ""}">
+            <div style="text-align:center;padding:16px 0;">
+              <div style="font-size:3rem;margin-bottom:12px;">📬</div>
+              <p class="eyebrow">Almost there!</p>
+              <h2 class="auth-title" style="margin-bottom:12px;">Check your inbox</h2>
+              <p class="auth-copy" style="margin-bottom:8px;">
+                We sent a verification email to:<br/>
+                <strong style="color:#fff;">${getCurrentFamily()?.parentEmail || ""}</strong>
+              </p>
+              <p class="auth-copy" style="font-size:0.85rem;opacity:0.8;margin-bottom:24px;">
+                Click the link in the email to verify your address, then come back and log in.
+              </p>
+              <div class="button-row" style="flex-direction:column;gap:10px;">
+                <button class="action-button primary" type="button" data-auth-view="parent">
+                  I've verified — Log in
+                </button>
+                <button class="action-button secondary" type="button" id="resend-verification-btn">
+                  Resend verification email
+                </button>
+              </div>
+              <p style="font-size:0.72rem;opacity:0.6;margin-top:16px;">
+                Check your spam folder if you don't see it within a minute.
+              </p>
+            </div>
           </div>
         </article>
       </section>
@@ -2452,7 +2479,22 @@ function renderKidPage(kidId) {
 
 function getSubscriptionStatus(family) {
   if (!family) return "expired";
-  if (family.isPro) return "pro";
+
+  if (family.isPro) {
+    // Safety net: if subscriptionEndsAt is set and more than 7 days past, treat as expired
+    // (7 day grace period covers Stripe retry window + webhook delivery delays)
+    if (family.subscriptionEndsAt) {
+      const endDate = new Date(family.subscriptionEndsAt);
+      if (!isNaN(endDate.getTime())) {
+        const now = new Date();
+        const daysPast = Math.floor((now - endDate) / (1000 * 60 * 60 * 24));
+        if (daysPast > 7) return "expired";
+      }
+    }
+    return "pro";
+  }
+
+  // Free trial logic
   const trial = family.trialEndsAt;
   if (!trial) return "expired";
   const trialDate = new Date(trial);
@@ -2549,6 +2591,7 @@ async function manageSubscription() {
   const stripeCustomerId = family?.stripeCustomerId || "";
   const ownerUid = family?.ownerUid || "";
   if (!ownerUid) { showToast("Could not identify account."); return; }
+  if (!stripeCustomerId) { showToast("No billing account found. Please contact support at noreply@choreheroes.app."); return; }
   const PORTAL_URL = "https://us-central1-chores-c605d.cloudfunctions.net/createPortalSession";
   showToast("Opening subscription portal...");
   try {
@@ -2616,6 +2659,36 @@ function triggerPointsBurst(pointsCard) {
 }
 
 document.body.addEventListener("click", async (event) => {
+  // Resend verification email button
+  const resendBtn = event.target.closest("#resend-verification-btn");
+  if (resendBtn) {
+    resendBtn.textContent = "Sending...";
+    resendBtn.disabled = true;
+    try {
+      const user = firebaseAuth.currentUser;
+      if (user) {
+        await user.sendEmailVerification({ url: "https://choreheroes.app" });
+        showToast("Verification email sent! Check your inbox.");
+      } else {
+        // Re-sign in to get the user object
+        const family = getCurrentFamily();
+        if (family?.parentEmail && family?.parentPin) {
+          const authPwd = buildCloudAuthPassword(family.parentEmailLower, family.parentPin);
+          const res = await firebaseAuth.signInWithEmailAndPassword(family.parentEmailLower, authPwd);
+          await res.user.sendEmailVerification({ url: "https://choreheroes.app" });
+          await firebaseAuth.signOut();
+          showToast("Verification email sent! Check your inbox.");
+        }
+      }
+    } catch(e) {
+      showToast("Could not resend — please try again in a minute.");
+      console.warn("Resend failed:", e.message);
+    }
+    resendBtn.textContent = "Resend verification email";
+    resendBtn.disabled = false;
+    return;
+  }
+
   const authButton = event.target.closest("[data-auth-view]");
   if (authButton && !state.session) {
     const nextView = authButton.dataset.authView || "create";
@@ -3138,20 +3211,25 @@ document.body.addEventListener("submit", async (event) => {
         const authPwd = buildCloudAuthPassword(email, pin);
         const signInRes = await firebaseAuth.signInWithEmailAndPassword(email, authPwd);
         if (signInRes.user) {
-          // Check email verification
+          // Check email verification — only enforce for brand-new accounts (no existing family)
           if (!signInRes.user.emailVerified) {
-            resetLoginBtn();
-            showToast("Please verify your email first. Check your inbox for a verification link.");
-            // Offer resend
-            const resendToast = document.createElement("div");
-            resendToast.className = "pin-toast";
-            resendToast.innerHTML = `Didn\'t get the email? <button onclick="this.closest('.pin-toast').remove();window._resendVerification('${email.replace(/'/g,"\\'")}${''}" style="background:none;border:none;color:#fff;text-decoration:underline;cursor:pointer;font-size:inherit;">Resend it</button>`;
-            document.body.appendChild(resendToast);
-            setTimeout(() => resendToast?.remove(), 8000);
-            window._resendVerification = async (e) => {
-              try { await signInRes.user.sendEmailVerification({ url: "https://choreheroes.app" }); showToast("Verification email sent!"); } catch(err) { showToast("Could not resend — try again later."); }
-            };
-            return;
+            const existingSnap = await firebaseDb.collection("families").where("ownerUid", "==", signInRes.user.uid).limit(1).get();
+            if (existingSnap.empty) {
+              // New account - enforce verification
+              resetLoginBtn();
+              showToast("Please verify your email first. Check your inbox for a verification link.");
+              const resendToast = document.createElement("div");
+              resendToast.className = "pin-toast";
+              resendToast.innerHTML = `Didn\'t get the email? <button onclick="this.closest('.pin-toast').remove();window._resendVerification('${email.replace(/'/g,"\\'")}${''}" style="background:none;border:none;color:#fff;text-decoration:underline;cursor:pointer;font-size:inherit;">Resend it</button>`;
+              document.body.appendChild(resendToast);
+              setTimeout(() => resendToast?.remove(), 8000);
+              window._resendVerification = async (e) => {
+                try { await signInRes.user.sendEmailVerification({ url: "https://choreheroes.app" }); showToast("Verification email sent!"); } catch(err) { showToast("Could not resend — try again later."); }
+              };
+              return;
+            }
+            // Existing account - allow login but nudge them to verify
+            showToast("Tip: verify your email address for better account security.");
           }
           const snap = await firebaseDb.collection("families").where("ownerUid", "==", signInRes.user.uid).limit(1).get();
           if (!snap.empty) {
@@ -3215,11 +3293,16 @@ document.body.addEventListener("submit", async (event) => {
         const authPwd = buildCloudAuthPassword(email, pin);
         const signInRes = await firebaseAuth.signInWithEmailAndPassword(email, authPwd);
         if (signInRes.user) {
+          // Check email verification — only enforce for brand-new accounts (no existing family)
           if (!signInRes.user.emailVerified) {
-            resetRetLoginBtn();
-            showToast("Please verify your email first. Check your inbox for a verification link.");
-            try { await signInRes.user.sendEmailVerification({ url: "https://choreheroes.app" }); } catch(e) {}
-            return;
+            const existingSnap = await firebaseDb.collection("families").where("ownerUid", "==", signInRes.user.uid).limit(1).get();
+            if (existingSnap.empty) {
+              resetRetLoginBtn();
+              showToast("Please verify your email first. Check your inbox for a verification link.");
+              try { await signInRes.user.sendEmailVerification({ url: "https://choreheroes.app" }); } catch(e) {}
+              return;
+            }
+            showToast("Tip: verify your email address for better account security.");
           }
           const snap = await firebaseDb.collection("families").where("ownerUid", "==", signInRes.user.uid).limit(1).get();
           if (!snap.empty) {
@@ -3494,6 +3577,7 @@ if ("serviceWorker" in navigator) {
 })();
 
 let initialAuthStatePromise = null;
+
 function buildCloudAuthPassword(email, plainPin) {
   return "chores::" + String(email || "").trim().toLowerCase() + "::" + String(plainPin || "").trim() + "::v1";
 }
@@ -3506,7 +3590,6 @@ function waitForInitialAuthState(timeoutMs = 3000) {
   initialAuthStatePromise = new Promise((resolve) => {
     let settled = false;
     let unsubscribe = null;
-
     const finish = (user) => {
       if (settled) return;
       settled = true;
@@ -3514,31 +3597,14 @@ function waitForInitialAuthState(timeoutMs = 3000) {
       clearTimeout(timer);
       resolve(user || null);
     };
-
     unsubscribe = firebaseAuth.onAuthStateChanged(
       (user) => finish(user),
       () => finish(null)
     );
-
     const timer = window.setTimeout(() => finish(firebaseAuth.currentUser || null), timeoutMs);
   });
 
   return initialAuthStatePromise;
-}
-
-async function ensureCloudSessionForFamily(family) {
-  if (!firebaseAuth || !cloudAuthEnabled || !cloudModeEnabled) return null;
-  const currentUser = await waitForInitialAuthState();
-  if (currentUser) return currentUser;
-  if (!family || !family.parentEmail || !family.cloudAuthKey) return null;
-
-  try {
-    const signInRes = await firebaseAuth.signInWithEmailAndPassword(family.parentEmail, family.cloudAuthKey);
-    return signInRes.user || firebaseAuth.currentUser || null;
-  } catch (err) {
-    console.warn("Firebase session restore failed:", err.message || err);
-    return null;
-  }
 }
 
 // Show brief loading screen then boot — prevents stale localStorage flash
@@ -3551,6 +3617,24 @@ async function bootApp() {
 
   const family = getCurrentFamily();
   if (!family || !family.id) {
+    renderApp();
+    return;
+  }
+
+  // For kid sessions, skip Firebase auth check — kids don't sign in via Firebase
+  const isKidBoot = state.session?.role === "kid";
+
+  // Kid sessions: render immediately, no Firestore refresh needed
+  if (isKidBoot) {
+    renderApp();
+    return;
+  }
+
+  // For parent sessions, wait for Firebase auth state before fetching subscription data
+  const authUser = await waitForInitialAuthState(2000);
+
+  // No auth user means we can't safely read Firestore — just render with cached data
+  if (!authUser) {
     renderApp();
     return;
   }
@@ -3573,11 +3657,6 @@ async function bootApp() {
   document.body.appendChild(loader);
 
   try {
-    const currentUser = await ensureCloudSessionForFamily(family);
-    if (!currentUser) {
-      return;
-    }
-
     const snap = await firebaseDb.collection("families").doc(family.id).get();
     if (snap.exists) {
       const d = snap.data();
@@ -3587,6 +3666,7 @@ async function bootApp() {
       family.ownerUid = d.ownerUid || family.ownerUid || "";
       family.haWebhookUrl = d.haWebhookUrl || null;
       family.stripeCustomerId = d.stripeCustomerId || null;
+      family.subscriptionEndsAt = d.subscriptionEndsAt || null;
       saveState({ skipCloud: true });
     }
   } catch(e) {
@@ -3660,28 +3740,14 @@ async function fbPullFamily(familyId) {
   var famData = famSnap.data();
   var kidsSnap = await firebaseDb.collection("families").doc(familyId).collection("kids").get();
   var kids = kidsSnap.docs.map(function(d) { return firestoreDocToKid(d.data()); });
-  return normalizeFamily({ id: familyId, familyName: famData.familyName || "", parentName: famData.parentName || "Parent", parentPin: famData.parentPin || "", parentEmail: famData.parentEmail || "", parentEmailLower: famData.parentEmailLower || "", ownerUid: famData.ownerUid || "", kids: kids, favorClaims: famData.favorClaims || [], isPro: famData.isPro || false, proTier: famData.proTier || null, trialEndsAt: famData.trialEndsAt || null, stripeCustomerId: famData.stripeCustomerId || null, haWebhookUrl: famData.haWebhookUrl || null });
+  return normalizeFamily({ id: familyId, familyName: famData.familyName || "", parentName: famData.parentName || "Parent", parentPin: famData.parentPin || "", parentEmail: famData.parentEmail || "", parentEmailLower: famData.parentEmailLower || "", ownerUid: famData.ownerUid || "", kids: kids, favorClaims: famData.favorClaims || [], isPro: famData.isPro || false, proTier: famData.proTier || null, trialEndsAt: famData.trialEndsAt || null, stripeCustomerId: famData.stripeCustomerId || null, haWebhookUrl: famData.haWebhookUrl || null, subscriptionEndsAt: famData.subscriptionEndsAt || null });
 }
 
 function cloudSave(kidId) {
   if (!cloudAuthEnabled || !cloudModeEnabled || !firebaseDb) return;
   var family = getCurrentFamily(); if (!family) return;
-  if (kidId) {
-    var kid = getKid(kidId);
-    if (kid) {
-      fbEnqueue(async function() {
-        var readyUser = await ensureCloudSessionForFamily(family);
-        if (!readyUser) throw new Error("Missing Firebase auth session for kid sync");
-        return fbPushKid(family.id, kid);
-      });
-      return;
-    }
-  }
-  fbEnqueue(async function() {
-    var readyUser = await ensureCloudSessionForFamily(family);
-    if (!readyUser) throw new Error("Missing Firebase auth session for family sync");
-    return fbPushFamily(family);
-  });
+  if (kidId) { var kid = getKid(kidId); if (kid) { fbEnqueue(function() { return fbPushKid(family.id, kid); }); return; } }
+  fbEnqueue(function() { return fbPushFamily(family); });
 }
 
 async function cloudSyncOnLogin(email, plainPin, localFamily) {
@@ -3700,7 +3766,6 @@ async function cloudSyncOnLogin(email, plainPin, localFamily) {
     } else { console.warn("Firebase sign in failed:", signInErr.message); return; }
   }
   if (!user) return;
-  localFamily.cloudAuthKey = authPwd;
   var existingSnap = await firebaseDb.collection("families").where("ownerUid", "==", user.uid).limit(1).get();
   if (!existingSnap.empty) {
     try {
@@ -3708,7 +3773,6 @@ async function cloudSyncOnLogin(email, plainPin, localFamily) {
       var cloudFamily = await fbPullFamily(cloudFamilyId);
       cloudFamily.parentEmail = localFamily.parentEmail;
       cloudFamily.parentEmailLower = localFamily.parentEmailLower;
-      cloudFamily.cloudAuthKey = authPwd;
       upsertFamilyInState(cloudFamily);
       state.session = { familyId: cloudFamily.id, role: "parent" };
       saveState({ skipCloud: true }); renderApp();

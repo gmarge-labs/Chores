@@ -42,7 +42,6 @@ exports.cancelSubscription = functions.onRequest(
       }
     }
 
-    // Mark as cancelled in Firestore
     await snap.docs[0].ref.update({ isPro: false, proTier: null, stripeSubscriptionId: null });
 
     res.json({ ok: true });

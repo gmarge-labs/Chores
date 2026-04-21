@@ -41,8 +41,8 @@ async function getFamilyAnnouncementConfig(familyId) {
 function buildTaskMap(tasks) {
   return new Map(
     (Array.isArray(tasks) ? tasks : [])
-      .filter((task) => task && task.id)
-      .map((task) => [task.id, task])
+      .filter((task) => task && (task.id || task.templateId))
+      .map((task) => [task.id || task.templateId, task])
   );
 }
 
@@ -164,8 +164,8 @@ exports.createCheckoutSession = onRequest(
         payment_method_types: ["card"],
         line_items: [{ price: priceId, quantity: 1 }],
         metadata: { ownerUid, priceId },
-        success_url: successUrl || "https://gmarge-labs.github.io/Chores?subscribed=true",
-        cancel_url: cancelUrl || "https://gmarge-labs.github.io/Chores?cancelled=true",
+        success_url: successUrl || "https://choreheroes.app?subscribed=true",
+        cancel_url: cancelUrl || "https://choreheroes.app?cancelled=true",
       });
       res.json({ url: session.url });
     } catch (err) {
@@ -191,6 +191,7 @@ exports.onTaskDone = onDocumentUpdated("families/{familyId}/kids/{kidId}", async
   const afterCompleted = buildTaskMap(afterKid.completed);
   const kidName = afterKid.name || beforeKid.name || "kiddo";
 
+  // Task moved from due → awaiting (kid marked done, awaiting parent approval)
   for (const [taskId, afterTask] of afterAwaiting.entries()) {
     if (beforeAwaiting.has(taskId)) continue;
     if (!beforeDue.has(taskId)) continue;
@@ -199,21 +200,24 @@ exports.onTaskDone = onDocumentUpdated("families/{familyId}/kids/{kidId}", async
     await announceToHA(familyConfig.webhookUrl, message);
   }
 
+  // Task moved from awaiting → completed (parent approved)
   for (const [taskId, afterTask] of afterCompleted.entries()) {
     if (beforeCompleted.has(taskId)) continue;
 
     if (beforeAwaiting.has(taskId)) {
-      const message = "Woohoo " + kidName + "! You just " + afterTask.title + " and bagged " + afterTask.points + " points! Keep that energy going!";
+      const message = "Woohoo " + kidName + "! You just completed " + afterTask.title + " and bagged " + afterTask.points + " points! Keep that energy going!";
       await announceToHA(familyConfig.webhookUrl, message);
     }
   }
 
+  // Bonus awarded
   const afterBonus = findNewAdjustment(beforeKid.bonusPenalty, afterKid.bonusPenalty, "bonus");
   if (afterBonus && afterBonus.value && afterBonus.value !== "+0 points") {
     const message = kidName + ", you legend! Someone thinks you deserve a bonus of " + afterBonus.value + " and honestly, I also think you do. Keep shining!";
     await announceToHA(familyConfig.webhookUrl, message);
   }
 
+  // Penalty given
   const afterPenalty = findNewAdjustment(beforeKid.bonusPenalty, afterKid.bonusPenalty, "penalty");
   if (afterPenalty && afterPenalty.value && afterPenalty.value !== "-0 points") {
     const message = "Uh oh " + kidName + "... a penalty of " + afterPenalty.value + " just landed on your account. You nutty nutty nutty little munchichi! Do better next time OKAY!";

@@ -1710,10 +1710,10 @@ function renderAuthHome() {
                 `
                 : `
                   <form class="reward-form auth-form" id="returning-login-form">
-                    <input type="email" name="username" placeholder="Username" required />
-                    <input type="password" name="password" placeholder="Password" required />
+                    <input type="email" name="username" placeholder="Username" autocomplete="email" required />
+                    <input type="password" name="password" placeholder="Password" autocomplete="current-password" required />
                     <div class="button-row create-progress-actions">
-                      <button class="action-button primary" type="submit">Log in</button>
+                      <button class="action-button primary" type="submit" form="returning-login-form">Log in</button>
                       <button class="action-button secondary" type="button" data-auth-view="back-intro">Back to home</button>
                       <button class="action-button secondary" type="button" data-reset-passcode-toggle="true">Reset passcode</button>
                     </div>

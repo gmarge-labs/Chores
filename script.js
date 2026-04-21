@@ -3597,9 +3597,19 @@ async function bootApp() {
   // For kid sessions, skip Firebase auth check — kids don't sign in via Firebase
   const isKidBoot = state.session?.role === "kid";
 
+  // Kid sessions: render immediately, no Firestore refresh needed
+  if (isKidBoot) {
+    renderApp();
+    return;
+  }
+
   // For parent sessions, wait for Firebase auth state before fetching subscription data
-  if (!isKidBoot && firebaseAuth) {
-    await waitForInitialAuthState(2000);
+  const authUser = await waitForInitialAuthState(2000);
+
+  // No auth user means we can't safely read Firestore — just render with cached data
+  if (!authUser) {
+    renderApp();
+    return;
   }
 
   // Show a minimal loading indicator while we fetch fresh subscription state

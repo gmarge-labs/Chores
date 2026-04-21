@@ -9,8 +9,8 @@ const db = admin.firestore();
 
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
 const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;
-const TIER1_PRICE_ID = "price_1TNmlH2NkhDmsnu9Bi89HjTg";
-const TIER2_PRICE_ID = "price_1TNmqb2NkhDmsnu9TgCMw25u";
+const TIER1_PRICE_ID = "price_1TO5E9Rt74M3AjXKT7mRnvyE";  // Live $4.99/mo
+const TIER2_PRICE_ID = "price_1TO5JPRt74M3AjXK2gfE7BXv";  // Live $9.99/mo w/ HA
 
 async function announceToHA(webhookUrl, message) {
   try {
@@ -105,6 +105,17 @@ exports.stripeWebhook = onRequest(
 
       const tier = priceId === TIER2_PRICE_ID ? "tier2" : "tier1";
 
+      // Fetch the subscription to get the period end date
+      let subscriptionEndsAt = null;
+      if (session.subscription) {
+        try {
+          const subscription = await stripe.subscriptions.retrieve(session.subscription);
+          subscriptionEndsAt = new Date(subscription.current_period_end * 1000).toISOString();
+        } catch(e) {
+          console.warn("Could not fetch subscription period:", e.message);
+        }
+      }
+
       const snap = await db.collection("families")
         .where("ownerUid", "==", ownerUid)
         .limit(1)
@@ -117,12 +128,37 @@ exports.stripeWebhook = onRequest(
           stripeCustomerId: session.customer,
           stripeSubscriptionId: session.subscription,
           subscribedAt: new Date().toISOString(),
+          subscriptionEndsAt: subscriptionEndsAt,
         });
         console.log("Family upgraded to " + tier + ": " + ownerUid);
       }
     }
 
-    if (event.type === "customer.subscription.deleted") {
+    // When subscription renews, update the period end date
+    if (event.type === "invoice.payment_succeeded") {
+      const invoice = event.data.object;
+      if (invoice.billing_reason === "subscription_cycle" && invoice.subscription) {
+        try {
+          const subscription = await stripe.subscriptions.retrieve(invoice.subscription);
+          const customerId = invoice.customer;
+          const snap = await db.collection("families")
+            .where("stripeCustomerId", "==", customerId)
+            .limit(1)
+            .get();
+          if (!snap.empty) {
+            await snap.docs[0].ref.update({
+              subscriptionEndsAt: new Date(subscription.current_period_end * 1000).toISOString(),
+            });
+            console.log("Subscription renewed for: " + customerId);
+          }
+        } catch(e) {
+          console.warn("Could not update renewal period:", e.message);
+        }
+      }
+    }
+
+    if (event.type === "customer.subscription.deleted" ||
+        event.type === "customer.subscription.paused") {
       const subscription = event.data.object;
       const customerId = subscription.customer;
 
@@ -137,7 +173,24 @@ exports.stripeWebhook = onRequest(
           proTier: null,
           stripeSubscriptionId: null,
         });
-        console.log("Family subscription cancelled: " + customerId);
+        console.log("Family subscription cancelled/paused: " + customerId);
+      }
+    }
+
+    // Handle failed payments - downgrade after grace period
+    if (event.type === "invoice.payment_failed") {
+      const invoice = event.data.object;
+      const customerId = invoice.customer;
+      // Only downgrade if this is a recurring payment (not first payment)
+      if (invoice.billing_reason !== "subscription_create") {
+        const snap = await db.collection("families")
+          .where("stripeCustomerId", "==", customerId)
+          .limit(1)
+          .get();
+        if (!snap.empty) {
+          console.warn("Payment failed for customer: " + customerId);
+          // Don't downgrade immediately - Stripe will retry. Log for monitoring.
+        }
       }
     }
 
@@ -159,9 +212,15 @@ exports.createCheckoutSession = onRequest(
     }
 
     try {
+      // Look up family email for Stripe customer pre-fill
+      const familySnap = await db.collection("families").where("ownerUid", "==", ownerUid).limit(1).get();
+      const familyEmail = familySnap.empty ? undefined : familySnap.docs[0].data().parentEmail;
+
       const session = await stripe.checkout.sessions.create({
         mode: "subscription",
         payment_method_types: ["card"],
+        customer_creation: "always",
+        customer_email: familyEmail,
         line_items: [{ price: priceId, quantity: 1 }],
         metadata: { ownerUid, priceId },
         success_url: successUrl || "https://choreheroes.app?subscribed=true",
@@ -227,6 +286,22 @@ exports.onTaskDone = onDocumentUpdated("families/{familyId}/kids/{kidId}", async
   return null;
 });
 
+// Convert "5:30 PM" / "11:00 AM" to "05:30" / "11:00" (24hr HH:MM)
+function to24hr(timeStr) {
+  if (!timeStr) return null;
+  // Already in HH:MM format
+  if (/^\d{2}:\d{2}$/.test(timeStr)) return timeStr;
+  // Parse "5:30 PM" or "11:00 AM"
+  const match = timeStr.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+  if (!match) return null;
+  let h = parseInt(match[1], 10);
+  const m = match[2];
+  const period = match[3].toUpperCase();
+  if (period === "AM" && h === 12) h = 0;
+  if (period === "PM" && h !== 12) h += 12;
+  return h.toString().padStart(2, "0") + ":" + m;
+}
+
 // ── Task reminders (every minute) ────────────────────────────
 exports.taskReminders = onSchedule("every 1 minutes", async () => {
   const now = new Date();
@@ -246,7 +321,7 @@ exports.taskReminders = onSchedule("every 1 minutes", async () => {
       const kid = kidDoc.data() || {};
       const dueTasks = Array.isArray(kid.due) ? kid.due : [];
       for (const task of dueTasks) {
-        if (task && task.time === currentTime) {
+        if (task && to24hr(task.time) === currentTime) {
           const message = "Hey " + (kid.name || "kiddo") + "! Just a nudge — you really need to " + task.title + ". Knock it out and grab those " + task.points + " points!";
           await announceToHA(webhookUrl, message);
         }

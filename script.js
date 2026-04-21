@@ -190,6 +190,7 @@ function normalizeFamily(family) {
     stripeCustomerId: family.stripeCustomerId || null,
     haWebhookUrl: family.haWebhookUrl || null,
     cloudAuthKey: family.cloudAuthKey || null,
+    subscriptionEndsAt: family.subscriptionEndsAt || null,
   };
 }
 
@@ -2478,7 +2479,22 @@ function renderKidPage(kidId) {
 
 function getSubscriptionStatus(family) {
   if (!family) return "expired";
-  if (family.isPro) return "pro";
+
+  if (family.isPro) {
+    // Safety net: if subscriptionEndsAt is set and more than 7 days past, treat as expired
+    // (7 day grace period covers Stripe retry window + webhook delivery delays)
+    if (family.subscriptionEndsAt) {
+      const endDate = new Date(family.subscriptionEndsAt);
+      if (!isNaN(endDate.getTime())) {
+        const now = new Date();
+        const daysPast = Math.floor((now - endDate) / (1000 * 60 * 60 * 24));
+        if (daysPast > 7) return "expired";
+      }
+    }
+    return "pro";
+  }
+
+  // Free trial logic
   const trial = family.trialEndsAt;
   if (!trial) return "expired";
   const trialDate = new Date(trial);
@@ -2575,6 +2591,7 @@ async function manageSubscription() {
   const stripeCustomerId = family?.stripeCustomerId || "";
   const ownerUid = family?.ownerUid || "";
   if (!ownerUid) { showToast("Could not identify account."); return; }
+  if (!stripeCustomerId) { showToast("No billing account found. Please contact support at noreply@choreheroes.app."); return; }
   const PORTAL_URL = "https://us-central1-chores-c605d.cloudfunctions.net/createPortalSession";
   showToast("Opening subscription portal...");
   try {
@@ -3194,20 +3211,25 @@ document.body.addEventListener("submit", async (event) => {
         const authPwd = buildCloudAuthPassword(email, pin);
         const signInRes = await firebaseAuth.signInWithEmailAndPassword(email, authPwd);
         if (signInRes.user) {
-          // Check email verification
+          // Check email verification — only enforce for brand-new accounts (no existing family)
           if (!signInRes.user.emailVerified) {
-            resetLoginBtn();
-            showToast("Please verify your email first. Check your inbox for a verification link.");
-            // Offer resend
-            const resendToast = document.createElement("div");
-            resendToast.className = "pin-toast";
-            resendToast.innerHTML = `Didn\'t get the email? <button onclick="this.closest('.pin-toast').remove();window._resendVerification('${email.replace(/'/g,"\\'")}${''}" style="background:none;border:none;color:#fff;text-decoration:underline;cursor:pointer;font-size:inherit;">Resend it</button>`;
-            document.body.appendChild(resendToast);
-            setTimeout(() => resendToast?.remove(), 8000);
-            window._resendVerification = async (e) => {
-              try { await signInRes.user.sendEmailVerification({ url: "https://choreheroes.app" }); showToast("Verification email sent!"); } catch(err) { showToast("Could not resend — try again later."); }
-            };
-            return;
+            const existingSnap = await firebaseDb.collection("families").where("ownerUid", "==", signInRes.user.uid).limit(1).get();
+            if (existingSnap.empty) {
+              // New account - enforce verification
+              resetLoginBtn();
+              showToast("Please verify your email first. Check your inbox for a verification link.");
+              const resendToast = document.createElement("div");
+              resendToast.className = "pin-toast";
+              resendToast.innerHTML = `Didn\'t get the email? <button onclick="this.closest('.pin-toast').remove();window._resendVerification('${email.replace(/'/g,"\\'")}${''}" style="background:none;border:none;color:#fff;text-decoration:underline;cursor:pointer;font-size:inherit;">Resend it</button>`;
+              document.body.appendChild(resendToast);
+              setTimeout(() => resendToast?.remove(), 8000);
+              window._resendVerification = async (e) => {
+                try { await signInRes.user.sendEmailVerification({ url: "https://choreheroes.app" }); showToast("Verification email sent!"); } catch(err) { showToast("Could not resend — try again later."); }
+              };
+              return;
+            }
+            // Existing account - allow login but nudge them to verify
+            showToast("Tip: verify your email address for better account security.");
           }
           const snap = await firebaseDb.collection("families").where("ownerUid", "==", signInRes.user.uid).limit(1).get();
           if (!snap.empty) {
@@ -3271,11 +3293,16 @@ document.body.addEventListener("submit", async (event) => {
         const authPwd = buildCloudAuthPassword(email, pin);
         const signInRes = await firebaseAuth.signInWithEmailAndPassword(email, authPwd);
         if (signInRes.user) {
+          // Check email verification — only enforce for brand-new accounts (no existing family)
           if (!signInRes.user.emailVerified) {
-            resetRetLoginBtn();
-            showToast("Please verify your email first. Check your inbox for a verification link.");
-            try { await signInRes.user.sendEmailVerification({ url: "https://choreheroes.app" }); } catch(e) {}
-            return;
+            const existingSnap = await firebaseDb.collection("families").where("ownerUid", "==", signInRes.user.uid).limit(1).get();
+            if (existingSnap.empty) {
+              resetRetLoginBtn();
+              showToast("Please verify your email first. Check your inbox for a verification link.");
+              try { await signInRes.user.sendEmailVerification({ url: "https://choreheroes.app" }); } catch(e) {}
+              return;
+            }
+            showToast("Tip: verify your email address for better account security.");
           }
           const snap = await firebaseDb.collection("families").where("ownerUid", "==", signInRes.user.uid).limit(1).get();
           if (!snap.empty) {
@@ -3639,6 +3666,7 @@ async function bootApp() {
       family.ownerUid = d.ownerUid || family.ownerUid || "";
       family.haWebhookUrl = d.haWebhookUrl || null;
       family.stripeCustomerId = d.stripeCustomerId || null;
+      family.subscriptionEndsAt = d.subscriptionEndsAt || null;
       saveState({ skipCloud: true });
     }
   } catch(e) {
@@ -3712,7 +3740,7 @@ async function fbPullFamily(familyId) {
   var famData = famSnap.data();
   var kidsSnap = await firebaseDb.collection("families").doc(familyId).collection("kids").get();
   var kids = kidsSnap.docs.map(function(d) { return firestoreDocToKid(d.data()); });
-  return normalizeFamily({ id: familyId, familyName: famData.familyName || "", parentName: famData.parentName || "Parent", parentPin: famData.parentPin || "", parentEmail: famData.parentEmail || "", parentEmailLower: famData.parentEmailLower || "", ownerUid: famData.ownerUid || "", kids: kids, favorClaims: famData.favorClaims || [], isPro: famData.isPro || false, proTier: famData.proTier || null, trialEndsAt: famData.trialEndsAt || null, stripeCustomerId: famData.stripeCustomerId || null, haWebhookUrl: famData.haWebhookUrl || null });
+  return normalizeFamily({ id: familyId, familyName: famData.familyName || "", parentName: famData.parentName || "Parent", parentPin: famData.parentPin || "", parentEmail: famData.parentEmail || "", parentEmailLower: famData.parentEmailLower || "", ownerUid: famData.ownerUid || "", kids: kids, favorClaims: famData.favorClaims || [], isPro: famData.isPro || false, proTier: famData.proTier || null, trialEndsAt: famData.trialEndsAt || null, stripeCustomerId: famData.stripeCustomerId || null, haWebhookUrl: famData.haWebhookUrl || null, subscriptionEndsAt: famData.subscriptionEndsAt || null });
 }
 
 function cloudSave(kidId) {

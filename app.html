@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ChoreHeroes</title>
+    <meta name="description" content="A playful offline-capable family chore tracker for kids." />
+    <meta name="theme-color" content="#4fc7b5" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="ChoreHeroes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="icon" href="./icons/icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="./icons/icon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Nunito:wght@400;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="ambient-orbs" aria-hidden="true">
+      <span></span>
+      <span></span>
+      <span></span>
+      <span></span>
+      <span></span>
+      <span></span>
+    </div>
+    <div class="confetti-field" aria-hidden="true">
+      <span></span>
+      <span></span>
+      <span></span>
+      <span></span>
+      <span></span>
+      <span></span>
+      <span></span>
+      <span></span>
+      <span></span>
+      <span></span>
+    </div>
+    <main class="app">
+      <section class="page active" id="page-home">
+        <div class="home-shell">
+          <header class="home-header">
+            <p class="eyebrow">Family task tracker</p>
+            <h1 class="rainbow-title-new" aria-label="ChoreHeroes">
+              <span class="title-star" aria-hidden="true">✦</span>
+              <span aria-hidden="true">C</span>
+              <span aria-hidden="true">h</span>
+              <span aria-hidden="true">o</span>
+              <span aria-hidden="true">r</span>
+              <span aria-hidden="true">e</span>
+              <span aria-hidden="true">H</span>
+              <span aria-hidden="true">e</span>
+              <span aria-hidden="true">r</span>
+              <span aria-hidden="true">o</span>
+              <span aria-hidden="true">e</span>
+              <span aria-hidden="true">s</span>
+              <span class="title-star" aria-hidden="true">✦</span>
+            </h1>
+          </header>
+
+          <section class="kid-grid" id="home-kids"></section>
+
+          <section class="home-actions" aria-label="Family shortcuts">
+            <button class="family-tile report-shortcut" type="button" data-family-view="report">
+              <span class="tile-bubbles" aria-hidden="true">
+                <span></span>
+                <span></span>
+                <span></span>
+                <span></span>
+                <span></span>
+              </span>
+              <span>Reports</span>
+            </button>
+            <button class="family-tile settings-shortcut" type="button" data-family-view="settings">
+              <span class="tile-bubbles" aria-hidden="true">
+                <span></span>
+                <span></span>
+                <span></span>
+                <span></span>
+                <span></span>
+              </span>
+              <span>Settings</span>
+            </button>
+          </section>
+        </div>
+      </section>
+
+      <section class="page" id="page-kid"></section>
+    </main>
+
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <script src="./firebase-config.js"></script>
+    <script src="./script.js"></script>
+  </body>
+</html>

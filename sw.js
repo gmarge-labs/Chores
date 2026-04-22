@@ -1,4 +1,4 @@
-const CACHE_NAME = "choreheroes-v1";
+const CACHE_NAME = "choreheroes-1776860607";
 
 const SHELL = ["./manifest.webmanifest","./icons/icon.svg"];
 

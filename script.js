@@ -3561,12 +3561,10 @@ document.body.addEventListener("submit", async (event) => {
 });
 
 if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("./sw.js").then(reg => {
-      // Force update if a new SW is waiting
-      if (reg.waiting) reg.waiting.postMessage({type:"SKIP_WAITING"});
-    }).catch(() => {});
+  navigator.serviceWorker.getRegistrations().then(regs => {
+    regs.forEach(r => r.unregister());
   });
+  caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
 }
 
 // Fix title — inject CSS + swap title regardless of SW cache

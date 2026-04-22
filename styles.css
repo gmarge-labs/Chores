@@ -352,6 +352,30 @@ button {
   color: #c22f7e;
   animation-delay: 600ms;
 }
+.rainbow-title > span:nth-child(8) {
+  color: #d44719;
+  animation-delay: 720ms;
+}
+.rainbow-title > span:nth-child(9) {
+  color: #ee9412;
+  animation-delay: 840ms;
+}
+.rainbow-title > span:nth-child(10) {
+  color: #1465cf;
+  animation-delay: 960ms;
+}
+.rainbow-title > span:nth-child(11) {
+  color: #0a907f;
+  animation-delay: 1080ms;
+}
+.rainbow-title > span:nth-child(12) {
+  color: #7042d6;
+  animation-delay: 1200ms;
+}
+.rainbow-title > span:nth-child(13) {
+  color: #c22f7e;
+  animation-delay: 1320ms;
+}
 
 .home-header h1 .title-star {
   display: inline-block;

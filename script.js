@@ -1220,10 +1220,15 @@ function timeToMinutes(timeValue) {
 }
 
 function formatTaskTimeValue(timeValue) {
-  const [hoursRaw, minutesRaw] = String(timeValue || "").split(":");
+  const str = String(timeValue || "").trim();
+  if (!str) return "";
+  // Already in "8:00 AM" or "5:30 PM" format — return as-is
+  if (/^\d{1,2}:\d{2}\s*(AM|PM)$/i.test(str)) return str;
+  // Convert from 24hr "08:00" or "17:30" format
+  const [hoursRaw, minutesRaw] = str.split(":");
   const hoursNum = Number(hoursRaw);
   if (!Number.isFinite(hoursNum)) return "";
-  const minutes = minutesRaw || "00";
+  const minutes = (minutesRaw || "00").substring(0, 2).padStart(2, "0");
   const suffix = hoursNum >= 12 ? "PM" : "AM";
   const displayHour = ((hoursNum + 11) % 12) + 1;
   return `${displayHour}:${minutes} ${suffix}`;
@@ -3614,6 +3619,12 @@ window.addEventListener("unhandledrejection", function(event) {
     history.replaceState({}, "", window.location.pathname);
     showToast("Subscription cancelled — you can try again anytime.");
   }
+  // Landing page routing — store for after bootApp
+  const viewParam = params.get("view");
+  if (viewParam === "create" || viewParam === "returning") {
+    history.replaceState({}, "", window.location.pathname);
+    window._landingView = viewParam;
+  }
 })();
 
 let initialAuthStatePromise = null;
@@ -3717,7 +3728,14 @@ async function bootApp() {
   }
 }
 
-bootApp();
+bootApp().then(() => {
+  if (window._landingView) {
+    authStage = "intro";
+    authView = window._landingView;
+    window._landingView = null;
+    renderApp();
+  }
+});
 
 async function bootstrapCloudSessionIfAvailable() {
   // No-op — replaced by bootApp() above

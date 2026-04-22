@@ -3562,11 +3562,31 @@ document.body.addEventListener("submit", async (event) => {
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("./sw.js").catch(() => {
-      // Offline support is progressive.
-    });
+    navigator.serviceWorker.register("./sw.js").then(reg => {
+      // Force update if a new SW is waiting
+      if (reg.waiting) reg.waiting.postMessage({type:"SKIP_WAITING"});
+    }).catch(() => {});
   });
 }
+
+// Fix title if SW served old cached HTML
+(function fixTitle() {
+  const h1 = document.querySelector(".rainbow-title");
+  if (h1) {
+    h1.className = "rainbow-title-new";
+    h1.setAttribute("aria-label", "ChoreHeroes");
+    h1.innerHTML = `
+      <span class="title-star" aria-hidden="true">&#10022;</span>
+      <span aria-hidden="true">C</span><span aria-hidden="true">h</span>
+      <span aria-hidden="true">o</span><span aria-hidden="true">r</span>
+      <span aria-hidden="true">e</span><span aria-hidden="true">H</span>
+      <span aria-hidden="true">e</span><span aria-hidden="true">r</span>
+      <span aria-hidden="true">o</span><span aria-hidden="true">e</span>
+      <span aria-hidden="true">s</span>
+      <span class="title-star" aria-hidden="true">&#10022;</span>
+    `;
+  }
+})();
 
 // ── Error monitoring ──────────────────────────────────────────
 const ERROR_ENDPOINT = "https://us-central1-chores-c605d.cloudfunctions.net/logError";

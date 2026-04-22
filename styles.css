@@ -7544,3 +7544,20 @@ details[open] .existing-tasks-chevron { transform: rotate(180deg); }
 .rainbow-title-new > span:nth-child(11) { color: #0a907f; animation-delay: 720ms; }
 .rainbow-title-new > span:nth-child(12) { color: #7042d6; animation-delay: 800ms; }
 .rainbow-title-new > span:nth-child(13) { color: white; }
+
+/* Move trial banner to bottom */
+.home-shell {
+  display: flex;
+  flex-direction: column;
+}
+.trial-banner {
+  order: 99;
+  margin-top: auto;
+  margin-bottom: 0;
+  border-radius: 0;
+  border-top: 1px solid rgba(0,0,0,0.1);
+  border-left: none;
+  border-right: none;
+  border-bottom: none;
+  border-radius: 0 0 20px 20px;
+}

@@ -1,8 +1,8 @@
 {
-  "name": "CHORES",
-  "short_name": "CHORES",
-  "description": "A playful offline-capable family chore tracker for kids.",
-  "start_url": "./",
+  "name": "ChoreHeroes",
+  "short_name": "ChoreHeroes",
+  "description": "Turn chores into a family adventure. Kids earn points, parents stay sane.",
+  "start_url": "./app.html",
   "scope": "./",
   "display": "standalone",
   "background_color": "#fff5e8",

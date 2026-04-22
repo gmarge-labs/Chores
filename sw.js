@@ -17,8 +17,8 @@ self.addEventListener("activate", (e) => {
 
 self.addEventListener("fetch", (e) => {
   const url = new URL(e.request.url);
-  // Always network-first for JS, CSS, config files — never serve stale code
-  if (url.pathname.endsWith(".js") || url.pathname.endsWith(".css")) {
+  // Always network-first for HTML, JS, CSS — never serve stale code
+  if (url.pathname.endsWith(".html") || url.pathname.endsWith(".js") || url.pathname.endsWith(".css") || url.pathname === "/" || url.pathname === "") {
     e.respondWith(
       fetch(e.request).then(r => {
         const clone = r.clone();

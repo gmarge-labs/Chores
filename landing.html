@@ -711,6 +711,174 @@
       .hero-ctas { flex-direction: column; align-items: center; }
       .btn-hero, .btn-hero-outline { width: 100%; max-width: 320px; }
     }
+
+    /* ── PHRASE TILES ── */
+    .phrases-row {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      flex-wrap: nowrap;
+      margin-bottom: 20px;
+      animation: fadeInDown 0.6s 0.1s ease both;
+    }
+    .phrase-pill {
+      background: rgba(0,0,0,0.35);
+      border: 2px solid rgba(255,255,255,0.25);
+      border-radius: 32px;
+      width: 260px;
+      height: 200px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      backdrop-filter: blur(16px);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.1);
+      animation: pillHover 3s ease-in-out infinite;
+    }
+    .phrase-pill:nth-child(2) { animation-delay: -1s; }
+    .phrase-pill:nth-child(3) { animation-delay: -2s; }
+    @keyframes pillHover {
+      0%,100% { transform: translateY(0px); }
+      50% { transform: translateY(-6px); }
+    }
+    .phrase-label {
+      font-size: 0.85rem;
+      font-weight: 800;
+      letter-spacing: 2px;
+      color: white;
+      opacity: 0.9;
+      text-transform: uppercase;
+    }
+    .rainbow-word {
+      font-family: 'Baloo 2', cursive;
+      font-size: 3.2rem;
+      font-weight: 800;
+      line-height: 1;
+      text-shadow: 0 2px 12px rgba(0,0,0,0.25);
+    }
+
+    /* ── HERO BENEFIT PILLS ── */
+    .hero-benefits {
+      display: flex;
+      flex-direction: row;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 28px;
+      animation: fadeInDown 0.6s 0.25s ease both;
+    }
+    .hero-benefit-pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(0,0,0,0.3);
+      border: 1.5px solid rgba(255,255,255,0.2);
+      border-radius: 50px;
+      padding: 9px 18px;
+      font-weight: 700;
+      font-size: 0.85rem;
+      color: white;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+    }
+
+    /* ── MINI PILLS ── */
+    .hero-mini-pills {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-bottom: 20px;
+      animation: fadeInDown 0.6s ease both;
+    }
+    .mini-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      border-radius: 50px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      background: rgba(0,0,0,0.35);
+      border: 1.5px solid rgba(255,255,255,0.25);
+      color: white;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+    }
+
+    /* ── STEPS FLOW ── */
+    .steps-flow {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .step-tile {
+      flex: 1;
+      background: rgba(0,0,0,0.35);
+      border: 2px solid rgba(255,255,255,0.2);
+      border-radius: 24px;
+      padding: 24px 18px;
+      text-align: center;
+      backdrop-filter: blur(16px);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+    }
+    .step-emoji { font-size: 1.8rem; margin-bottom: 10px; }
+    .step-circle {
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Baloo 2', cursive;
+      font-weight: 800; font-size: 1.2rem;
+      color: white;
+      margin: 0 auto 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+    .step-tile .step-title {
+      font-family: 'Baloo 2', cursive;
+      font-weight: 700;
+      font-size: 1rem;
+      color: white;
+      margin-bottom: 8px;
+    }
+    .step-tile .step-desc {
+      font-size: 0.82rem;
+      color: rgba(255,255,255,0.75);
+      line-height: 1.5;
+    }
+    .step-arrow {
+      font-size: 2.2rem;
+      color: rgba(255,255,255,0.7);
+      font-weight: 300;
+      flex-shrink: 0;
+      line-height: 1;
+    }
+
+    /* ── TIGHTENED SECTIONS ── */
+    section { padding: 50px 24px; }
+    .hero { padding: 30px 24px 40px; min-height: unset; }
+    .hero-sub { margin-bottom: 16px; font-size: 1rem; }
+    .hero-ctas { margin-bottom: 24px; gap: 12px; }
+    .section-title { margin-bottom: 10px; }
+    .section-sub { margin-bottom: 36px; }
+    .feature-card { padding: 22px; }
+    .features-grid { gap: 16px; }
+    .pricing-grid { max-width: 680px; gap: 16px; }
+    .pricing-card { padding: 22px 24px; }
+    .pricing-price { font-size: 2.2rem; margin-bottom: 2px; }
+    .pricing-tier { font-size: 0.8rem; margin-bottom: 8px; }
+    .pricing-period { font-size: 0.78rem; margin-bottom: 16px; }
+    .pricing-features { margin-bottom: 20px; }
+    .pricing-features li { padding: 4px 0; font-size: 0.85rem; }
+    .pricing-cta { padding: 11px; font-size: 0.9rem; }
+    .testimonial-card { padding: 22px; }
+    .testimonials-grid { gap: 16px; }
+    .cta-section { padding: 30px 24px; }
+    .cta-card { padding: 32px; max-width: 580px; border-radius: 24px; }
+    .cta-emoji { font-size: 2.2rem; margin-bottom: 12px; }
+    .cta-title { font-size: clamp(1.4rem,3vw,2rem); margin-bottom: 10px; }
+    .cta-sub { font-size: 0.95rem; margin-bottom: 24px; }
+    .btn-hero { padding: 14px 32px; font-size: 1rem; }
   </style>
 </head>
 <body>
@@ -726,7 +894,7 @@
 
   <!-- NAV -->
   <nav>
-    <a href="#" class="nav-logo">Chore<span>Heroes</span></a>
+    <a href="#" class="nav-logo">Chore<span style="color:inherit"><span style="color:#FF6B9D">H</span><span style="color:#FF8C42">e</span><span style="color:#FFD166">r</span><span style="color:#4ecdc4">o</span><span style="color:#6dafff">e</span><span style="color:#a78bfa">s</span></span></a>
     <div class="nav-links">
       <a href="#features" class="btn btn-ghost">Features</a>
       <a href="#pricing" class="btn btn-ghost">Pricing</a>
@@ -743,39 +911,32 @@
       <span class="mini-pill mini-green">🎉 Rewards they love</span>
     </div>
 
-    <h1 class="hero-title">
-      Stop nagging.<br/>
-      <span class="line2">Start celebrating.</span>
-    </h1>
+    <div class="phrases-row">
+      <div class="phrase-pill"><div class="phrase-label">CHORES</div><div class="rainbow-word"><span style="color:#FF6B9D">d</span><span style="color:#FF8C42">o</span><span style="color:#FFD166">n</span><span style="color:#4ecdc4">e</span><span style="color:#6dafff">.</span></div></div>
+      <div class="phrase-pill"><div class="phrase-label">KIDS</div><div class="rainbow-word"><span style="color:#FF6B9D">p</span><span style="color:#FF8C42">r</span><span style="color:#FFD166">o</span><span style="color:#4ecdc4">u</span><span style="color:#6dafff">d</span><span style="color:#a78bfa">.</span></div></div>
+      <div class="phrase-pill"><div class="phrase-label">PARENTS</div><div class="rainbow-word"><span style="color:#FF6B9D">s</span><span style="color:#FFD166">a</span><span style="color:#4ecdc4">n</span><span style="color:#6dafff">e</span><span style="color:#a78bfa">.</span></div></div>
+    </div>
 
     <p class="hero-sub">
-      ChoreHeroes turns the daily chore battle into something your whole family actually enjoys.
+      Turns out kids <strong style="color:#FFD166;font-weight:800">WILL</strong> do chores. They just needed points.
     </p>
 
     <div class="hero-benefits">
-      <div class="hero-benefit"><span class="benefit-icon" style="background:rgba(255,140,66,0.3)">👨‍👩‍👧</span> Parents assign tasks in seconds</div>
-      <div class="hero-benefit"><span class="benefit-icon" style="background:rgba(109,175,255,0.3)">⭐</span> Kids earn points for every chore</div>
-      <div class="hero-benefit"><span class="benefit-icon" style="background:rgba(78,205,196,0.3)">🏆</span> Families celebrate real rewards</div>
+      <div class="hero-benefit-pill">👨‍👩‍👧 Parents assign tasks in seconds</div>
+      <div class="hero-benefit-pill">⭐ Kids earn points for every chore</div>
+      <div class="hero-benefit-pill">🏆 Families celebrate real rewards</div>
     </div>
 
     <div class="hero-ctas">
       <a href="index.html?view=create" class="btn btn-hero">🚀 Start free trial</a>
       <a href="#how-it-works" class="btn btn-hero-outline">See how it works</a>
     </div>
-
-    <div class="hero-social-proof">
-      <div class="avatars">
-        <div class="avatar">👩</div>
         <div class="avatar">👨</div>
         <div class="avatar">👩‍🦱</div>
         <div class="avatar">👨‍🦰</div>
       </div>
       <span>Loved by families everywhere · Free for 30 days</span>
     </div>
-
-    <!-- Floating pills preview -->
-    <div class="hero-pills">
-      <div class="pill pill-orange float-1">✅ Brush Teeth <span class="pill-pts">+5 pts</span></div>
       <div class="pill pill-blue float-2">⭐ 148 points earned!</div>
       <div class="pill pill-green float-3">🏆 Reward claimed: Trip to Urban Air</div>
       <div class="pill pill-purple float-4">🔔 Simra just finished Clean Room!</div>
@@ -830,24 +991,31 @@
     <h2 class="section-title reveal">Up and running in minutes</h2>
     <p class="section-sub reveal">No apps to install. Works on any device. Your whole family is set up in under 5 minutes.</p>
 
-    <div class="steps">
-      <div class="step reveal">
-        <div class="step-num">1</div>
+    <div class="steps-flow">
+      <div class="step-tile reveal">
+        <div class="step-emoji">👨‍👩‍👧</div>
+        <div class="step-circle" style="background:#FF6B9D">1</div>
         <div class="step-title">Create your family</div>
         <div class="step-desc">Sign up and add your kids. Give each one a name, avatar colour, and PIN.</div>
       </div>
-      <div class="step reveal">
-        <div class="step-num">2</div>
+      <div class="step-arrow">›</div>
+      <div class="step-tile reveal">
+        <div class="step-emoji">🎯</div>
+        <div class="step-circle" style="background:#FFD166;color:#1a1a2e">2</div>
         <div class="step-title">Add tasks & rewards</div>
         <div class="step-desc">Set up daily chores with point values. Add rewards your kids actually want to earn.</div>
       </div>
-      <div class="step reveal">
-        <div class="step-num">3</div>
+      <div class="step-arrow">›</div>
+      <div class="step-tile reveal">
+        <div class="step-emoji">⭐</div>
+        <div class="step-circle" style="background:#4ecdc4">3</div>
         <div class="step-title">Kids get to work</div>
         <div class="step-desc">Each kid logs in with their PIN, marks tasks done, and watches their points grow.</div>
       </div>
-      <div class="step reveal">
-        <div class="step-num">4</div>
+      <div class="step-arrow">›</div>
+      <div class="step-tile reveal">
+        <div class="step-emoji">🎉</div>
+        <div class="step-circle" style="background:#6dafff">4</div>
         <div class="step-title">Approve & celebrate</div>
         <div class="step-desc">You approve completed tasks from your parent dashboard. Points flow, rewards get claimed, everyone wins.</div>
       </div>

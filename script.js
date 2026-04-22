@@ -573,7 +573,7 @@ function renderAboutTopicContent(topic) {
   if (topic === "what") {
     return `
       <h3>What it does</h3>
-      <p>CHORES gives families one place to manage tasks, points, rewards, approvals, and progress in a fun way.</p>
+      <p>ChoreHeroes gives families one place to manage tasks, points, rewards, approvals, and progress in a fun way.</p>
     `;
   }
 
@@ -1598,7 +1598,7 @@ function renderAuthHome() {
     <div class="home-shell auth-shell">
       <header class="home-header">
         <p class="eyebrow">Family task tracker</p>
-        <h1 class="rainbow-title" aria-label="CHORES">
+        <h1 class="rainbow-title" aria-label="ChoreHeroes">
           <span class="title-star" aria-hidden="true">✦</span>
           <span aria-hidden="true">C</span>
           <span aria-hidden="true">H</span>
@@ -1803,7 +1803,7 @@ function renderParentHome() {
       <header class="home-header home-header--session">
         <button class="back-button home-logout-button" type="button" data-logout="true">Log out</button>
         <p class="eyebrow">${escapeHtml(family.familyName)} family</p>
-        <h1 class="rainbow-title" aria-label="CHORES">
+        <h1 class="rainbow-title" aria-label="ChoreHeroes">
           <span class="title-star" aria-hidden="true">✦</span>
           <span aria-hidden="true">C</span>
           <span aria-hidden="true">H</span>
@@ -2517,7 +2517,7 @@ function showUpgradeModal(status) {
   const isExpired = status === "expired";
   const headline = isExpired
     ? "Your free trial has ended"
-    : "Subscribe to keep using Chores";
+    : "Subscribe to keep using ChoreHeroes";
   const subtext = isExpired
     ? "Subscribe to keep managing your family's tasks, points, and rewards."
     : "Your trial has ended. Choose a plan to keep going.";
@@ -3613,7 +3613,7 @@ window.addEventListener("unhandledrejection", function(event) {
   const params = new URLSearchParams(window.location.search);
   if (params.get("subscribed") === "true") {
     history.replaceState({}, "", window.location.pathname);
-    showToast("Welcome to Chores Pro! Your subscription is active.");
+    showToast("Welcome to ChoreHeroes Pro! Your subscription is active.");
   }
   if (params.get("cancelled") === "true") {
     history.replaceState({}, "", window.location.pathname);
@@ -3697,7 +3697,7 @@ async function bootApp() {
     <div style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
       background:linear-gradient(135deg,#1a1240 0%,#2d1b69 45%,#1a3a5c 100%);z-index:99999;">
       <div style="text-align:center;">
-        <h1 style="color:#fff;font-size:2rem;font-weight:700;letter-spacing:0.05em;margin:0 0 12px;">CHORES</h1>
+        <h1 style="color:#fff;font-size:2rem;font-weight:700;letter-spacing:0.05em;margin:0 0 12px;">ChoreHeroes</h1>
         <div style="width:40px;height:4px;background:rgba(255,255,255,0.3);border-radius:2px;margin:0 auto;overflow:hidden;">
           <div style="width:40%;height:100%;background:#fff;border-radius:2px;animation:bootSlide 1s ease-in-out infinite alternate;"></div>
         </div>

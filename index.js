@@ -331,4 +331,48 @@ exports.taskReminders = onSchedule("every 1 minutes", async () => {
 
   return null;
 });
+
+// ── Error reporting ───────────────────────────────────────────
+exports.logError = onRequest(
+  { cors: true },
+  async (req, res) => {
+    if (req.method === "OPTIONS") { res.status(204).send(""); return; }
+    if (req.method !== "POST") { res.status(405).send("Method not allowed"); return; }
+
+    const { message, source, stack, userAgent, familyId, timestamp } = req.body;
+    if (!message) { res.status(400).json({ error: "Missing message" }); return; }
+
+    const errorBody = [
+      "<h2>ChoreHeroes App Error</h2>",
+      "<p><strong>Time:</strong> " + (timestamp || new Date().toISOString()) + "</p>",
+      "<p><strong>Message:</strong> " + (message || "unknown") + "</p>",
+      "<p><strong>Source:</strong> " + (source || "unknown") + "</p>",
+      "<p><strong>Family:</strong> " + (familyId || "not logged in") + "</p>",
+      "<p><strong>Browser:</strong> " + (userAgent || "unknown") + "</p>",
+      "<pre style=\"background:#f5f5f5;padding:12px;border-radius:4px;font-size:12px;\">" + (stack || "no stack trace") + "</pre>",
+    ].join("\n");
+
+    try {
+      await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          "Authorization": "Bearer re_YX49WM2k_2k9buzfhoFc31fa4JJ6XQTC6",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          from: "errors@choreheroes.app",
+          to: "heilleys@gmail.com",
+          subject: "🚨 ChoreHeroes Error: " + (message || "unknown").substring(0, 80),
+          html: errorBody,
+        }),
+      });
+      console.log("Error report sent:", message?.substring(0, 100));
+      res.json({ ok: true });
+    } catch(err) {
+      console.error("Failed to send error report:", err.message);
+      res.status(500).json({ error: err.message });
+    }
+  }
+);
+
 exports.createPortalSession = require("./createPortalSession").createPortalSession;

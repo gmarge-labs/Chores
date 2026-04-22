@@ -1598,7 +1598,7 @@ function renderAuthHome() {
     <div class="home-shell auth-shell">
       <header class="home-header">
         <p class="eyebrow">Family task tracker</p>
-        <h1 class="rainbow-title" aria-label="ChoreHeroes">
+        <h1 class="rainbow-title-new" aria-label="ChoreHeroes">
           <span class="title-star" aria-hidden="true">✦</span>
           <span aria-hidden="true">C</span>
           <span aria-hidden="true">H</span>
@@ -1803,7 +1803,7 @@ function renderParentHome() {
       <header class="home-header home-header--session">
         <button class="back-button home-logout-button" type="button" data-logout="true">Log out</button>
         <p class="eyebrow">${escapeHtml(family.familyName)} family</p>
-        <h1 class="rainbow-title" aria-label="ChoreHeroes">
+        <h1 class="rainbow-title-new" aria-label="ChoreHeroes">
           <span class="title-star" aria-hidden="true">✦</span>
           <span aria-hidden="true">C</span>
           <span aria-hidden="true">H</span>
@@ -1820,7 +1820,7 @@ function renderParentHome() {
           const days = sub.split(":")[1];
           return `<div class="trial-banner">${escapeHtml(days)} day${days === "1" ? "" : "s"} left in your free trial — <button class="trial-banner-link" type="button" data-show-upgrade="true">Subscribe now</button></div>`;
         }
-        if (family.isPro) return `<div class="trial-banner trial-banner--pro">Chores Pro ${family.proTier === "tier2" ? "✦ Home Assistant included" : ""} — <button class="trial-banner-link" type="button" data-manage-subscription="true">Manage subscription</button></div>`;
+        if (family.isPro) return `<div class="trial-banner trial-banner--pro">ChoreHeroes Pro ${family.proTier === "tier2" ? "✦ Home Assistant included" : ""} — <button class="trial-banner-link" type="button" data-manage-subscription="true">Manage subscription</button></div>`;
         return "";
       })()}
 

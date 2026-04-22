@@ -1,4 +1,4 @@
-const CACHE_NAME = "chores-v8";
+const CACHE_NAME = "choreheroes-v1";
 
 const SHELL = ["./","./index.html","./manifest.webmanifest","./icons/icon.svg"];
 

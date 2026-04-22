@@ -25,17 +25,24 @@ async function announceToHA(webhookUrl, message) {
   }
 }
 
-async function getFamilyAnnouncementConfig(familyId) {
+async function getFamilyConfig(familyId) {
   const familySnap = await db.collection("families").doc(familyId).get();
   if (!familySnap.exists) return null;
-
   const family = familySnap.data() || {};
-  if (!family.haWebhookUrl) return null;
-  if (family.proTier !== "tier2") return null;
-
+  if (family.proTier !== "tier2" && !family.isPro) return null;
   return {
-    webhookUrl: family.haWebhookUrl,
+    webhookUrl: family.haWebhookUrl || null,
+    parentEmail: family.parentEmail || null,
+    isPro: family.isPro || false,
+    proTier: family.proTier || null,
   };
+}
+
+// Keep old name for backwards compat
+async function getFamilyAnnouncementConfig(familyId) {
+  const config = await getFamilyConfig(familyId);
+  if (!config || !config.webhookUrl) return null;
+  return config;
 }
 
 function buildTaskMap(tasks) {
@@ -235,6 +242,34 @@ exports.createCheckoutSession = onRequest(
 );
 
 // ── Task done / bonus / penalty announcements ─────────────────
+// ── Email helper ─────────────────────────────────────────────
+async function notifyParentByEmail(toEmail, subject, htmlBody) {
+  try {
+    const fetchFn = globalThis.fetch || fetch;
+    const res = await fetchFn("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        "Authorization": "Bearer re_YX49WM2k_2k9buzfhoFc31fa4JJ6XQTC6",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: "noreply@choreheroes.app",
+        to: toEmail,
+        subject: subject,
+        html: "<div style='font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px'>" +
+              "<img src='https://choreheroes.app/icons/icon.svg' width='40' style='margin-bottom:16px'/>" +
+              "<h2 style='margin:0 0 12px'>" + subject + "</h2>" +
+              "<p style='color:#555;line-height:1.6'>" + htmlBody + "</p>" +
+              "<p style='color:#aaa;font-size:12px;margin-top:24px'>ChoreHeroes · Unsubscribe anytime in app settings</p>" +
+              "</div>",
+      }),
+    });
+    console.log("Parent email sent to " + toEmail + ": " + res.status);
+  } catch(err) {
+    console.warn("Failed to send parent email:", err.message);
+  }
+}
+
 exports.onTaskDone = onDocumentUpdated("families/{familyId}/kids/{kidId}", async (event) => {
   const beforeKid = event.data.before.data() || {};
   const afterKid = event.data.after.data() || {};
@@ -255,8 +290,19 @@ exports.onTaskDone = onDocumentUpdated("families/{familyId}/kids/{kidId}", async
     if (beforeAwaiting.has(taskId)) continue;
     if (!beforeDue.has(taskId)) continue;
 
-    const message = "Heads up! " + kidName + " just finished " + afterTask.title + " and is sitting there patiently waiting for her task to be approved!";
-    await announceToHA(familyConfig.webhookUrl, message);
+    const haMessage = "Heads up! " + kidName + " just finished " + afterTask.title + " and is sitting there patiently waiting for her task to be approved!";
+    if (familyConfig.webhookUrl) await announceToHA(familyConfig.webhookUrl, haMessage);
+
+    // Email parent notification
+    if (familyConfig.parentEmail) {
+      await notifyParentByEmail(
+        familyConfig.parentEmail,
+        "✅ " + kidName + " completed a task!",
+        kidName + " just marked <strong>" + afterTask.title + "</strong> as done and is waiting for your approval." +
+        " They earned " + (afterTask.points || 0) + " points for this task." +
+        "<br><br><a href='https://choreheroes.app' style='background:#6dafff;color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:bold;'>Review & Approve</a>"
+      );
+    }
   }
 
   // Task moved from awaiting → completed (parent approved)

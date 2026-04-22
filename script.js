@@ -3563,6 +3563,46 @@ if ("serviceWorker" in navigator) {
   });
 }
 
+// ── Error monitoring ──────────────────────────────────────────
+const ERROR_ENDPOINT = "https://us-central1-chores-c605d.cloudfunctions.net/logError";
+let _errorReportCount = 0;
+
+function reportError(message, source, stack) {
+  if (_errorReportCount >= 5) return;
+  _errorReportCount++;
+
+  const ignore = ["ResizeObserver loop", "Non-Error promise rejection", "Load failed", "NetworkError", "Script error"];
+  if (ignore.some(i => (message || "").includes(i))) return;
+
+  const family = getCurrentFamily?.();
+  try {
+    fetch(ERROR_ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        message: String(message || "").substring(0, 500),
+        source: String(source || "").substring(0, 200),
+        stack: String(stack || "").substring(0, 2000),
+        userAgent: navigator.userAgent.substring(0, 200),
+        familyId: family?.id || null,
+        timestamp: new Date().toISOString(),
+      }),
+    }).catch(() => {});
+  } catch(e) {}
+}
+
+// Catch unhandled JS errors
+window.onerror = function(message, source, lineno, colno, error) {
+  reportError(message, source + ":" + lineno + ":" + colno, error?.stack);
+  return false;
+};
+
+// Catch unhandled promise rejections
+window.addEventListener("unhandledrejection", function(event) {
+  const msg = event.reason?.message || String(event.reason) || "Unhandled promise rejection";
+  reportError(msg, "promise", event.reason?.stack);
+});
+
 // ── Handle Stripe redirect ────────────────────────────────────
 (function handleStripeRedirect() {
   const params = new URLSearchParams(window.location.search);

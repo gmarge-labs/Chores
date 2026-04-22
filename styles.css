@@ -7564,3 +7564,16 @@ details[open] .existing-tasks-chevron { transform: rotate(180deg); }
   font-size: inherit;
   padding: 0;
 }
+
+/* Banner: always render after action buttons using absolute positioning */
+.home-shell { position: relative; padding-bottom: 48px; }
+.trial-banner {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 0.78rem;
+  opacity: 0.65;
+  padding: 8px 0 4px;
+}

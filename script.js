@@ -3567,18 +3567,7 @@ if ("serviceWorker" in navigator) {
   caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
 }
 
-// Fix title — inject CSS + swap title regardless of SW cache
-(function fixTitle() {
-  const style = document.createElement("style");
-  style.textContent = `.rainbow-title-new{font-family:'Baloo 2',cursive;font-size:96px;font-weight:800;letter-spacing:5px;display:flex;align-items:center;justify-content:center;gap:2px;margin:0;line-height:1}.rainbow-title-new .title-star{font-size:.4em;color:#fff;filter:drop-shadow(0 2px 4px rgba(255,255,255,.6));animation:title-letter-float 2.8s ease-in-out infinite}.rainbow-title-new>span:not(.title-star){display:inline-block;-webkit-text-stroke:4.5px rgba(255,255,255,.58);text-shadow:0 2px 0 rgba(255,255,255,.72),0 7px 0 rgba(25,19,58,.18),0 18px 28px rgba(25,19,58,.28);animation:title-letter-float 2.8s ease-in-out infinite}.rainbow-title-new>span:nth-child(2){color:#d44719;animation-delay:0ms}.rainbow-title-new>span:nth-child(3){color:#ee9412;animation-delay:80ms}.rainbow-title-new>span:nth-child(4){color:#1465cf;animation-delay:160ms}.rainbow-title-new>span:nth-child(5){color:#0a907f;animation-delay:240ms}.rainbow-title-new>span:nth-child(6){color:#7042d6;animation-delay:320ms}.rainbow-title-new>span:nth-child(7){color:#c22f7e;animation-delay:400ms}.rainbow-title-new>span:nth-child(8){color:#d44719;animation-delay:480ms}.rainbow-title-new>span:nth-child(9){color:#ee9412;animation-delay:560ms}.rainbow-title-new>span:nth-child(10){color:#1465cf;animation-delay:640ms}.rainbow-title-new>span:nth-child(11){color:#0a907f;animation-delay:720ms}.rainbow-title-new>span:nth-child(12){color:#7042d6;animation-delay:800ms}.rainbow-title-new>span:nth-child(13){color:#fff}`;
-  document.head.appendChild(style);
-  const h1 = document.querySelector(".rainbow-title,.rainbow-title-new");
-  if (h1) {
-    h1.className = "rainbow-title-new";
-    h1.setAttribute("aria-label", "ChoreHeroes");
-    h1.innerHTML = `<span class="title-star" aria-hidden="true">✦</span><span aria-hidden="true">C</span><span aria-hidden="true">h</span><span aria-hidden="true">o</span><span aria-hidden="true">r</span><span aria-hidden="true">e</span><span aria-hidden="true">H</span><span aria-hidden="true">e</span><span aria-hidden="true">r</span><span aria-hidden="true">o</span><span aria-hidden="true">e</span><span aria-hidden="true">s</span><span class="title-star" aria-hidden="true">✦</span>`;
-  }
-})();
+
 
 // ── Error monitoring ──────────────────────────────────────────
 const ERROR_ENDPOINT = "https://us-central1-chores-c605d.cloudfunctions.net/logError";
@@ -3746,6 +3735,16 @@ bootApp().then(() => {
     authView = window._landingView;
     window._landingView = null;
     renderApp();
+  }
+  // Fix title after render
+  const style = document.createElement("style");
+  style.textContent = `.rainbow-title-new{font-family:'Baloo 2',cursive;font-size:96px;font-weight:800;letter-spacing:5px;display:flex;align-items:center;justify-content:center;gap:2px;margin:0;line-height:1}.rainbow-title-new .title-star{font-size:.4em;color:#fff;filter:drop-shadow(0 2px 4px rgba(255,255,255,.6));animation:title-letter-float 2.8s ease-in-out infinite}.rainbow-title-new>span:not(.title-star){display:inline-block;-webkit-text-stroke:4.5px rgba(255,255,255,.58);text-shadow:0 2px 0 rgba(255,255,255,.72),0 7px 0 rgba(25,19,58,.18),0 18px 28px rgba(25,19,58,.28);animation:title-letter-float 2.8s ease-in-out infinite}.rainbow-title-new>span:nth-child(2){color:#d44719;animation-delay:0ms}.rainbow-title-new>span:nth-child(3){color:#ee9412;animation-delay:80ms}.rainbow-title-new>span:nth-child(4){color:#1465cf;animation-delay:160ms}.rainbow-title-new>span:nth-child(5){color:#0a907f;animation-delay:240ms}.rainbow-title-new>span:nth-child(6){color:#7042d6;animation-delay:320ms}.rainbow-title-new>span:nth-child(7){color:#c22f7e;animation-delay:400ms}.rainbow-title-new>span:nth-child(8){color:#d44719;animation-delay:480ms}.rainbow-title-new>span:nth-child(9){color:#ee9412;animation-delay:560ms}.rainbow-title-new>span:nth-child(10){color:#1465cf;animation-delay:640ms}.rainbow-title-new>span:nth-child(11){color:#0a907f;animation-delay:720ms}.rainbow-title-new>span:nth-child(12){color:#7042d6;animation-delay:800ms}.rainbow-title-new>span:nth-child(13){color:#fff}`;
+  document.head.appendChild(style);
+  const h1 = document.querySelector(".rainbow-title,.rainbow-title-new");
+  if (h1) {
+    h1.className = "rainbow-title-new";
+    h1.setAttribute("aria-label", "ChoreHeroes");
+    h1.innerHTML = `<span class="title-star" aria-hidden="true">✦</span><span aria-hidden="true">C</span><span aria-hidden="true">h</span><span aria-hidden="true">o</span><span aria-hidden="true">r</span><span aria-hidden="true">e</span><span aria-hidden="true">H</span><span aria-hidden="true">e</span><span aria-hidden="true">r</span><span aria-hidden="true">o</span><span aria-hidden="true">e</span><span aria-hidden="true">s</span><span class="title-star" aria-hidden="true">✦</span>`;
   }
 });
 

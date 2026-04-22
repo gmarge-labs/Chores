@@ -1,6 +1,6 @@
 const CACHE_NAME = "choreheroes-v1";
 
-const SHELL = ["./","./index.html","./manifest.webmanifest","./icons/icon.svg"];
+const SHELL = ["./manifest.webmanifest","./icons/icon.svg"];
 
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE_NAME).then(c => c.addAll(SHELL)));

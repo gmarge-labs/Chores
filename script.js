@@ -1601,11 +1601,16 @@ function renderAuthHome() {
         <h1 class="rainbow-title-new" aria-label="ChoreHeroes">
           <span class="title-star" aria-hidden="true">✦</span>
           <span aria-hidden="true">C</span>
+          <span aria-hidden="true">h</span>
+          <span aria-hidden="true">o</span>
+          <span aria-hidden="true">r</span>
+          <span aria-hidden="true">e</span>
           <span aria-hidden="true">H</span>
-          <span aria-hidden="true">O</span>
-          <span aria-hidden="true">R</span>
-          <span aria-hidden="true">E</span>
-          <span aria-hidden="true">S</span>
+          <span aria-hidden="true">e</span>
+          <span aria-hidden="true">r</span>
+          <span aria-hidden="true">o</span>
+          <span aria-hidden="true">e</span>
+          <span aria-hidden="true">s</span>
           <span class="title-star" aria-hidden="true">✦</span>
         </h1>
       </header>
@@ -1806,11 +1811,16 @@ function renderParentHome() {
         <h1 class="rainbow-title-new" aria-label="ChoreHeroes">
           <span class="title-star" aria-hidden="true">✦</span>
           <span aria-hidden="true">C</span>
+          <span aria-hidden="true">h</span>
+          <span aria-hidden="true">o</span>
+          <span aria-hidden="true">r</span>
+          <span aria-hidden="true">e</span>
           <span aria-hidden="true">H</span>
-          <span aria-hidden="true">O</span>
-          <span aria-hidden="true">R</span>
-          <span aria-hidden="true">E</span>
-          <span aria-hidden="true">S</span>
+          <span aria-hidden="true">e</span>
+          <span aria-hidden="true">r</span>
+          <span aria-hidden="true">o</span>
+          <span aria-hidden="true">e</span>
+          <span aria-hidden="true">s</span>
           <span class="title-star" aria-hidden="true">✦</span>
         </h1>
       </header>

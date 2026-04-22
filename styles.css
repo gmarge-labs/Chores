@@ -7510,7 +7510,7 @@ details[open] .existing-tasks-chevron { transform: rotate(180deg); }
 
 .rainbow-title-new {
   font-family: 'Baloo 2', cursive;
-  font-size: 74px;
+  font-size: 58px;
   font-weight: 800;
   letter-spacing: 5px;
   display: flex;
@@ -7545,12 +7545,14 @@ details[open] .existing-tasks-chevron { transform: rotate(180deg); }
 .rainbow-title-new > span:nth-child(12) { color: #7042d6; animation-delay: 800ms; }
 .rainbow-title-new > span:nth-child(13) { color: white; }
 
-/* Move trial banner to bottom - sits above action buttons */
-.trial-banner {
-  order: 99;
-  margin-top: 16px;
-  margin-bottom: -8px;
+/* Move trial banner below action buttons */
+.home-shell {
+  display: flex;
+  flex-direction: column;
 }
-.home-actions {
-  order: 100;
+.trial-banner {
+  order: 999;
+  margin-top: 12px;
+  font-size: 0.8rem;
+  opacity: 0.75;
 }

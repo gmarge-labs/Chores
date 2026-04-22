@@ -605,6 +605,104 @@
       transform: translateY(0);
     }
 
+    /* ── MINI PILLS ROW ── */
+    .hero-mini-pills {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-bottom: 32px;
+      animation: fadeInDown 0.6s ease both;
+    }
+    .mini-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 18px;
+      border-radius: 50px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      border: 1.5px solid rgba(255,255,255,0.35);
+      backdrop-filter: blur(12px);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+      animation: fadeInDown 0.5s ease both;
+    }
+    .mini-orange { background: rgba(255,140,66,0.55); color: white; animation-delay: 0.1s; }
+    .mini-blue   { background: rgba(109,175,255,0.55); color: white; animation-delay: 0.2s; }
+    .mini-green  { background: rgba(78,205,196,0.55); color: white; animation-delay: 0.3s; }
+
+    /* ── HERO BENEFITS ── */
+    .hero-benefits {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 40px;
+      animation: fadeInDown 0.6s 0.25s ease both;
+    }
+    .hero-benefit {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: rgba(255,255,255,0.92);
+    }
+    .benefit-icon {
+      width: 36px; height: 36px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      flex-shrink: 0;
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+
+    /* ── FLOATING PILLS ── */
+    .hero-pills {
+      position: relative;
+      width: 100%;
+      max-width: 680px;
+      height: 220px;
+      margin: 40px auto 0;
+    }
+    .pill {
+      position: absolute;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 22px;
+      border-radius: 50px;
+      font-family: 'Nunito', sans-serif;
+      font-weight: 700;
+      font-size: 0.9rem;
+      white-space: nowrap;
+      backdrop-filter: blur(12px);
+      border: 1.5px solid rgba(255,255,255,0.3);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+      animation: pillFloat linear infinite;
+    }
+    .pill-pts {
+      background: rgba(255,255,255,0.25);
+      padding: 2px 10px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+    }
+    .pill-orange { background: rgba(255,140,66,0.75); color: white; top: 0; left: 0; animation-duration: 6s; animation-delay: 0s; }
+    .pill-blue   { background: rgba(109,175,255,0.75); color: white; top: 20px; right: 0; animation-duration: 7s; animation-delay: -1s; }
+    .pill-green  { background: rgba(78,205,196,0.75); color: white; top: 80px; left: 10%; animation-duration: 8s; animation-delay: -2s; }
+    .pill-purple { background: rgba(83,74,183,0.85); color: white; top: 100px; right: 5%; animation-duration: 6.5s; animation-delay: -3s; }
+    .pill-pink   { background: rgba(255,107,157,0.75); color: white; bottom: 20px; left: 5%; animation-duration: 7.5s; animation-delay: -1.5s; }
+    .pill-yellow { background: rgba(255,209,102,0.85); color: #1a1a2e; bottom: 0; right: 10%; animation-duration: 6s; animation-delay: -4s; }
+
+    @keyframes pillFloat {
+      0%   { transform: translateY(0px) rotate(-1deg); }
+      25%  { transform: translateY(-8px) rotate(0.5deg); }
+      50%  { transform: translateY(-4px) rotate(1deg); }
+      75%  { transform: translateY(-10px) rotate(-0.5deg); }
+      100% { transform: translateY(0px) rotate(-1deg); }
+    }
+
     /* ── RESPONSIVE ── */
     @media (max-width: 768px) {
       nav { padding: 16px 20px; }
@@ -638,19 +736,27 @@
 
   <!-- HERO -->
   <div class="hero">
-    <div class="hero-badge">
-      <span class="hero-badge-dot"></span>
-      30-day free trial · No credit card needed
+    <!-- Mini pills row -->
+    <div class="hero-mini-pills">
+      <span class="mini-pill mini-orange">🎯 Tasks that stick</span>
+      <span class="mini-pill mini-blue">⭐ Points that matter</span>
+      <span class="mini-pill mini-green">🎉 Rewards they love</span>
     </div>
 
     <h1 class="hero-title">
-      Turn chores into<br/>
-      <span class="line2">family adventures.</span>
+      Stop nagging.<br/>
+      <span class="line2">Start celebrating.</span>
     </h1>
 
     <p class="hero-sub">
-      ChoreHeroes helps parents assign tasks, kids earn points, and families celebrate together — all from one beautiful app.
+      ChoreHeroes turns the daily chore battle into something your whole family actually enjoys.
     </p>
+
+    <div class="hero-benefits">
+      <div class="hero-benefit"><span class="benefit-icon" style="background:rgba(255,140,66,0.3)">👨‍👩‍👧</span> Parents assign tasks in seconds</div>
+      <div class="hero-benefit"><span class="benefit-icon" style="background:rgba(109,175,255,0.3)">⭐</span> Kids earn points for every chore</div>
+      <div class="hero-benefit"><span class="benefit-icon" style="background:rgba(78,205,196,0.3)">🏆</span> Families celebrate real rewards</div>
+    </div>
 
     <div class="hero-ctas">
       <a href="index.html?view=create" class="btn btn-hero">🚀 Start free trial</a>
@@ -667,34 +773,14 @@
       <span>Loved by families everywhere · Free for 30 days</span>
     </div>
 
-    <!-- App preview -->
-    <div class="hero-preview">
-      <div class="preview-card">
-        <div class="preview-header">
-          <span class="preview-family">✨ Bulamas Family</span>
-          <span class="preview-badge">Chores Pro ✦</span>
-        </div>
-        <div class="preview-kids">
-          <div class="preview-kid">
-            <div class="preview-kid-avatar" style="background:rgba(255,140,66,0.3);color:#FF8C42;">S</div>
-            <div class="preview-kid-name">Simra</div>
-            <div class="preview-kid-pts">148</div>
-            <div class="preview-kid-label">points · $7</div>
-          </div>
-          <div class="preview-kid">
-            <div class="preview-kid-avatar" style="background:rgba(109,175,255,0.3);color:#6dafff;">R</div>
-            <div class="preview-kid-name">Rayyan</div>
-            <div class="preview-kid-pts">90</div>
-            <div class="preview-kid-label">points · $4</div>
-          </div>
-          <div class="preview-kid">
-            <div class="preview-kid-avatar" style="background:rgba(78,205,196,0.3);color:#4ecdc4;">J</div>
-            <div class="preview-kid-name">Jinan</div>
-            <div class="preview-kid-pts">104</div>
-            <div class="preview-kid-label">points · $5</div>
-          </div>
-        </div>
-      </div>
+    <!-- Floating pills preview -->
+    <div class="hero-pills">
+      <div class="pill pill-orange float-1">✅ Brush Teeth <span class="pill-pts">+5 pts</span></div>
+      <div class="pill pill-blue float-2">⭐ 148 points earned!</div>
+      <div class="pill pill-green float-3">🏆 Reward claimed: Trip to Urban Air</div>
+      <div class="pill pill-purple float-4">🔔 Simra just finished Clean Room!</div>
+      <div class="pill pill-pink float-5">✅ Math Work approved <span class="pill-pts">+10 pts</span></div>
+      <div class="pill pill-yellow float-6">🎉 Level up! 100 points reached</div>
     </div>
   </div>
 

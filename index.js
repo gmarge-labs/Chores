@@ -25,24 +25,18 @@ async function announceToHA(webhookUrl, message) {
   }
 }
 
-async function getFamilyConfig(familyId) {
+async function getFamilyAnnouncementConfig(familyId) {
   const familySnap = await db.collection("families").doc(familyId).get();
   if (!familySnap.exists) return null;
-  const family = familySnap.data() || {};
-  if (family.proTier !== "tier2" && !family.isPro) return null;
-  return {
-    webhookUrl: family.haWebhookUrl || null,
-    parentEmail: family.parentEmail || null,
-    isPro: family.isPro || false,
-    proTier: family.proTier || null,
-  };
-}
 
-// Keep old name for backwards compat
-async function getFamilyAnnouncementConfig(familyId) {
-  const config = await getFamilyConfig(familyId);
-  if (!config || !config.webhookUrl) return null;
-  return config;
+  const family = familySnap.data() || {};
+  if (!family.haWebhookUrl) return null;
+  if (family.proTier !== "tier2") return null;
+
+  return {
+    webhookUrl: family.haWebhookUrl,
+    parentEmail: family.parentEmail || null,
+  };
 }
 
 function buildTaskMap(tasks) {

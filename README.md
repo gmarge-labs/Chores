@@ -1,32 +1,32 @@
-# CHORES
+# ChoreHeroes — Family Task Tracker
 
-A playful web app for tracking kids' chores, points, rewards, reports, and parent-only settings.
+A PWA for families to track kids' chores, earn points, and celebrate together.
 
-## Run Locally
+## Live
+https://choreheroes.app
 
+## Stack
+- Vanilla JS + Firebase Auth + Firestore
+- GitHub Pages (static hosting)
+- Stripe (subscriptions)
+- Resend (email)
+- Home Assistant (voice announcements)
+
+## Dev
 ```bash
-python3 -m http.server 8000
+cd ~/Documents/Playground/Chores
+python3 -m http.server 3000
+# open http://localhost:3000
 ```
 
-Then open `http://localhost:8000`.
+## Branches
+- `main` → production (choreheroes.app)
+- `dev` → development
 
-## Deploy With GitHub Pages
+## Tests
+Open http://localhost:3000, paste `tests/suite.js` in the browser console.
+21 tests across auth, family data, kids, rendering, business logic.
 
-This is a static app, so it can be deployed directly from the repository root using GitHub Pages.
-
-## Current Data Mode
-
-CHORES currently runs in local browser storage mode, which means each device keeps its own family data.
-
-The repo is now also prepared for a future Supabase migration so multiple families can eventually log in and sync data across devices.
-
-## Cloud-Sync Prep
-
-Files added for the next backend phase:
-
-- [`supabase/schema.sql`](./supabase/schema.sql)
-- [`supabase/cloud-auth-patch.sql`](./supabase/cloud-auth-patch.sql)
-- [`SUPABASE_SETUP.md`](./SUPABASE_SETUP.md)
-- [`supabase-config.example.js`](./supabase-config.example.js)
-
-The runtime safely loads [`supabase-config.js`](./supabase-config.js), but the app stays in local mode until real Supabase credentials are added.
+## Pricing
+- Tier 1: $4.99/mo — App only
+- Tier 2: $9.99/mo — App + Home Assistant voice announcements

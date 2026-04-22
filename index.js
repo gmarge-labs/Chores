@@ -14,7 +14,8 @@ const TIER2_PRICE_ID = "price_1TO5JPRt74M3AjXK2gfE7BXv";  // Live $9.99/mo w/ HA
 
 async function announceToHA(webhookUrl, message) {
   try {
-    const response = await fetch(webhookUrl, {
+    const fetchFn = globalThis.fetch || fetch;
+    const response = await fetchFn(webhookUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ message }),

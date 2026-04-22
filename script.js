@@ -3619,6 +3619,12 @@ window.addEventListener("unhandledrejection", function(event) {
     history.replaceState({}, "", window.location.pathname);
     showToast("Subscription cancelled — you can try again anytime.");
   }
+  // Landing page routing — store for after bootApp
+  const viewParam = params.get("view");
+  if (viewParam === "create" || viewParam === "returning") {
+    history.replaceState({}, "", window.location.pathname);
+    window._landingView = viewParam;
+  }
 })();
 
 let initialAuthStatePromise = null;
@@ -3722,7 +3728,14 @@ async function bootApp() {
   }
 }
 
-bootApp();
+bootApp().then(() => {
+  if (window._landingView) {
+    authStage = "intro";
+    authView = window._landingView;
+    window._landingView = null;
+    renderApp();
+  }
+});
 
 async function bootstrapCloudSessionIfAvailable() {
   // No-op — replaced by bootApp() above

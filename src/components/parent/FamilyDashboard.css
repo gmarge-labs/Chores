@@ -1,0 +1,321 @@
+.dashboard-page {
+  height: 100vh;
+  padding: 80px 24px 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  position: relative;
+  z-index: 1;
+}
+
+.dashboard-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  position: relative;
+  padding: 0 4px;
+}
+
+.dashboard-title-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.dashboard-family-name {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.75);
+  margin: 0;
+}
+
+.kid-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 22px;
+  width: 100%;
+  flex: 1;
+}
+
+.dashboard-actions {
+  display: flex;
+  gap: 14px;
+  justify-content: center;
+  margin-top: -8px;
+}
+
+.pro-banner {
+  text-align: center;
+  font-size: 0.78rem;
+  color: rgba(255,255,255,0.65);
+  font-weight: 600;
+  margin: 0;
+}
+
+.pro-banner-link {
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.85);
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: underline;
+  font-size: inherit;
+  font-family: inherit;
+}
+
+.dashboard-header .ch-btn {
+  position: absolute;
+  right: 0;
+  top: 0;
+}
+
+.action-btn {
+  font-family: 'Baloo 2', cursive;
+  font-size: 26px;
+  font-weight: 800;
+  color: rgb(255,248,234);
+  border-radius: 999px;
+  border: 3px solid rgba(255,255,255,0.72);
+  padding: 12px 36px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow:
+    rgba(63,43,24,0.18) 0px 18px 38px,
+    rgba(255,255,255,0.12) 0px 0px 0px 8px,
+    rgba(255,255,255,0.64) 0px 3px 0px inset,
+    rgba(20,70,130,0.1) 0px -12px 20px inset;
+}
+.action-btn::before {
+  content: "";
+  position: absolute;
+  inset: 8px 14px auto;
+  height: 12px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.78), transparent);
+  pointer-events: none;
+}
+.action-btn:hover {
+  transform: translateY(-4px);
+  filter: saturate(1.08);
+}
+.action-btn--reports {
+  background:
+    radial-gradient(circle at 100% 0%, rgba(255,255,255,0.52), transparent 28%),
+    linear-gradient(145deg, rgb(255,157,87), rgb(79,199,181) 52%, rgb(109,175,255));
+}
+.action-btn--settings {
+  background:
+    radial-gradient(circle at 100% 0%, rgba(255,255,255,0.52), transparent 28%),
+    linear-gradient(145deg, rgb(109,175,255), rgb(185,156,255) 48%, rgb(255,157,87));
+}
+
+/* Ambient background orbs */
+.ambient-orbs {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+.ambient-orbs span {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.34);
+  animation: orb-float 8s ease-in-out infinite;
+}
+.ambient-orbs span:nth-child(1) { width:130px; height:130px; top:119px; left:122px; animation-delay:0s; }
+.ambient-orbs span:nth-child(2) { width:90px;  height:90px;  top:159px; right:281px; animation-delay:1.2s; }
+.ambient-orbs span:nth-child(3) { width:110px; height:110px; top:473px; left:275px; animation-delay:2.1s; }
+.ambient-orbs span:nth-child(4) { width:150px; height:150px; top:407px; left:1074px; animation-delay:3s; }
+.ambient-orbs span:nth-child(5) { width:72px;  height:72px;  top:225px; left:734px; animation-delay:4s; }
+.ambient-orbs span:nth-child(6) { width:58px;  height:58px;  top:353px; right:157px; animation-delay:5.1s; }
+
+@keyframes orb-float {
+  0%, 100% { transform: translate3d(0,0,0) scale(1); opacity: 0.38; }
+  50%       { transform: translate3d(26px,-34px,0) scale(1.16); opacity: 0.68; }
+}
+
+
+
+
+  50%       { background-position: 18% 55%, 76% 38%, 60% 62%; }
+}
+
+/* Water bubbles on action buttons */
+.action-btn::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 30% 35%, rgba(255,255,255,0.90) 0%, rgba(255,255,255,0.55) 18%, rgba(255,255,255,0.10) 38%, transparent 55%) 10% 65% / 22px 22px no-repeat,
+    radial-gradient(circle at 30% 35%, rgba(255,255,255,0.90) 0%, rgba(255,255,255,0.55) 18%, rgba(255,255,255,0.10) 38%, transparent 55%) 78% 22% / 26px 26px no-repeat,
+    radial-gradient(circle at 30% 35%, rgba(255,255,255,0.90) 0%, rgba(255,255,255,0.55) 18%, rgba(255,255,255,0.10) 38%, transparent 55%) 62% 72% / 16px 16px no-repeat;
+  animation: btn-bubbles 3s ease-in-out infinite;
+}
+.action-btn:nth-child(2)::after { animation-delay: 0.8s; }
+
+@keyframes btn-bubbles {
+  0%, 100% { background-position: 10% 65%, 78% 22%, 62% 72%; }
+  50%       { background-position: 14% 48%, 74% 36%, 58% 58%; }
+}
+
+.btn-bub {
+  position: absolute;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 28% 25%, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.6) 12%, rgba(255,255,255,0.1) 30%, transparent 50%),
+    radial-gradient(circle at 70% 75%, rgba(255,255,255,0.4) 0%, transparent 40%);
+  border: 1px solid rgba(255,255,255,0.55);
+  box-shadow: inset 0 1px 3px rgba(255,255,255,0.6), 0 2px 8px rgba(255,255,255,0.25);
+  pointer-events: none;
+}
+.btn-bub:nth-child(2)  { width:22px; height:22px; left:8%;   bottom:20%; animation: bb1 2.8s ease-in-out infinite; }
+.btn-bub:nth-child(3)  { width:16px; height:16px; right:10%; top:15%;    animation: bb2 3.2s ease-in-out 0.3s infinite; }
+.btn-bub:nth-child(4)  { width:12px; height:12px; right:24%; bottom:16%; animation: bb3 2.5s ease-in-out 0.6s infinite; }
+.btn-bub:nth-child(5)  { width:18px; height:18px; left:26%;  top:20%;    animation: bb4 3.6s ease-in-out 0.9s infinite; }
+.btn-bub:nth-child(6)  { width:10px; height:10px; left:50%;  bottom:12%; animation: bb5 2.2s ease-in-out 1.2s infinite; }
+.btn-bub:nth-child(7)  { width:14px; height:14px; right:36%; top:24%;    animation: bb1 3.0s ease-in-out 1.5s infinite; }
+.btn-bub:nth-child(8)  { width:20px; height:20px; left:38%;  bottom:22%; animation: bb3 2.7s ease-in-out 1.8s infinite; }
+.btn-bub:nth-child(9)  { width:8px;  height:8px;  left:18%;  top:30%;    animation: bb2 2.4s ease-in-out 2.1s infinite; }
+
+@keyframes bb1 {
+  0%,100% { transform: translate(0,0) scale(1); opacity:0.9; }
+  33%  { transform: translate(14px,-18px) scale(1.05); opacity:1; }
+  66%  { transform: translate(-8px,-28px) scale(0.95); opacity:0.85; }
+}
+@keyframes bb2 {
+  0%,100% { transform: translate(0,0) scale(1); opacity:0.9; }
+  33%  { transform: translate(-18px,12px) scale(1.08); opacity:1; }
+  66%  { transform: translate(-10px,-20px) scale(0.92); opacity:0.8; }
+}
+@keyframes bb3 {
+  0%,100% { transform: translate(0,0) scale(1); opacity:0.9; }
+  33%  { transform: translate(-12px,-22px) scale(1.06); opacity:1; }
+  66%  { transform: translate(16px,-14px) scale(0.94); opacity:0.85; }
+}
+@keyframes bb4 {
+  0%,100% { transform: translate(0,0) scale(1); opacity:0.9; }
+  33%  { transform: translate(20px,14px) scale(1.1); opacity:1; }
+  66%  { transform: translate(8px,-18px) scale(0.9); opacity:0.8; }
+}
+@keyframes bb5 {
+  0%,100% { transform: translate(0,0) scale(1); opacity:0.9; }
+  33%  { transform: translate(-16px,10px) scale(1.07); opacity:1; }
+  66%  { transform: translate(12px,18px) scale(0.93); opacity:0.85; }
+}
+  33%  { transform: translate(-16px,10px); }
+  66%  { transform: translate(12px,18px); }
+}
+  50%       { transform: translateY(-10px) scale(1.12); opacity: 1; }
+}
+  50%       { transform: translateY(-8px) scale(1.1); opacity: 1; }
+}
+
+/* Water bubbles on main background */
+.water-bubbles {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+.water-bubbles span {
+  position: absolute;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 28% 25%, rgba(255,255,255,0.92) 0%, rgba(255,255,255,0.5) 14%, rgba(255,255,255,0.08) 32%, transparent 50%),
+    radial-gradient(circle at 70% 75%, rgba(255,255,255,0.35) 0%, transparent 40%);
+  border: 1px solid rgba(255,255,255,0.45);
+  box-shadow: inset 0 1px 4px rgba(255,255,255,0.55), 0 4px 12px rgba(255,255,255,0.15);
+}
+.water-bubbles span:nth-child(1)  { width:40px; height:40px; left:5%;   top:15%;  animation: wb1 6s ease-in-out infinite; }
+.water-bubbles span:nth-child(2)  { width:28px; height:28px; left:18%;  top:60%;  animation: wb2 7s ease-in-out 0.5s infinite; }
+.water-bubbles span:nth-child(3)  { width:50px; height:50px; left:35%;  top:25%;  animation: wb3 8s ease-in-out 1s infinite; }
+.water-bubbles span:nth-child(4)  { width:22px; height:22px; left:52%;  top:70%;  animation: wb4 5.5s ease-in-out 1.5s infinite; }
+.water-bubbles span:nth-child(5)  { width:36px; height:36px; left:68%;  top:12%;  animation: wb5 7.5s ease-in-out 2s infinite; }
+.water-bubbles span:nth-child(6)  { width:18px; height:18px; left:80%;  top:55%;  animation: wb1 6.5s ease-in-out 2.5s infinite; }
+.water-bubbles span:nth-child(7)  { width:44px; height:44px; left:88%;  top:30%;  animation: wb2 8.5s ease-in-out 3s infinite; }
+.water-bubbles span:nth-child(8)  { width:26px; height:26px; left:12%;  top:82%;  animation: wb3 6s ease-in-out 3.5s infinite; }
+.water-bubbles span:nth-child(9)  { width:32px; height:32px; left:44%;  top:85%;  animation: wb4 7s ease-in-out 4s infinite; }
+.water-bubbles span:nth-child(10) { width:20px; height:20px; left:62%;  top:45%;  animation: wb5 5.5s ease-in-out 4.5s infinite; }
+.water-bubbles span:nth-child(11) { width:38px; height:38px; left:75%;  top:75%;  animation: wb1 7.5s ease-in-out 5s infinite; }
+.water-bubbles span:nth-child(12) { width:24px; height:24px; left:28%;  top:45%;  animation: wb3 6.5s ease-in-out 5.5s infinite; }
+
+
+.water-bubbles span:nth-child(13) { width:30px; height:30px; left:8%;   top:42%;  animation: wb2 7s ease-in-out 0.8s infinite; }
+.water-bubbles span:nth-child(14) { width:16px; height:16px; left:22%;  top:28%;  animation: wb4 5s ease-in-out 1.3s infinite; }
+.water-bubbles span:nth-child(15) { width:42px; height:42px; left:40%;  top:55%;  animation: wb1 8s ease-in-out 1.8s infinite; }
+.water-bubbles span:nth-child(16) { width:20px; height:20px; left:55%;  top:20%;  animation: wb3 6s ease-in-out 2.3s infinite; }
+.water-bubbles span:nth-child(17) { width:34px; height:34px; left:70%;  top:62%;  animation: wb5 7s ease-in-out 2.8s infinite; }
+.water-bubbles span:nth-child(18) { width:18px; height:18px; left:85%;  top:82%;  animation: wb2 5.5s ease-in-out 3.3s infinite; }
+.water-bubbles span:nth-child(19) { width:26px; height:26px; left:3%;   top:70%;  animation: wb4 6.5s ease-in-out 3.8s infinite; }
+.water-bubbles span:nth-child(20) { width:22px; height:22px; left:32%;  top:8%;   animation: wb1 7.5s ease-in-out 4.3s infinite; }
+.water-bubbles span:nth-child(21) { width:46px; height:46px; left:58%;  top:88%;  animation: wb3 9s ease-in-out 4.8s infinite; }
+.water-bubbles span:nth-child(22) { width:14px; height:14px; left:78%;  top:18%;  animation: wb5 5s ease-in-out 5.3s infinite; }
+.water-bubbles span:nth-child(23) { width:36px; height:36px; left:92%;  top:50%;  animation: wb2 6s ease-in-out 5.8s infinite; }
+.water-bubbles span:nth-child(24) { width:28px; height:28px; left:48%;  top:38%;  animation: wb4 7.5s ease-in-out 6.3s infinite; }
+
+@keyframes wb1 {
+  0%,100% { transform: translate(0,0) scale(1); opacity:0.7; }
+  33%  { transform: translate(30px,-40px) scale(1.06); opacity:0.9; }
+  66%  { transform: translate(-20px,-60px) scale(0.94); opacity:0.75; }
+}
+@keyframes wb2 {
+  0%,100% { transform: translate(0,0) scale(1); opacity:0.7; }
+  33%  { transform: translate(-35px,25px) scale(1.08); opacity:0.9; }
+  66%  { transform: translate(-15px,-45px) scale(0.92); opacity:0.75; }
+}
+@keyframes wb3 {
+  0%,100% { transform: translate(0,0) scale(1); opacity:0.7; }
+  33%  { transform: translate(25px,-50px) scale(1.05); opacity:0.9; }
+  66%  { transform: translate(40px,-20px) scale(0.95); opacity:0.75; }
+}
+@keyframes wb4 {
+  0%,100% { transform: translate(0,0) scale(1); opacity:0.7; }
+  33%  { transform: translate(-28px,-35px) scale(1.07); opacity:0.9; }
+  66%  { transform: translate(22px,-55px) scale(0.93); opacity:0.75; }
+}
+@keyframes wb5 {
+  0%,100% { transform: translate(0,0) scale(1); opacity:0.7; }
+  33%  { transform: translate(38px,20px) scale(1.06); opacity:0.9; }
+  66%  { transform: translate(15px,-40px) scale(0.94); opacity:0.75; }
+}
+
+/* Reports and Settings float together */
+.dashboard-actions {
+  animation: actions-float 3.8s ease-in-out infinite;
+}
+
+@keyframes actions-float {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-10px); }
+}
+
+.manage-sub {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: rgba(255,255,255,0.6);
+  text-align: center;
+  margin: 0;
+  padding-bottom: 8px;
+}
+.manage-sub-link {
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.85);
+  font-weight: 700;
+  font-size: inherit;
+  font-family: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+}

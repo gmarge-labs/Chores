@@ -1,0 +1,83 @@
+.ch-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: none;
+  border-radius: 50px;
+  font-family: 'Nunito', sans-serif;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 0.15s, opacity 0.15s;
+  position: relative;
+  overflow: hidden;
+}
+
+.ch-btn:active:not(:disabled) { transform: scale(0.96); }
+.ch-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Variants */
+.ch-btn--primary {
+  background: linear-gradient(135deg, #ff8c42, #ff6b9d);
+  color: white;
+  box-shadow: 0 4px 16px rgba(255,107,157,0.35);
+}
+.ch-btn--primary:hover:not(:disabled) { opacity: 0.92; }
+
+.ch-btn--secondary {
+  background: linear-gradient(135deg, #6db8ff, #534ab7);
+  color: white;
+  box-shadow: 0 4px 16px rgba(83,74,183,0.35);
+}
+
+.ch-btn--success {
+  background: linear-gradient(135deg, #4ecdc4, #0a907f);
+  color: white;
+  box-shadow: 0 4px 16px rgba(78,205,196,0.35);
+}
+
+.ch-btn--ghost {
+  background: rgba(255,255,255,0.2);
+  color: white;
+  border: 1.5px solid rgba(255,255,255,0.4);
+  backdrop-filter: blur(4px);
+}
+.ch-btn--ghost:hover:not(:disabled) { background: rgba(255,255,255,0.3); }
+
+.ch-btn--danger {
+  background: linear-gradient(135deg, #ff6b6b, #c22f2f);
+  color: white;
+}
+
+/* Sizes */
+.ch-btn--sm { padding: 8px 20px; font-size: 0.85rem; }
+.ch-btn--md { padding: 12px 28px; font-size: 1rem; }
+.ch-btn--lg { padding: 16px 36px; font-size: 1.1rem; }
+
+.ch-btn--full { width: 100%; }
+
+/* Loading spinner */
+.ch-btn-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2.5px solid rgba(255,255,255,0.4);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Bubble effect */
+.ch-btn--primary::before,
+.ch-btn--secondary::before,
+.ch-btn--success::before {
+  content: '';
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.3);
+  top: 6px;
+  left: 14px;
+}

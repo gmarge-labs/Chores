@@ -6,6 +6,7 @@ import CreateAccount from "./components/auth/CreateAccount";
 import Login from "./components/auth/Login";
 import FamilyDashboard from "./components/parent/FamilyDashboard";
 import KidDashboard from "./components/kid/KidDashboard";
+import KidDetail from './components/parent/KidDetail';
 
 function AppRoutes() {
   const { user, session, loading } = useAuth();
@@ -33,6 +34,8 @@ function AppRoutes() {
           ? <KidDashboard />
           : <Navigate to="/" replace />}
       />
+      <Route path="/kid" element={<KidDashboard />} />
+      <Route path="/kid-detail/:id" element={<KidDetail />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

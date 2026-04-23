@@ -3,6 +3,7 @@ import RainbowTitle from "../shared/RainbowTitle";
 import Button from "../shared/Button";
 import KidCard from "./KidCard";
 import "./FamilyDashboard.css";
+import Background from '../shared/Background';
 
 const MOCK_KIDS = [
   { id: "k1", name: "Simra",  points: 149, pointsPerDollarReward: 20, dollarRewardValue: 1, accentColour: "#f07a45", awaiting: [] },
@@ -16,12 +17,7 @@ export default function FamilyDashboard() {
 
   return (
     <div className="dashboard-page">
-      <div className="ambient-orbs" aria-hidden="true">
-        <span/><span/><span/><span/><span/><span/>
-      </div>
-      <div className="water-bubbles" aria-hidden="true">
-        <span/><span/><span/><span/><span/><span/><span/><span/><span/><span/><span/><span/><span/><span/><span/><span/><span/><span/><span/><span/><span/><span/><span/><span/>
-      </div>
+      <Background />
       <div className="dashboard-header">
         <div className="dashboard-title-area">
           <p className="dashboard-family-name">{MOCK_FAMILY.familyName} Family</p>

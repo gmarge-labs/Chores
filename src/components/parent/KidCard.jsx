@@ -13,6 +13,14 @@ const ACCENT_COLORS = [
   { name: "Yellow", light: "#ffd97a", deep: "#e6a800" },
 ];
 
+const BUBBLES = [
+  { w:22, h:22, left:"12%",  top:"42%",    anim:"bub1", dur:"4s",   delay:"0s" },
+  { w:16, h:16, right:"16%", top:"24%",    anim:"bub2", dur:"4.3s", delay:"0.3s" },
+  { w:20, h:20, right:"24%", bottom:"18%", anim:"bub3", dur:"4.5s", delay:"0.6s" },
+  { w:14, h:14, left:"34%",  bottom:"12%", anim:"bub4", dur:"4.1s", delay:"0.9s" },
+  { w:18, h:18, right:"8%",  bottom:"46%", anim:"bub5", dur:"4.4s", delay:"1.2s" },
+];
+
 export default function KidCard({ kid, familyId }) {
   const { setSession } = useAuth();
   const { updateKid } = useFamily();
@@ -41,16 +49,27 @@ export default function KidCard({ kid, familyId }) {
       onClick={handleOpen}
     >
       <span className="tile-bubbles" aria-hidden="true">
-        <span/><span/><span/><span/><span/>
+        {BUBBLES.map((b, i) => (
+          <span key={i} style={{
+            position: 'absolute',
+            width: b.w + 'px',
+            height: b.h + 'px',
+            borderRadius: '50%',
+            background: `radial-gradient(circle at 28% 24%, rgba(255,255,255,0.82), transparent 20%), linear-gradient(145deg, ${accent.light}, ${accent.deep})`,
+            boxShadow: `0 0 8px 3px rgba(255,255,255,0.45), 0 0 16px 6px ${accent.light}66`,
+            animation: `${b.anim} ${b.dur} ease-in-out ${b.delay} infinite`,
+            ...(b.left   && { left:   b.left }),
+            ...(b.right  && { right:  b.right }),
+            ...(b.top    && { top:    b.top }),
+            ...(b.bottom && { bottom: b.bottom }),
+          }} />
+        ))}
       </span>
 
       <div className="kid-card-top">
-        <div
-          className="avatar-btn"
-          onClick={e => { e.stopPropagation(); setShowPicker(p => !p); }}
-        >
+        <div className="avatar-btn" onClick={e => { e.stopPropagation(); setShowPicker(p => !p); }}>
           <div className="kid-avatar">
-            <span className="avatar-shimmer" aria-hidden="true"/>
+            <span className="avatar-shimmer" aria-hidden="true" />
             <span className="avatar-letter">{kid.name[0].toUpperCase()}</span>
           </div>
         </div>
@@ -66,7 +85,7 @@ export default function KidCard({ kid, familyId }) {
               <div
                 key={c.name}
                 className={`color-swatch${c.deep === accent.deep ? " active" : ""}`}
-                style={{ background: `linear-gradient(145deg,${c.light},${c.deep})` }}
+                style={{ background: `linear-gradient(145deg, ${c.light}, ${c.deep})` }}
                 onClick={e => handleColorPick(e, c)}
               />
             ))}
@@ -76,7 +95,7 @@ export default function KidCard({ kid, familyId }) {
 
       <div className="pill-row">
         <span className="pill score-pill">
-          <span className="score-sparkles" aria-hidden="true"/>
+          <span className="score-sparkles" aria-hidden="true" />
           <span className="score-val">{kid.points} points</span>
         </span>
         <span className="pill dollar-pill">${money}</span>

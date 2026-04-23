@@ -31,20 +31,21 @@ export default function KidDetail() {
   const navigate = useNavigate();
   const [activePanel, setActivePanel] = useState("dashboard");
   const [displayPoints, setDisplayPoints] = useState(0);
+  const [celebrating, setCelebrating] = useState(false);
   const [kids, setKids] = useState(MOCK_KIDS);
 
   const kid = kids.find(k => k.id === id) || kids[0];
   const accent = ACCENT_COLORS.find(c => c.deep === kid.accentColour) || ACCENT_COLORS[0];
   useEffect(() => {
-    let start = 0;
     const end = kid.points;
-    const duration = 1200;
-    const step = Math.ceil(end / (duration / 16));
+    const startFrom = Math.max(0, end - 20);
+    let current = startFrom;
+    setDisplayPoints(startFrom);
     const timer = setInterval(() => {
-      start = Math.min(start + step, end);
-      setDisplayPoints(start);
-      if (start >= end) clearInterval(timer);
-    }, 16);
+      current = Math.min(current + 1, end);
+      setDisplayPoints(current);
+      if (current >= end) clearInterval(timer);
+    }, 40);
     return () => clearInterval(timer);
   }, [kid.points]);
 
@@ -56,6 +57,10 @@ export default function KidDetail() {
         (to === "completed" && from === "awaiting") ? (task?.points || 0) :
         (to === "due" && from === "completed") ? -(task?.points || 0) :
         0;
+      if (to === "completed" && from === "awaiting") {
+        setCelebrating(true);
+        setTimeout(() => setCelebrating(false), 2000);
+      }
       return {
         ...k,
         points: k.points + pointsDelta,
@@ -68,6 +73,19 @@ export default function KidDetail() {
   return (
     <div className="kid-detail-page" style={{ '--accent': accent.deep, '--accent-light': accent.light }}>
       <Background />
+      {celebrating && (
+        <div className="celebration-burst" aria-hidden="true">
+          {Array.from({length: 20}).map((_, i) => (
+            <span key={i} className="confetti-piece" style={{
+              left: `${Math.random() * 100}%`,
+              animationDelay: `${Math.random() * 0.5}s`,
+              background: ['#ff6b6b','#ffd93d','#6bcb77','#4d96ff','#ff6bcb','#fff'][i % 6],
+              transform: `rotate(${Math.random() * 360}deg)`,
+            }}/>
+          ))}
+          <div className="celebration-text">🎉 +5 pts!</div>
+        </div>
+      )}
 
       {/* Header */}
       <header className="kid-detail-header">
@@ -87,7 +105,10 @@ export default function KidDetail() {
         </nav>
         <div className="kid-points-counter">
           {String(displayPoints).split('').map((digit, i) => (
-            <span key={i} className="kid-points-digit" style={{ animationDelay: `${i * 0.15}s` }}>{digit}</span>
+            <span key={i} className="kid-points-digit" style={{
+              animationDelay: `${i * 0.15}s`,
+              color: ['#ff6b6b','#ffd93d','#6bcb77','#4d96ff','#ff6bcb'][i % 5],
+            }}>{digit}</span>
           ))}
           <span className="kid-points-label">pts</span>
         </div>

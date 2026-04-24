@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import "./KidDetail.css";
+import AddTaskModal from "./AddTaskModal";
 import Background from '../shared/Background';
 
 const ACCENT_COLORS = [
@@ -30,12 +31,19 @@ export default function KidDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [activePanel, setActivePanel] = useState("dashboard");
+  const [showAddTask, setShowAddTask] = useState(false);
   const [displayPoints, setDisplayPoints] = useState(0);
   const [celebrating, setCelebrating] = useState(false);
   const [kids, setKids] = useState(MOCK_KIDS);
 
   const kid = kids.find(k => k.id === id) || kids[0];
   const accent = ACCENT_COLORS.find(c => c.deep === kid.accentColour) || ACCENT_COLORS[0];
+
+  const handleAddTask = (task, kidIds) => {
+    setKids(prev => prev.map(k =>
+      kidIds.includes(k.id) ? { ...k, due: [...k.due, { ...task, id: task.id + k.id }] } : k
+    ));
+  };
   useEffect(() => {
     const end = kid.points;
     const startFrom = Math.max(0, end - 20);
@@ -125,6 +133,7 @@ export default function KidDetail() {
               {kid.due.length > 0 && (
                 <span className="due-badge">{kid.due.length} due tasks</span>
               )}
+              <button className="add-task-btn" onClick={() => setShowAddTask(true)}>+ Add Task</button>
             </div>
 
             <div className="task-columns">
@@ -200,6 +209,15 @@ export default function KidDetail() {
             <p>Coming soon.</p>
           </div>
         )}
+      {showAddTask && (
+        <AddTaskModal
+          kid={kid}
+          accent={accent}
+          allKids={kids}
+          onAdd={handleAddTask}
+          onClose={() => setShowAddTask(false)}
+        />
+      )}
       </section>
       <button className="kid-back-btn" onClick={() => navigate("/family")}>
         ← Back to family

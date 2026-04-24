@@ -1,0 +1,19 @@
+{
+  "name": "ChoreHeroes",
+  "short_name": "ChoreHeroes",
+  "description": "Turn chores into a family adventure. Kids earn points, parents stay sane.",
+  "start_url": "./app.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#fff5e8",
+  "theme_color": "#4fc7b5",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "./icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

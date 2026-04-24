@@ -85,8 +85,9 @@
 }
 .kid-nav-btn.active {
   background:
-    radial-gradient(circle at 18% 18%, rgba(255,255,255,0.78), transparent 18%),
-    linear-gradient(145deg, var(--accent-light, #ff9d57), var(--accent, #f07a45));
+    radial-gradient(circle at 18% 18%, rgba(255,255,255,0.6), transparent 30%),
+    linear-gradient(145deg, #C9A882, #A67C52);
+  color: rgb(47,36,25);
 }
 .kid-nav-btn:hover { transform: translateY(-2px); }
 
@@ -205,8 +206,9 @@
   border-radius: 16px;
   border: 1px solid rgba(255,255,255,0.72);
   background:
-    radial-gradient(circle at 18% 18%, rgba(255,255,255,0.78), transparent 18%),
-    linear-gradient(145deg, var(--accent-light, #ff9d57), var(--accent, #f07a45));
+    radial-gradient(circle at 18% 18%, rgba(255,255,255,0.6), transparent 30%),
+    linear-gradient(145deg, #C9A882, #A67C52);
+  color: rgb(47,36,25);
 }
 
 /* ── Task columns ───────────────────────────────────────────── */
@@ -326,8 +328,9 @@
   position: relative;
   overflow: hidden;
   background:
-    radial-gradient(circle at 18% 18%, rgba(255,255,255,0.78), transparent 18%),
-    linear-gradient(145deg, var(--accent-light, #ff9d57), var(--accent, #f07a45));
+    radial-gradient(circle at 18% 18%, rgba(255,255,255,0.6), transparent 30%),
+    linear-gradient(145deg, #C9A882, #A67C52);
+  color: rgb(47,36,25);
   box-shadow:
     rgba(45,32,18,0.18) 0px 10px 24px,
     rgba(255,255,255,0.62) 0px 3px 0px inset,
@@ -626,8 +629,9 @@
   position: relative;
   overflow: hidden;
   background:
-    radial-gradient(circle at 18% 18%, rgba(255,255,255,0.78), transparent 18%),
-    linear-gradient(145deg, var(--accent-light, #ff9d57), var(--accent, #f07a45));
+    radial-gradient(circle at 18% 18%, rgba(255,255,255,0.6), transparent 30%),
+    linear-gradient(145deg, #C9A882, #A67C52);
+  color: rgb(47,36,25);
   box-shadow:
     rgba(45,32,18,0.18) 0px 10px 24px,
     rgba(255,255,255,0.62) 0px 3px 0px inset,
@@ -758,8 +762,9 @@
   position: relative;
   overflow: hidden;
   background:
-    radial-gradient(circle at 18% 18%, rgba(255,255,255,0.78), transparent 18%),
-    linear-gradient(145deg, var(--accent-light, #ff9d57), var(--accent, #f07a45));
+    radial-gradient(circle at 18% 18%, rgba(255,255,255,0.6), transparent 30%),
+    linear-gradient(145deg, #C9A882, #A67C52);
+  color: rgb(47,36,25);
   box-shadow: rgba(63,43,24,0.16) 0px 10px 24px, rgba(255,255,255,0.6) 0px 3px 0px inset;
   transition: transform 0.15s;
   animation: pill-float 3.6s ease-in-out 0.6s infinite;

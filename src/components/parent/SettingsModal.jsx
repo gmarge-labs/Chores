@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import "./SettingsModal.css";
 
 const ACCENT_COLORS = [
@@ -60,6 +60,10 @@ export default function SettingsModal({ onClose }) {
     { id: "r3", name: "Screen time bonus", points: 30 },
   ]);
   const [newRewardName, setNewRewardName] = useState("");
+  const [selectedRewardId, setSelectedRewardId] = useState(null);
+  const [rewardLibrary, setRewardLibrary] = useState([]);
+  const [saveRewardToLib, setSaveRewardToLib] = useState(true);
+  const [editingReward, setEditingReward] = useState(null);
   const [newRewardPoints, setNewRewardPoints] = useState("");
 
   // Hero Journey
@@ -318,52 +322,134 @@ export default function SettingsModal({ onClose }) {
             </div>
           )}
 
-          {/* ── Rewards Store ── */}
+                                                  {/* ── Rewards Store ── */}
           {activeTab === "rewards" && (
-            <div className="settings-section">
+            <div className="settings-section settings-section--compact">
               <h3 className="settings-section-title">🛍️ Rewards Store</h3>
-              <p className="settings-hero-desc">Set favors kids can redeem with their points</p>
-              <div className="settings-rewards-list">
-                {rewards.map(r => (
-                  <div key={r.id} className="settings-reward-item">
-                    <span className="settings-reward-name">{r.name}</span>
-                    <span className="settings-reward-pts">{r.points} pts</span>
-                    <button className="settings-reward-delete" onClick={() => setRewards(prev => prev.filter(x => x.id !== r.id))}>✕</button>
+
+              {/* Name + Pts + Add all in one row */}
+              <div className="settings-rewards-input-row">
+                <div className="settings-field" style={{ flex: 1 }}>
+                  <label className="settings-label">Reward name</label>
+                  <input className="settings-input" type="text" placeholder="e.g. Stay up late"
+                    maxLength={40} value={newRewardName} onChange={e => setNewRewardName(e.target.value)} />
+                </div>
+                <div className="settings-field" style={{ width: "74px", flexShrink: 0 }}>
+                  <label className="settings-label">Pts</label>
+                  <input className="settings-input" type="number" placeholder="000" min="1"
+                    value={newRewardPoints}
+                    onChange={e => setNewRewardPoints(e.target.value.replace(/\D/g,"").slice(0,3))}
+                    style={{ textAlign:"center" }} />
+                </div>
+                <div className="settings-field" style={{ flexShrink: 0, alignSelf: "flex-end" }}>
+                  <button className="settings-modal-save"
+                    style={{ "--tab-accent": "#f07a45", "--tab-light": "#ff9d57", padding: "9px 20px", whiteSpace:"nowrap" }}
+                    onClick={() => {
+                      if (!newRewardName.trim() || !newRewardPoints) return;
+                      const r = { id: "r"+Date.now(), name: newRewardName.trim(), points: Number(newRewardPoints) };
+                      setRewards(prev => [...prev, r]);
+                      if (saveRewardToLib) setRewardLibrary(prev => [r, ...prev].slice(0,30));
+                      setNewRewardName(""); setNewRewardPoints("");
+                    }}>Add ✦</button>
+                </div>
+              </div>
+
+              {/* Save to library toggle — compact */}
+              <div className="settings-rewards-toggle-row">
+                <button className={`settings-toggle-btn${saveRewardToLib ? " on" : ""}`}
+                  style={{ transform: "scale(0.85)", transformOrigin: "left center" }}
+                  onClick={() => setSaveRewardToLib(p => !p)}>
+                  <span className="settings-toggle-knob" />
+                </button>
+                <span className="settings-toggle-label" style={{ fontSize: "0.82rem" }}>
+                  {saveRewardToLib ? "Save to library" : "Don't save"}
+                </span>
+              </div>
+
+              <div className="settings-rewards-divider" />
+
+              {/* Library — compact fixed height */}
+              <div className="settings-field">
+                <label className="settings-label">📚 Library {rewardLibrary.length > 0 ? `(${rewardLibrary.length})` : ""}</label>
+                {rewardLibrary.length === 0 ? (
+                  <div className="settings-rewards-empty-compact">
+                    <span>🛍️ No saved rewards yet — add one above</span>
                   </div>
-                ))}
+                ) : (
+                  <div className="settings-rewards-lib-list settings-rewards-lib-list--compact">
+                    {rewardLibrary.map(r => (
+                      <div key={r.id}
+                        className={`settings-rewards-lib-item${selectedRewardId === r.id ? " active" : ""}`}
+                        onClick={() => { setSelectedRewardId(r.id === selectedRewardId ? null : r.id); setEditingReward(null); }}>
+                        <span className="settings-reward-detail-name">{r.name}</span>
+                        <span className="settings-reward-detail-pts">⭐ {r.points}</span>
+                        <div className="settings-reward-lib-actions" onClick={e => e.stopPropagation()}>
+                          <button className="settings-reward-edit-btn"
+                            onClick={() => setEditingReward({ ...r })}>✏️</button>
+                          <button className="settings-reward-del-btn"
+                            onClick={() => { setRewardLibrary(prev => prev.filter(x => x.id !== r.id)); setSelectedRewardId(null); }}>
+                            🗑️
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
-              <div className="settings-reward-add">
-                <input className="settings-input" type="text" placeholder="e.g. Stay up late" maxLength={40}
-                  value={newRewardName} onChange={e => setNewRewardName(e.target.value)} />
-                <input className="settings-input" type="number" placeholder="Points" min="1"
-                  value={newRewardPoints} onChange={e => setNewRewardPoints(e.target.value.replace(/\D/g,""))}
-                  style={{ width: "100px" }} />
-                <button className="settings-modal-save" onClick={() => {
-                  if (!newRewardName.trim() || !newRewardPoints) return;
-                  setRewards(prev => [...prev, { id: "r"+Date.now(), name: newRewardName.trim(), points: Number(newRewardPoints) }]);
-                  setNewRewardName(""); setNewRewardPoints("");
-                }}>Add ✦</button>
-              </div>
+
+              {/* Inline edit — compact */}
+              {editingReward && (
+                <div className="settings-rewards-input-row">
+                  <div className="settings-field" style={{ flex: 1 }}>
+                    <label className="settings-label">Edit name</label>
+                    <input className="settings-input" type="text" maxLength={40}
+                      value={editingReward.name}
+                      onChange={e => setEditingReward(p => ({ ...p, name: e.target.value }))} />
+                  </div>
+                  <div className="settings-field" style={{ width: "74px", flexShrink: 0 }}>
+                    <label className="settings-label">Pts</label>
+                    <input className="settings-input" type="number" min="1"
+                      value={editingReward.points}
+                      onChange={e => setEditingReward(p => ({ ...p, points: Number(e.target.value) || 0 }))}
+                      style={{ textAlign:"center" }} />
+                  </div>
+                  <div style={{ display:"flex", gap:"6px", alignSelf:"flex-end" }}>
+                    <button className="settings-modal-save"
+                      style={{ "--tab-accent": "#f07a45", "--tab-light": "#ff9d57", padding: "9px 16px" }}
+                      onClick={() => {
+                        setRewardLibrary(prev => prev.map(r => r.id === editingReward.id ? editingReward : r));
+                        setEditingReward(null);
+                      }}>Save</button>
+                    <button className="settings-reward-del-btn"
+                      style={{ background:"rgba(255,255,255,0.45)", color:"rgba(47,36,25,0.7)", borderColor:"rgba(47,36,25,0.15)", padding:"9px 12px" }}
+                      onClick={() => setEditingReward(null)}>✕</button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
           {/* ── Hero Journey ── */}
           {activeTab === "journey" && (
-            <div className="settings-section">
+            <div className="settings-section settings-section--hero">
               <h3 className="settings-section-title">🏆 Hero Journey</h3>
-              <p className="settings-hero-desc">Set points needed for each level — resets monthly!</p>
-              <div className="settings-hero-levels">
-                {HERO_LEVELS.map(l => (
-                  <div key={l.key} className="settings-hero-level" style={{ background: l.color, borderColor: l.border }}>
-                    <span className="settings-hero-emoji">{l.emoji}</span>
-                    <div className="settings-hero-info">
-                      <span className="settings-hero-name">{l.name}</span>
-                      <input className="settings-input settings-hero-input" type="number" min="0"
-                        value={heroThresholds[l.key]}
-                        onChange={e => setHeroThresholds(prev => ({ ...prev, [l.key]: Number(e.target.value) || 0 }))} />
-                      <span className="settings-hero-pts">pts</span>
+              <div className="settings-hero-levels-grid">
+                {HERO_LEVELS.map((l, i) => (
+                  <React.Fragment key={l.key}>
+                    <div className="settings-hero-level-card" style={{ background: l.color, borderColor: l.border }}>
+                      <span className="settings-hero-emoji-lg">{l.emoji}</span>
+                      <span className="settings-hero-name-lg">{l.name}</span>
+                      <div className="settings-hero-pts-row">
+                        <input className="settings-hero-input-lg" type="number" min="0"
+                          value={heroThresholds[l.key]}
+                          onChange={e => setHeroThresholds(prev => ({ ...prev, [l.key]: Number(e.target.value) || 0 }))} />
+                        <span className="settings-hero-pts">pts</span>
+                      </div>
                     </div>
-                  </div>
+                    {i < HERO_LEVELS.length - 1 && (
+                      <span className="settings-hero-arrow">→</span>
+                    )}
+                  </React.Fragment>
                 ))}
               </div>
             </div>
@@ -372,25 +458,27 @@ export default function SettingsModal({ onClose }) {
           {/* ── Family ── */}
           {activeTab === "family" && (
             <>
-              <div className="settings-section">
-                <h3 className="settings-section-title">💵 Dollar Rate</h3>
-                <div className="settings-field">
-                  <label className="settings-label">How many points = how many dollars</label>
-                  <div className="settings-rate-row">
-                    <input className="settings-input" type="number" min="1" placeholder="Points"
-                      value={pointsPerDollar} onChange={e => setPointsPerDollar(Number(e.target.value) || "")}
-                      style={{ width: "120px", textAlign: "center" }} />
-                    <span className="settings-rate-equals">=</span>
-                    <span className="settings-rate-dollar">$</span>
-                    <input className="settings-input" type="number" min="1" placeholder="Dollars"
-                      value={dollarValue} onChange={e => setDollarValue(Number(e.target.value) || "")}
-                      style={{ width: "120px", textAlign: "center" }} />
+              <div className="settings-profile-two-tiles">
+                <div className="settings-section">
+                  <h3 className="settings-section-title">💵 Dollar Rate</h3>
+                  <p className="settings-hero-desc">Set how many points equal one dollar reward</p>
+                  <div className="settings-field">
+                    <label className="settings-label">Points = Dollars</label>
+                    <div className="settings-rate-row">
+                      <input className="settings-input" type="number" min="1" placeholder="Points"
+                        value={pointsPerDollar} onChange={e => setPointsPerDollar(Number(e.target.value) || "")}
+                        style={{ width: "100px", textAlign: "center" }} />
+                      <span className="settings-rate-equals">=</span>
+                      <span className="settings-rate-dollar">$</span>
+                      <input className="settings-input" type="number" min="1" placeholder="Dollars"
+                        value={dollarValue} onChange={e => setDollarValue(Number(e.target.value) || "")}
+                        style={{ width: "100px", textAlign: "center" }} />
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="settings-section">
-                <h3 className="settings-section-title">➕ Add a Kid</h3>
+                <div className="settings-section">
+                  <h3 className="settings-section-title">➕ Add a Kid</h3>
                 <div className="settings-add-kid-grid">
                   <div className="settings-field">
                     <label className="settings-label">Name</label>
@@ -404,19 +492,22 @@ export default function SettingsModal({ onClose }) {
                   </div>
                   <div className="settings-field">
                     <label className="settings-label">Theme colour</label>
-                    <div className="settings-colour-row">
+                    <div className="settings-colour-swatches">
                       {ACCENT_COLORS.map(c => (
-                        <button key={c.name} className={`settings-colour-swatch${newKidColour === c.deep ? " active" : ""}`}
+                        <button key={c.name} className={`settings-colour-swatch-lg${newKidColour === c.deep ? " active" : ""}`}
                           style={{ background: `linear-gradient(145deg, ${c.light}, ${c.deep})` }}
                           onClick={() => setNewKidColour(c.deep)} />
                       ))}
                     </div>
                   </div>
                 </div>
-                <div className="settings-add-kid-footer">
-                  <button className="settings-modal-save" onClick={() => { setNewKidName(""); setNewKidPin(""); }}>
-                    Add Kid ✦
-                  </button>
+                  <div className="settings-add-kid-footer">
+                    <button className="settings-modal-save"
+                      style={{ "--tab-accent": "#f07a45", "--tab-light": "#ff9d57" }}
+                      onClick={() => { setNewKidName(""); setNewKidPin(""); }}>
+                      Add Kid ✦
+                    </button>
+                  </div>
                 </div>
               </div>
 

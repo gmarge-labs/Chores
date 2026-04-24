@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import "./KidDetail.css";
 import AddTaskModal from "./AddTaskModal";
+import SettingsModal from "./SettingsModal";
 import Background from '../shared/Background';
 
 const ACCENT_COLORS = [
@@ -32,12 +33,17 @@ export default function KidDetail() {
   const navigate = useNavigate();
   const [activePanel, setActivePanel] = useState("dashboard");
   const [showAddTask, setShowAddTask] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const [displayPoints, setDisplayPoints] = useState(0);
   const [celebrating, setCelebrating] = useState(false);
   const [kids, setKids] = useState(MOCK_KIDS);
 
   const kid = kids.find(k => k.id === id) || kids[0];
   const accent = ACCENT_COLORS.find(c => c.deep === kid.accentColour) || ACCENT_COLORS[0];
+
+  const handleUpdate = (updates) => {
+    setKids(prev => prev.map(k => k.id !== kid.id ? k : { ...k, ...updates }));
+  };
 
   const handleAddTask = (task, kidIds) => {
     setKids(prev => prev.map(k =>
@@ -203,12 +209,16 @@ export default function KidDetail() {
           </>
         )}
 
-        {activePanel !== "dashboard" && (
+
+        {activePanel !== "dashboard" && activePanel !== "settings" && (
           <div className="panel-placeholder">
             <h2>{activePanel.charAt(0).toUpperCase() + activePanel.slice(1)}</h2>
             <p>Coming soon.</p>
           </div>
         )}
+      {showSettings && (
+        <SettingsModal onClose={() => setShowSettings(false)} />
+      )}
       {showAddTask && (
         <AddTaskModal
           kid={kid}

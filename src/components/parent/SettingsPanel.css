@@ -1,0 +1,232 @@
+.settings-panel {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto auto auto;
+  gap: 16px;
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  align-content: start;
+}
+
+/* Section */
+.settings-section {
+  background: rgba(255,255,255,0.55);
+  backdrop-filter: blur(16px);
+  border-radius: 24px;
+  padding: 20px 24px;
+  border: 1.5px solid rgba(255,255,255,0.75);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.9);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  animation: card-in 0.4s ease both;
+}
+.settings-section:nth-child(2) { animation-delay: 0.05s; }
+.settings-section:nth-child(3) { animation-delay: 0.1s; }
+.settings-section:nth-child(4) { animation-delay: 0.15s; }
+
+.settings-section-title {
+  font-family: 'Baloo 2', cursive;
+  font-size: 1.1rem;
+  font-weight: 900;
+  color: rgb(47,36,25);
+  margin: 0;
+}
+
+/* Field */
+.settings-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.settings-label {
+  font-family: 'Baloo 2', cursive;
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: rgba(47,36,25,0.7);
+}
+.settings-input {
+  font-family: 'Baloo 2', cursive;
+  font-size: 1rem;
+  font-weight: 600;
+  color: rgb(47,36,25);
+  padding: 10px 14px;
+  border-radius: 14px;
+  border: 1.5px solid rgba(255,255,255,0.6);
+  background: rgba(255,255,255,0.65);
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.settings-input:focus {
+  border-color: var(--accent, #f07a45);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent);
+}
+.settings-error {
+  font-family: 'Baloo 2', cursive;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #ff4444;
+  margin: 0;
+}
+
+/* Colour swatches */
+.settings-colour-row {
+  display: flex;
+  gap: 10px;
+}
+.settings-colour-swatch {
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  border: 3px solid transparent;
+  cursor: pointer;
+  transition: transform 0.15s, border-color 0.15s;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.12);
+}
+.settings-colour-swatch.active {
+  border-color: white;
+  transform: scale(1.15);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+}
+.settings-colour-swatch:hover:not(.active) { transform: scale(1.08); }
+
+/* Pill row */
+.settings-pill-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.settings-pill-btn {
+  font-family: 'Baloo 2', cursive;
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: rgb(47,36,25);
+  padding: 7px 14px;
+  border-radius: 999px;
+  border: 1.5px solid rgba(255,255,255,0.5);
+  background: rgba(255,255,255,0.5);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.settings-pill-btn.active {
+  background:
+    radial-gradient(circle at 18% 18%, rgba(255,255,255,0.78), transparent 18%),
+    linear-gradient(145deg, var(--accent-light, #ff9d57), var(--accent, #f07a45));
+  color: white;
+  border-color: rgba(255,255,255,0.72);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.7);
+}
+.settings-pill-btn:hover:not(.active) { background: rgba(255,255,255,0.75); transform: translateY(-1px); }
+
+/* Save button */
+.settings-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+.settings-save-btn {
+  font-family: 'Baloo 2', cursive;
+  font-size: 1rem;
+  font-weight: 900;
+  color: white;
+  padding: 12px 32px;
+  border-radius: 999px;
+  border: 2px solid rgba(255,255,255,0.72);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 18% 18%, rgba(255,255,255,0.78), transparent 18%),
+    linear-gradient(145deg, var(--accent-light, #ff9d57), var(--accent, #f07a45));
+  box-shadow: 0 10px 24px rgba(0,0,0,0.12), inset 0 2px 0 rgba(255,255,255,0.7);
+  transition: transform 0.15s;
+  animation: pill-float 3.6s ease-in-out infinite;
+}
+.settings-save-btn:hover { transform: translateY(-2px) scale(1.02); }
+
+/* Danger zone */
+.settings-section--danger {
+  border-color: rgba(255,80,80,0.25);
+  background: rgba(255,240,240,0.45);
+}
+.settings-delete-btn {
+  font-family: 'Baloo 2', cursive;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #cc3333;
+  padding: 10px 20px;
+  border-radius: 999px;
+  border: 1.5px solid rgba(255,80,80,0.35);
+  background: rgba(255,220,220,0.5);
+  cursor: pointer;
+  transition: all 0.15s;
+  align-self: flex-start;
+}
+.settings-delete-btn:hover { background: rgba(255,200,200,0.7); transform: translateY(-1px); }
+.settings-confirm-row {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.settings-confirm-text {
+  font-family: 'Baloo 2', cursive;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #cc3333;
+  margin: 0;
+}
+.settings-confirm-btns { display: flex; gap: 10px; }
+.settings-confirm-yes {
+  font-family: 'Baloo 2', cursive;
+  font-size: 0.9rem;
+  font-weight: 900;
+  color: white;
+  padding: 8px 18px;
+  border-radius: 999px;
+  border: none;
+  background: #cc3333;
+  cursor: pointer;
+  transition: transform 0.15s;
+}
+.settings-confirm-yes:hover { transform: translateY(-1px); }
+.settings-confirm-no {
+  font-family: 'Baloo 2', cursive;
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: rgba(47,36,25,0.7);
+  padding: 8px 18px;
+  border-radius: 999px;
+  border: 1.5px solid rgba(47,36,25,0.15);
+  background: rgba(255,255,255,0.5);
+  cursor: pointer;
+  transition: transform 0.15s;
+}
+.settings-confirm-no:hover { transform: translateY(-1px); }
+
+/* Grid layout for sections */
+.settings-section:nth-child(1) { grid-column: 1; grid-row: 1; } /* Profile */
+.settings-section:nth-child(2) { grid-column: 2; grid-row: 1; } /* PIN */
+.settings-section:nth-child(3) { grid-column: 1 / 3; grid-row: 2; } /* Rewards */
+.settings-actions             { grid-column: 1 / 3; grid-row: 3; justify-content: flex-end; }
+.settings-section--danger     { grid-column: 1 / 3; grid-row: 4; }
+
+/* Add water bubbles texture to sections */
+.settings-section {
+  position: relative;
+  overflow: hidden;
+}
+.settings-section::before {
+  content: "✦";
+  position: absolute;
+  top: 12px; right: 14px;
+  font-size: 0.8rem;
+  color: rgba(255,255,255,0.7);
+  animation: star-drift 2s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* Scrollable container */
+.kid-detail-card {
+  overflow-y: auto !important;
+}

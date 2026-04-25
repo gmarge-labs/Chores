@@ -29,7 +29,6 @@ const TABS = [
   { id: "bonus",    emoji: "🎁", label: "Bonus Points" },
   { id: "rewards",  emoji: "🛍️", label: "Rewards Store" },
   { id: "journey",  emoji: "🏆", label: "Hero Journey" },
-  { id: "family",   emoji: "👨‍👩‍👧", label: "Family" },
 ];
 
 export default function SettingsModal({ onClose }) {
@@ -64,6 +63,10 @@ export default function SettingsModal({ onClose }) {
   const [rewardLibrary, setRewardLibrary] = useState([]);
   const [saveRewardToLib, setSaveRewardToLib] = useState(true);
   const [editingReward, setEditingReward] = useState(null);
+  const [showAddKid, setShowAddKid] = useState(false);
+  const [showDangerZone, setShowDangerZone] = useState(false);
+  const [showPinForm, setShowPinForm] = useState(false);
+  const [deleteKids, setDeleteKids] = useState([]);
   const [newRewardPoints, setNewRewardPoints] = useState("");
 
   // Hero Journey
@@ -116,110 +119,95 @@ export default function SettingsModal({ onClose }) {
         {/* Tab content */}
         <div className="settings-tab-content" key={activeTab}>
 
-          {/* ── Edit Profile ── */}
+                                                                                          {/* ── Edit Profile ── */}
           {activeTab === "profile" && (
-            <div className="settings-profile-two-tiles">
-
-              {/* Tile 1: Kid selector + Theme colour */}
+            <>
               <div className="settings-section">
-                <h3 className="settings-section-title">🎨 Theme Colour</h3>
-                <div className="settings-field">
-                  <label className="settings-label">Select kid</label>
-                  <div className="settings-kid-chips">
-                    {kids.map(k => {
-                      const ac = ACCENT_COLORS.find(c => c.deep === k.accentColour) || ACCENT_COLORS[0];
-                      const isSelected = selectedKidId === k.id;
-                      const liveColour = isSelected ? kidColour : k.accentColour;
-                      const liveAc = ACCENT_COLORS.find(c => c.deep === liveColour) || ac;
-                      return (
-                        <button key={k.id}
-                          className={`settings-kid-chip-btn${isSelected ? " active" : ""}`}
-                          style={{ "--tab-accent": liveAc.deep, "--tab-light": liveAc.light }}
-                          onClick={() => { setSelectedKidId(k.id); setKidColour(k.accentColour); setPinError(""); }}>
-                          <span className="settings-kid-chip-avatar"
-                            style={{ background: `linear-gradient(145deg, ${liveAc.light}, ${liveAc.deep})`, transition: "background 0.3s" }}>
-                            {k.name[0]}
-                          </span>
-                          {k.name}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-                <div className="settings-field">
-                  <label className="settings-label">Pick colour</label>
-                  <div className="settings-colour-swatches">
-                    {ACCENT_COLORS.map(c => (
-                      <button key={c.name}
-                        className={`settings-colour-swatch-lg${kidColour === c.deep ? " active" : ""}`}
-                        style={{ background: `linear-gradient(145deg, ${c.light}, ${c.deep})` }}
-                        title={c.name}
-                        onClick={() => setKidColour(c.deep)} />
-                    ))}
-                  </div>
-                </div>
-              </div>
+                <h3 className="settings-section-title">✨ Kid Profiles</h3>
 
-              {/* Tile 2: Change PIN */}
-              <div className="settings-section">
-                <h3 className="settings-section-title">🔒 Change PIN</h3>
-                <div className="settings-field">
-                  <label className="settings-label">Select kid</label>
-                  <div className="settings-kid-chips">
-                    {kids.map(k => {
-                      const ac = ACCENT_COLORS.find(c => c.deep === k.accentColour) || ACCENT_COLORS[0];
-                      const isSelected = selectedKidId === k.id;
-                      const liveColour = isSelected ? kidColour : k.accentColour;
-                      const liveAc = ACCENT_COLORS.find(c => c.deep === liveColour) || ac;
-                      return (
-                        <button key={k.id}
-                          className={`settings-kid-chip-btn${isSelected ? " active" : ""}`}
-                          style={{ "--tab-accent": liveAc.deep, "--tab-light": liveAc.light }}
-                          onClick={() => { setSelectedKidId(k.id); setKidColour(k.accentColour); setPinError(""); }}>
-                          <span className="settings-kid-chip-avatar"
-                            style={{ background: `linear-gradient(145deg, ${liveAc.light}, ${liveAc.deep})`, transition: "background 0.3s" }}>
-                            {k.name[0]}
-                          </span>
-                          {k.name}
-                        </button>
-                      );
-                    })}
-                  </div>
+                {/* Row 1: kid chips */}
+                <div className="settings-kid-chips">
+                  {kids.map(k => {
+                    const ac = ACCENT_COLORS.find(c => c.deep === k.accentColour) || ACCENT_COLORS[0];
+                    const isSelected = selectedKidId === k.id;
+                    const liveColour = isSelected ? kidColour : k.accentColour;
+                    const liveAc = ACCENT_COLORS.find(c => c.deep === liveColour) || ac;
+                    return (
+                      <button key={k.id}
+                        className={`settings-kid-chip-btn${isSelected ? " active" : ""}`}
+                        style={{ "--tab-accent": liveAc.deep, "--tab-light": liveAc.light }}
+                        onClick={() => { setSelectedKidId(k.id); setKidColour(k.accentColour); setPinError(""); setShowPinForm(false); }}>
+                        <span className="settings-kid-chip-avatar"
+                          style={{ background: `linear-gradient(145deg, ${liveAc.light}, ${liveAc.deep})`, transition: "background 0.3s" }}>
+                          {k.name[0]}
+                        </span>
+                        {k.name}
+                      </button>
+                    );
+                  })}
                 </div>
-                <div className="settings-field">
-                  <label className="settings-label">New PIN</label>
-                  <div className="settings-pin-dots">
-                    {[0,1,2,3].map(i => (
-                      <span key={i} className={`settings-pin-dot${i < pin.length ? " filled" : ""}`}
-                        style={{ "--dot-color": kidColour }} />
-                    ))}
-                    <input className="settings-pin-hidden" type="password" inputMode="numeric" maxLength={4}
-                      value={pin} onChange={e => { setPin(e.target.value.replace(/\D/g,"")); setPinError(""); }} />
-                  </div>
+
+                {/* Row 2: colour swatches */}
+                <div className="settings-colour-swatches settings-colour-swatches--full">
+                  {ACCENT_COLORS.map(c => (
+                    <button key={c.name}
+                      className={`settings-colour-swatch-lg${kidColour === c.deep ? " active" : ""}`}
+                      style={{ background: `linear-gradient(145deg, ${c.light}, ${c.deep})` }}
+                      title={c.name}
+                      onClick={() => setKidColour(c.deep)} />
+                  ))}
                 </div>
-                <div className="settings-field">
-                  <label className="settings-label">Confirm PIN</label>
-                  <div className="settings-pin-dots">
-                    {[0,1,2,3].map(i => (
-                      <span key={i} className={`settings-pin-dot${i < confirmPin.length ? " filled" : ""}`}
-                        style={{ "--dot-color": kidColour }} />
-                    ))}
-                    <input className="settings-pin-hidden" type="password" inputMode="numeric" maxLength={4}
-                      value={confirmPin} onChange={e => { setConfirmPin(e.target.value.replace(/\D/g,"")); setPinError(""); }} />
+
+                {/* Row 3: Reset PIN + Add a Kid + Delete — all on one line */}
+                {!showPinForm ? (
+                  <div className="settings-ep-action-row">
+                    <button className="settings-lib-toggle-btn" onClick={() => { setShowPinForm(true); setPin(""); setConfirmPin(""); setPinError(""); }}>
+                      🔒 Reset PIN
+                    </button>
+                    <button className="settings-modal-save" style={{ padding:"9px 20px", fontSize:"0.95rem" }} onClick={() => {}}>
+                      👶 Add a Kid ✦
+                    </button>
+                    <button className="settings-modal-save" style={{ padding:"9px 20px", fontSize:"0.95rem" }} onClick={() => {}}>
+                      🗑️ Delete Kid / Family
+                    </button>
                   </div>
-                </div>
+                ) : (
+                  <div className="settings-ep-row" style={{ alignItems:"flex-end" }}>
+                    <div className="settings-field" style={{ flex:1 }}>
+                      <label className="settings-label">New PIN</label>
+                      <div className="settings-pin-dots">
+                        {[0,1,2,3].map(i => (
+                          <span key={i} className={`settings-pin-dot${i < pin.length ? " filled" : ""}`}
+                            style={{ "--dot-color": kidColour }} />
+                        ))}
+                        <input className="settings-pin-hidden" type="password" inputMode="numeric" maxLength={4}
+                          value={pin} onChange={e => { setPin(e.target.value.replace(/\D/g,"")); setPinError(""); }} />
+                      </div>
+                    </div>
+                    <div className="settings-field" style={{ flex:1 }}>
+                      <label className="settings-label">Confirm PIN</label>
+                      <div className="settings-pin-dots">
+                        {[0,1,2,3].map(i => (
+                          <span key={i} className={`settings-pin-dot${i < confirmPin.length ? " filled" : ""}`}
+                            style={{ "--dot-color": kidColour }} />
+                        ))}
+                        <input className="settings-pin-hidden" type="password" inputMode="numeric" maxLength={4}
+                          value={confirmPin} onChange={e => { setConfirmPin(e.target.value.replace(/\D/g,"")); setPinError(""); }} />
+                      </div>
+                    </div>
+                    <button className="settings-lib-toggle-btn" style={{ alignSelf:"flex-end", marginBottom:"2px" }}
+                      onClick={() => setShowPinForm(false)}>✕</button>
+                  </div>
+                )}
                 {pinError && <p className="settings-error">{pinError}</p>}
               </div>
-
-            </div>
+            </>
           )}
 
-          {/* ── Bonus Points ── */}
+                                                  {/* ── Bonus Points ── */}
           {activeTab === "bonus" && (
-            <div className="settings-profile-two-tiles">
-
-              {/* Left tile: Assign + Reason/Points */}
-              <div className="settings-section">
+            <div className="settings-bonus-single">
+              <div className="settings-section settings-bonus-right-tile">
                 <h3 className="settings-section-title">🎁 Bonus Points</h3>
                 <div className="settings-field">
                   <label className="settings-label">Assign to</label>
@@ -246,186 +234,147 @@ export default function SettingsModal({ onClose }) {
                   </div>
                 </div>
                 <div className="settings-reason-points-row">
-                  <div className="settings-field" style={{ flex: 1 }}>
+                  <div className="settings-field" style={{ flex:1 }}>
                     <label className="settings-label">Reason</label>
                     <input className="settings-input" type="text" placeholder="e.g. Good behaviour" maxLength={60}
-                      value={bonusReason} onChange={e => setBonusReason(e.target.value)} />
+                      value={bonusReason} onChange={e => setBonusReason(e.target.value)} style={{ width:"100%" }} />
                   </div>
-                  <div className="settings-field" style={{ width: "80px", flexShrink: 0 }}>
+                  <div className="settings-field" style={{ width:"80px", flexShrink:0 }}>
                     <label className="settings-label">Pts</label>
-                    <input className="settings-input" type="number" placeholder="000" min="1" max="999"
+                    <input className="settings-input" type="number" placeholder="000" min="1"
                       value={bonusPoints}
                       onChange={e => setBonusPoints(e.target.value.replace(/\D/g,"").slice(0,3))}
-                      style={{ textAlign:"center" }} />
+                      style={{ textAlign:"center", width:"100%" }} />
                   </div>
                 </div>
-              </div>
-
-              {/* Right tile: Notify + Library + Add */}
-              <div className="settings-section">
-                <h3 className="settings-section-title">⚙️ Award Settings</h3>
-                <div className="settings-field">
-                  <label className="settings-label">Notify kids when rewarded</label>
+                <div className="settings-bonus-footer">
                   <div className="settings-notify-toggle-row">
                     <button className={`settings-toggle-btn${notifyKids ? " on" : ""}`}
                       onClick={() => setNotifyKids(p => !p)}>
                       <span className="settings-toggle-knob" />
                     </button>
-                    <span className="settings-toggle-label">{notifyKids ? "On — kids will be notified" : "Off — silent award"}</span>
+                    <span className="settings-toggle-label">{notifyKids ? "Notify kids" : "Silent"}</span>
                   </div>
-                </div>
-
-                <div className="settings-field">
-                  <div className="settings-assign-header">
-                    <label className="settings-label">Bonus library</label>
-                    <button className="settings-lib-toggle-btn" onClick={() => setShowBonusLibrary(p => !p)}>
-                      {showBonusLibrary ? "Hide" : "Show"} {bonusLibrary.length > 0 ? `(${bonusLibrary.length})` : ""}
+                  <div style={{ display:"flex", gap:"10px", alignItems:"center", marginLeft:"auto" }}>
+                    {bonusAdded && <span className="settings-bonus-confirm">🎉 Added!</span>}
+                    <button className="settings-lib-toggle-btn" style={{ width:"auto" }} onClick={() => setShowBonusLibrary(p => !p)}>
+                      ☰ Pick from library {bonusLibrary.length > 0 ? `(${bonusLibrary.length})` : ""}
+                    </button>
+                    <button className="settings-modal-save"
+                      style={{ width:"auto" }}
+                      onClick={() => {
+                        if (!bonusReason.trim() || !bonusPoints) return;
+                        setBonusLibrary(prev => {
+                          const updated = [{ reason: bonusReason.trim(), points: Number(bonusPoints) }, ...prev.filter(b => b.reason !== bonusReason.trim())];
+                          return updated.slice(0, 30);
+                        });
+                        setBonusPoints(""); setBonusReason(""); setBonusKids([]);
+                        setBonusAdded(true); setTimeout(() => setBonusAdded(false), 2000);
+                      }}>
+                      Add Bonus ✦
                     </button>
                   </div>
-                  {showBonusLibrary && bonusLibrary.length > 0 && (
-                    <div className="settings-bonus-library">
-                      {bonusLibrary.map((b, i) => (
+                </div>
+                {showBonusLibrary && (
+                  <div className="settings-bonus-library">
+                    {bonusLibrary.length === 0
+                      ? <p className="settings-hero-desc">No saved bonuses yet.</p>
+                      : bonusLibrary.map((b, i) => (
                         <button key={i} className="settings-bonus-lib-item"
                           onClick={() => { setBonusReason(b.reason); setBonusPoints(String(b.points)); setShowBonusLibrary(false); }}>
                           <span className="settings-reward-name">{b.reason}</span>
                           <span className="settings-reward-pts">{b.points} pts</span>
                         </button>
-                      ))}
-                    </div>
-                  )}
-                  {showBonusLibrary && bonusLibrary.length === 0 && (
-                    <p className="settings-hero-desc">No saved bonuses yet — add one to build your library.</p>
-                  )}
-                  {!showBonusLibrary && bonusLibrary.length === 0 && (
-                    <p className="settings-hero-desc">Your bonus library is empty. Added bonuses are saved here automatically.</p>
-                  )}
-                </div>
-
-                <div style={{ marginTop: "auto", display: "flex", flexDirection: "column", gap: "10px", alignItems: "center" }}>
-                  {bonusAdded && <div className="settings-bonus-confirm">🎉 Bonus added successfully!</div>}
-                  <button className="settings-modal-save"
-                    style={{ "--tab-accent": "#f07a45", "--tab-light": "#ff9d57", padding: "10px 40px" }}
-                    onClick={() => {
-                      if (!bonusReason.trim() || !bonusPoints) return;
-                      setBonusLibrary(prev => {
-                        const updated = [{ reason: bonusReason.trim(), points: Number(bonusPoints) }, ...prev.filter(b => b.reason !== bonusReason.trim())];
-                        return updated.slice(0, 30);
-                      });
-                      setBonusPoints(""); setBonusReason(""); setBonusKids([]);
-                      setBonusAdded(true); setTimeout(() => setBonusAdded(false), 2000);
-                    }}>
-                    Add Bonus ✦
-                  </button>
-                </div>
-              </div>
-
-            </div>
-          )}
-
-                                                  {/* ── Rewards Store ── */}
-          {activeTab === "rewards" && (
-            <div className="settings-section settings-section--compact">
-              <h3 className="settings-section-title">🛍️ Rewards Store</h3>
-
-              {/* Name + Pts + Add all in one row */}
-              <div className="settings-rewards-input-row">
-                <div className="settings-field" style={{ flex: 1 }}>
-                  <label className="settings-label">Reward name</label>
-                  <input className="settings-input" type="text" placeholder="e.g. Stay up late"
-                    maxLength={40} value={newRewardName} onChange={e => setNewRewardName(e.target.value)} />
-                </div>
-                <div className="settings-field" style={{ width: "74px", flexShrink: 0 }}>
-                  <label className="settings-label">Pts</label>
-                  <input className="settings-input" type="number" placeholder="000" min="1"
-                    value={newRewardPoints}
-                    onChange={e => setNewRewardPoints(e.target.value.replace(/\D/g,"").slice(0,3))}
-                    style={{ textAlign:"center" }} />
-                </div>
-                <div className="settings-field" style={{ flexShrink: 0, alignSelf: "flex-end" }}>
-                  <button className="settings-modal-save"
-                    style={{ "--tab-accent": "#f07a45", "--tab-light": "#ff9d57", padding: "9px 20px", whiteSpace:"nowrap" }}
-                    onClick={() => {
-                      if (!newRewardName.trim() || !newRewardPoints) return;
-                      const r = { id: "r"+Date.now(), name: newRewardName.trim(), points: Number(newRewardPoints) };
-                      setRewards(prev => [...prev, r]);
-                      if (saveRewardToLib) setRewardLibrary(prev => [r, ...prev].slice(0,30));
-                      setNewRewardName(""); setNewRewardPoints("");
-                    }}>Add ✦</button>
-                </div>
-              </div>
-
-              {/* Save to library toggle — compact */}
-              <div className="settings-rewards-toggle-row">
-                <button className={`settings-toggle-btn${saveRewardToLib ? " on" : ""}`}
-                  style={{ transform: "scale(0.85)", transformOrigin: "left center" }}
-                  onClick={() => setSaveRewardToLib(p => !p)}>
-                  <span className="settings-toggle-knob" />
-                </button>
-                <span className="settings-toggle-label" style={{ fontSize: "0.82rem" }}>
-                  {saveRewardToLib ? "Save to library" : "Don't save"}
-                </span>
-              </div>
-
-              <div className="settings-rewards-divider" />
-
-              {/* Library — compact fixed height */}
-              <div className="settings-field">
-                <label className="settings-label">📚 Library {rewardLibrary.length > 0 ? `(${rewardLibrary.length})` : ""}</label>
-                {rewardLibrary.length === 0 ? (
-                  <div className="settings-rewards-empty-compact">
-                    <span>🛍️ No saved rewards yet — add one above</span>
-                  </div>
-                ) : (
-                  <div className="settings-rewards-lib-list settings-rewards-lib-list--compact">
-                    {rewardLibrary.map(r => (
-                      <div key={r.id}
-                        className={`settings-rewards-lib-item${selectedRewardId === r.id ? " active" : ""}`}
-                        onClick={() => { setSelectedRewardId(r.id === selectedRewardId ? null : r.id); setEditingReward(null); }}>
-                        <span className="settings-reward-detail-name">{r.name}</span>
-                        <span className="settings-reward-detail-pts">⭐ {r.points}</span>
-                        <div className="settings-reward-lib-actions" onClick={e => e.stopPropagation()}>
-                          <button className="settings-reward-edit-btn"
-                            onClick={() => setEditingReward({ ...r })}>✏️</button>
-                          <button className="settings-reward-del-btn"
-                            onClick={() => { setRewardLibrary(prev => prev.filter(x => x.id !== r.id)); setSelectedRewardId(null); }}>
-                            🗑️
-                          </button>
-                        </div>
-                      </div>
-                    ))}
+                      ))
+                    }
                   </div>
                 )}
               </div>
+            </div>
+          )}
 
-              {/* Inline edit — compact */}
-              {editingReward && (
+                    {/* ── Rewards Store ── */}
+          {activeTab === "rewards" && (
+            <div className="settings-rewards-two-col">
+
+              {/* LEFT — Conversion Rate narrow tile */}
+              <div className="settings-section settings-section--compact settings-rewards-left-tile">
+                <h3 className="settings-section-title">💵 Conversion Rate</h3>
+                <div className="settings-rate-row" style={{ justifyContent:"center" }}>
+                  <span className="settings-rate-pts-label">Pts</span>
+                  <input className="settings-input" type="number" min="1"
+                    value={pointsPerDollar} onChange={e => setPointsPerDollar(Number(e.target.value) || "")}
+                    style={{ width:"60px", textAlign:"center" }} />
+                  <span className="settings-rate-equals">=</span>
+                  <span className="settings-rate-dollar-bold">$</span>
+                  <input className="settings-input" type="number" min="1"
+                    value={dollarValue} onChange={e => setDollarValue(Number(e.target.value) || "")}
+                    style={{ width:"60px", textAlign:"center" }} />
+                </div>
+              </div>
+
+              {/* RIGHT — Rewards Store wider tile */}
+              <div className="settings-section settings-section--compact settings-rewards-right-tile">
+                <h3 className="settings-section-title">🛍️ Rewards Store</h3>
                 <div className="settings-rewards-input-row">
                   <div className="settings-field" style={{ flex: 1 }}>
-                    <label className="settings-label">Edit name</label>
-                    <input className="settings-input" type="text" maxLength={40}
-                      value={editingReward.name}
-                      onChange={e => setEditingReward(p => ({ ...p, name: e.target.value }))} />
+                    <label className="settings-label">Reward name</label>
+                    <input className="settings-input" type="text" placeholder="e.g. Stay up late"
+                      maxLength={40} value={newRewardName} onChange={e => setNewRewardName(e.target.value)} />
                   </div>
                   <div className="settings-field" style={{ width: "74px", flexShrink: 0 }}>
                     <label className="settings-label">Pts</label>
-                    <input className="settings-input" type="number" min="1"
-                      value={editingReward.points}
-                      onChange={e => setEditingReward(p => ({ ...p, points: Number(e.target.value) || 0 }))}
+                    <input className="settings-input" type="number" placeholder="000" min="1"
+                      value={newRewardPoints}
+                      onChange={e => setNewRewardPoints(e.target.value.replace(/\D/g,"").slice(0,3))}
                       style={{ textAlign:"center" }} />
                   </div>
-                  <div style={{ display:"flex", gap:"6px", alignSelf:"flex-end" }}>
-                    <button className="settings-modal-save"
-                      style={{ "--tab-accent": "#f07a45", "--tab-light": "#ff9d57", padding: "9px 16px" }}
+                  <div className="settings-field" style={{ flexShrink: 0, alignSelf:"flex-end" }}>
+                    <button className="settings-modal-save" style={{ padding:"9px 20px", whiteSpace:"nowrap" }}
                       onClick={() => {
-                        setRewardLibrary(prev => prev.map(r => r.id === editingReward.id ? editingReward : r));
-                        setEditingReward(null);
-                      }}>Save</button>
-                    <button className="settings-reward-del-btn"
-                      style={{ background:"rgba(255,255,255,0.45)", color:"rgba(47,36,25,0.7)", borderColor:"rgba(47,36,25,0.15)", padding:"9px 12px" }}
-                      onClick={() => setEditingReward(null)}>✕</button>
+                        if (!newRewardName.trim() || !newRewardPoints) return;
+                        const r = { id: "r"+Date.now(), name: newRewardName.trim(), points: Number(newRewardPoints) };
+                        setRewards(prev => [...prev, r]);
+                        if (saveRewardToLib) setRewardLibrary(prev => [r, ...prev].slice(0,30));
+                        setNewRewardName(""); setNewRewardPoints("");
+                      }}>Add ✦</button>
                   </div>
                 </div>
-              )}
+                <div className="settings-rewards-toggle-row">
+                  <button className={`settings-toggle-btn${saveRewardToLib ? " on" : ""}`}
+                    onClick={() => setSaveRewardToLib(p => !p)}>
+                    <span className="settings-toggle-knob" />
+                  </button>
+                  <span className="settings-toggle-label" style={{ fontSize:"0.82rem" }}>
+                    {saveRewardToLib ? "Save to library" : "Don't save"}
+                  </span>
+                </div>
+                <div className="settings-rewards-divider" />
+                <div className="settings-field">
+                  <label className="settings-label">📚 Library {rewardLibrary.length > 0 ? `(${rewardLibrary.length})` : ""}</label>
+                  {rewardLibrary.length === 0 ? (
+                    <div className="settings-rewards-empty-compact">
+                      <span>🛍️ No saved rewards yet</span>
+                    </div>
+                  ) : (
+                    <div className="settings-rewards-lib-list settings-rewards-lib-list--compact">
+                      {rewardLibrary.map(r => (
+                        <div key={r.id}
+                          className={`settings-rewards-lib-item${selectedRewardId === r.id ? " active" : ""}`}
+                          onClick={() => { setSelectedRewardId(r.id === selectedRewardId ? null : r.id); setEditingReward(null); }}>
+                          <span className="settings-reward-detail-name">{r.name}</span>
+                          <span className="settings-reward-detail-pts">⭐ {r.points}</span>
+                          <div className="settings-reward-lib-actions" onClick={e => e.stopPropagation()}>
+                            <button className="settings-reward-edit-btn" onClick={() => setEditingReward({ ...r })}>✏️</button>
+                            <button className="settings-reward-del-btn"
+                              onClick={() => { setRewardLibrary(prev => prev.filter(x => x.id !== r.id)); setSelectedRewardId(null); }}>🗑️</button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           )}
 
@@ -455,123 +404,17 @@ export default function SettingsModal({ onClose }) {
             </div>
           )}
 
-          {/* ── Family ── */}
-          {activeTab === "family" && (
-            <>
-              <div className="settings-profile-two-tiles">
-                <div className="settings-section">
-                  <h3 className="settings-section-title">💵 Dollar Rate</h3>
-                  <p className="settings-hero-desc">Set how many points equal one dollar reward</p>
-                  <div className="settings-field">
-                    <label className="settings-label">Points = Dollars</label>
-                    <div className="settings-rate-row">
-                      <input className="settings-input" type="number" min="1" placeholder="Points"
-                        value={pointsPerDollar} onChange={e => setPointsPerDollar(Number(e.target.value) || "")}
-                        style={{ width: "100px", textAlign: "center" }} />
-                      <span className="settings-rate-equals">=</span>
-                      <span className="settings-rate-dollar">$</span>
-                      <input className="settings-input" type="number" min="1" placeholder="Dollars"
-                        value={dollarValue} onChange={e => setDollarValue(Number(e.target.value) || "")}
-                        style={{ width: "100px", textAlign: "center" }} />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="settings-section">
-                  <h3 className="settings-section-title">➕ Add a Kid</h3>
-                <div className="settings-add-kid-grid">
-                  <div className="settings-field">
-                    <label className="settings-label">Name</label>
-                    <input className="settings-input" type="text" placeholder="Kid's name" maxLength={30}
-                      value={newKidName} onChange={e => setNewKidName(e.target.value)} />
-                  </div>
-                  <div className="settings-field">
-                    <label className="settings-label">PIN</label>
-                    <input className="settings-input" type="password" inputMode="numeric" maxLength={4} placeholder="4 digits"
-                      value={newKidPin} onChange={e => setNewKidPin(e.target.value.replace(/\D/g,""))} />
-                  </div>
-                  <div className="settings-field">
-                    <label className="settings-label">Theme colour</label>
-                    <div className="settings-colour-swatches">
-                      {ACCENT_COLORS.map(c => (
-                        <button key={c.name} className={`settings-colour-swatch-lg${newKidColour === c.deep ? " active" : ""}`}
-                          style={{ background: `linear-gradient(145deg, ${c.light}, ${c.deep})` }}
-                          onClick={() => setNewKidColour(c.deep)} />
-                      ))}
-                    </div>
-                  </div>
-                </div>
-                  <div className="settings-add-kid-footer">
-                    <button className="settings-modal-save"
-                      style={{ "--tab-accent": "#f07a45", "--tab-light": "#ff9d57" }}
-                      onClick={() => { setNewKidName(""); setNewKidPin(""); }}>
-                      Add Kid ✦
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <div className="settings-section settings-section--danger">
-                <h3 className="settings-section-title">⚠️ Delete Accounts</h3>
-                <div className="settings-field">
-                  <label className="settings-label">Select kids to delete</label>
-                  <div className="settings-delete-kids-row">
-                    {kids.map(k => {
-                      const ac = ACCENT_COLORS.find(c => c.deep === k.accentColour) || ACCENT_COLORS[0];
-                      return (
-                        <label key={k.id} className="settings-delete-kid-chip">
-                          <input type="checkbox" className="settings-delete-checkbox"
-                            checked={selectedDeleteKids.includes(k.id)}
-                            onChange={() => setSelectedDeleteKids(p => p.includes(k.id) ? p.filter(id => id !== k.id) : [...p, k.id])} />
-                          <span className="settings-kid-tab-avatar" style={{ background: `linear-gradient(145deg, ${ac.light}, ${ac.deep})` }}>{k.name[0]}</span>
-                          {k.name}
-                        </label>
-                      );
-                    })}
-                  </div>
-                  <button className="settings-delete-btn" style={{ marginTop: "8px" }}
-                    onClick={() => alert("Not wired to Firestore yet")}>
-                    Delete selected kid(s)
-                  </button>
-                </div>
-                <div className="settings-divider" />
-                <div className="settings-field">
-                  <label className="settings-label" style={{ color: "#cc3333" }}>Delete entire family account</label>
-                  <p className="settings-hero-desc">This permanently deletes all data. Cannot be undone.</p>
-                  {!showDeleteFamily ? (
-                    <button className="settings-delete-btn" onClick={() => setShowDeleteFamily(true)}>
-                      Delete entire family account
-                    </button>
-                  ) : (
-                    <div className="settings-confirm-row">
-                      <label className="settings-label">Type DELETE to confirm</label>
-                      <input className="settings-input" type="text" placeholder="DELETE" style={{ width: "200px" }}
-                        value={deleteFamilyConfirm} onChange={e => setDeleteFamilyConfirm(e.target.value)} />
-                      <div className="settings-confirm-btns">
-                        <button className="settings-confirm-yes"
-                          disabled={deleteFamilyConfirm !== "DELETE"}
-                          style={{ opacity: deleteFamilyConfirm !== "DELETE" ? 0.4 : 1 }}
-                          onClick={() => alert("Not wired to Firestore yet")}>
-                          Permanently Delete
-                        </button>
-                        <button className="settings-confirm-no" onClick={() => { setShowDeleteFamily(false); setDeleteFamilyConfirm(""); }}>Cancel</button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </>
-          )}
-
         </div>
 
-        <div className="settings-modal-footer" style={{ "--tab-accent": ACCENT_COLORS.find(c=>c.deep===kidColour)?.deep||"#f07a45", "--tab-light": ACCENT_COLORS.find(c=>c.deep===kidColour)?.light||"#ff9d57" }}>
+        <div className="settings-modal-footer"
+          style={{ "--tab-accent": ACCENT_COLORS.find(c=>c.deep===kidColour)?.deep||"#f07a45", "--tab-light": ACCENT_COLORS.find(c=>c.deep===kidColour)?.light||"#ff9d57" }}>
           <button className="settings-modal-cancel" onClick={onClose}>Cancel</button>
-          <button className="settings-modal-save" onClick={handleSave}>
-            {saved ? "✓ Saved!" : "Save changes"}
+          <button className="settings-modal-save" onClick={() => { setSaved(true); setTimeout(() => setSaved(false), 2000); onClose(); }}>
+            Save changes
           </button>
         </div>
       </div>
     </div>
   );
 }
+

@@ -962,7 +962,6 @@
   align-items: stretch;
 }
 .settings-profile-two-tiles .settings-section {
-  height: 100%;
   box-sizing: border-box;
 }
 
@@ -1373,4 +1372,369 @@
 /* Shrink tile vertical padding so no empty space */
 .settings-section--hero {
   padding: 18px 20px !important;
+}
+
+/* Shrink Kid Profiles tile to content width only */
+.settings-section {
+  width: fit-content !important;
+  min-width: unset !important;
+}
+
+/* Centre Kid Profiles tile horizontally */
+.settings-tab-content {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+}
+
+/* Reset PIN + Cancel same colour as Save/other buttons */
+.settings-lib-toggle-btn,
+.settings-modal-cancel {
+  background: radial-gradient(circle at 18% 18%, rgba(255,255,255,0.35), transparent 30%),
+    linear-gradient(145deg, #C9A882, #A67C52) !important;
+  color: white !important;
+  border-color: rgba(255,255,255,0.7) !important;
+  box-shadow: 0 6px 18px rgba(120,90,50,0.2), inset 0 2px 0 rgba(255,255,255,0.35) !important;
+}
+.settings-lib-toggle-btn:hover,
+.settings-modal-cancel:hover {
+  transform: translateY(-1px) !important;
+}
+
+/* Centre all content inside Kid Profiles tile */
+.settings-section {
+  align-items: center !important;
+}
+.settings-section .settings-kid-chips,
+.settings-section .settings-colour-swatches--full,
+.settings-section .settings-ep-action-row {
+  justify-content: center !important;
+}
+
+/* Bigger kid chip avatars */
+.settings-kid-chip-avatar {
+  width: 38px !important;
+  height: 38px !important;
+  font-size: 1.1rem !important;
+  border-radius: 11px !important;
+}
+.settings-kid-chip-btn {
+  font-size: 1.05rem !important;
+  padding: 8px 18px 8px 8px !important;
+}
+
+/* Bigger colour swatches */
+.settings-colour-swatch-lg {
+  width: 62px !important;
+  height: 62px !important;
+  border-radius: 18px !important;
+}
+
+/* PIN overlay — floats over the tile */
+.settings-pin-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0.18);
+  backdrop-filter: blur(4px);
+  border-radius: 24px;
+  animation: card-in 0.2s ease both;
+}
+.settings-pin-overlay-card {
+  background: rgba(255,255,255,0.82);
+  backdrop-filter: blur(24px);
+  border-radius: 22px;
+  border: 1.5px solid rgba(255,255,255,0.9);
+  padding: 24px 28px;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.15);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 300px;
+  animation: card-in 0.25s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+
+/* Make the section relative so overlay positions correctly */
+.settings-section {
+  position: relative;
+}
+
+/* Bonus top row */
+.settings-bonus-top-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+}
+.settings-bonus-dollar-inline {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+/* Bonus Points tab — full width section */
+[data-tab="bonus"] .settings-section,
+.settings-tab-content .settings-section {
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* Bonus Points — left align assign to and all content */
+.settings-bonus-top-row {
+  align-items: flex-start !important;
+  justify-content: flex-start !important;
+}
+.settings-bonus-kids {
+  justify-content: flex-start !important;
+}
+.settings-section .settings-bonus-top-row {
+  align-self: flex-start !important;
+  width: 100% !important;
+}
+
+/* Reason + Pts + footer — left aligned */
+.settings-section {
+  align-items: flex-start !important;
+}
+.settings-section-title {
+  align-self: center !important;
+}
+
+/* Reason input — wider */
+.settings-reason-points-row .settings-input[type="text"],
+.settings-reason-points-row input[placeholder="e.g. Good behaviour"] {
+  width: 100% !important;
+  min-width: 320px !important;
+}
+.settings-reason-points-row {
+  width: 100% !important;
+}
+
+/* Library button — wider */
+.settings-bonus-footer .settings-lib-toggle-btn {
+  min-width: 160px !important;
+  text-align: center !important;
+}
+
+/* Bonus Points two-col layout */
+.settings-bonus-two-col {
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  gap: 20px;
+  align-items: start;
+  width: 100%;
+}
+.settings-bonus-left-col {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding-right: 16px;
+  border-right: 1.5px solid rgba(255,255,255,0.5);
+}
+.settings-bonus-right-col {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* Bonus two-tile layout */
+.settings-bonus-two-col {
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  gap: 14px;
+  align-items: start;
+  width: 100%;
+}
+.settings-bonus-left-tile {
+  align-items: flex-start !important;
+}
+.settings-bonus-right-tile {
+  align-items: flex-start !important;
+}
+.settings-bonus-footer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+
+/* Rate row — compact, no overflow */
+.settings-rate-row {
+  flex-wrap: nowrap !important;
+  gap: 4px !important;
+  overflow: hidden !important;
+}
+.settings-rate-equals,
+.settings-rate-dollar {
+  font-size: 0.85rem !important;
+  flex-shrink: 0 !important;
+}
+/* Left tile — strictly contained */
+.settings-bonus-left-tile {
+  overflow: hidden !important;
+  min-width: 0 !important;
+}
+
+/* Widen left tile to fully contain rate row */
+.settings-bonus-two-col {
+  grid-template-columns: 210px 1fr !important;
+}
+
+/* Rate inputs — enough room for 2-3 digits */
+.settings-bonus-left-tile .settings-rate-row input {
+  width: 52px !important;
+  min-width: 52px !important;
+  padding: 8px 4px !important;
+  font-size: 0.95rem !important;
+}
+
+/* Conversion Rate tile — compact height, vertically centred */
+.settings-bonus-two-col {
+  align-items: center !important;
+}
+.settings-bonus-left-tile {
+  padding: 14px 16px !important;
+}
+.settings-bonus-left-tile .settings-section-title {
+  font-size: 0.85rem !important;
+  margin-bottom: 8px !important;
+}
+
+/* Pick from library — wider */
+.settings-bonus-footer .settings-lib-toggle-btn {
+  min-width: 200px !important;
+  text-align: center !important;
+}
+
+/* Conversion Rate tile — shrink to content height */
+.settings-bonus-two-col {
+  align-items: start !important;
+}
+
+/* Conversion Rate tile — shrink height to fit content only */
+.settings-bonus-left-tile {
+  align-self: flex-start !important;
+  height: auto !important;
+}
+
+/* Force grid to not stretch tiles vertically */
+.settings-bonus-two-col {
+  grid-template-rows: auto !important;
+  align-items: start !important;
+}
+.settings-bonus-left-tile {
+  align-self: start !important;
+}
+
+/* Bonus left tile — never stretch to full height */
+.settings-bonus-left-tile {
+  height: auto !important;
+  align-self: start !important;
+  min-height: 0 !important;
+}
+
+/* Centre content inside Conversion Rate tile */
+.settings-bonus-left-tile {
+  align-items: center !important;
+  text-align: center !important;
+}
+.settings-bonus-left-tile .settings-rate-row {
+  justify-content: center !important;
+}
+.settings-bonus-left-tile .settings-label {
+  text-align: center !important;
+  width: 100% !important;
+}
+
+/* Vertically centre the Conversion Rate tile relative to Award tile */
+.settings-bonus-two-col {
+  align-items: center !important;
+}
+
+/* Rewards Store two-col layout */
+.settings-rewards-two-col {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  gap: 14px;
+  align-items: start;
+  width: 100%;
+}
+.settings-rewards-left-tile {
+  align-items: center !important;
+  align-self: center !important;
+}
+.settings-rewards-right-tile {
+  align-items: flex-start !important;
+}
+
+/* Reward name — full width */
+.settings-rewards-right-tile .settings-rewards-input-row {
+  width: 100% !important;
+  display: flex !important;
+  align-items: flex-end !important;
+  gap: 10px !important;
+}
+.settings-rewards-right-tile .settings-rewards-input-row .settings-field:first-child {
+  flex: 1 !important;
+  min-width: 0 !important;
+}
+.settings-rewards-right-tile .settings-rewards-input-row .settings-field:first-child input {
+  width: 100% !important;
+}
+
+/* Reward name — full width */
+.settings-rewards-right-tile .settings-rewards-input-row {
+  width: 100% !important;
+  display: flex !important;
+  align-items: flex-end !important;
+  gap: 10px !important;
+}
+.settings-rewards-right-tile .settings-rewards-input-row .settings-field:first-child {
+  flex: 1 !important;
+  min-width: 0 !important;
+}
+.settings-rewards-right-tile .settings-rewards-input-row .settings-field:first-child input {
+  width: 100% !important;
+}
+
+/* Library section — larger */
+.settings-rewards-lib-list--compact {
+  max-height: 200px !important;
+  min-height: 80px !important;
+}
+.settings-rewards-empty-compact {
+  padding: 20px !important;
+  font-size: 0.92rem !important;
+}
+.settings-rewards-right-tile .settings-field {
+  width: 100% !important;
+}
+
+/* Conversion rate labels */
+.settings-rate-pts-label {
+  font-family: "Baloo 2", cursive;
+  font-size: 0.85rem;
+  font-weight: 900;
+  color: rgba(47,36,25,0.6);
+  flex-shrink: 0;
+}
+.settings-rate-dollar-bold {
+  font-family: "Baloo 2", cursive;
+  font-size: 1.3rem;
+  font-weight: 900;
+  color: rgb(47,36,25);
+  flex-shrink: 0;
+}
+
+/* Make = sign bold and visible */
+.settings-rate-equals {
+  font-family: "Baloo 2", cursive !important;
+  font-size: 1.4rem !important;
+  font-weight: 900 !important;
+  color: rgb(47,36,25) !important;
+  flex-shrink: 0 !important;
 }

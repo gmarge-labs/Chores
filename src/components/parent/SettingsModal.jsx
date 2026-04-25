@@ -301,7 +301,7 @@ export default function SettingsModal({ onClose }) {
               <div className="settings-section settings-section--compact settings-rewards-left-tile">
                 <h3 className="settings-section-title">💵 Conversion Rate</h3>
                 <div className="settings-rate-row" style={{ justifyContent:"center" }}>
-                  <span className="settings-rate-pts-label">Pts</span>
+                  
                   <input className="settings-input" type="number" min="1"
                     value={pointsPerDollar} onChange={e => setPointsPerDollar(Number(e.target.value) || "")}
                     style={{ width:"60px", textAlign:"center" }} />
@@ -318,14 +318,12 @@ export default function SettingsModal({ onClose }) {
                 <h3 className="settings-section-title">🛍️ Rewards Store</h3>
                 <div style={{ display:"flex", flexDirection:"row", alignItems:"flex-end", gap:"10px", width:"100%" }}>
                   <div style={{ flex:1, minWidth:0, display:"flex", flexDirection:"column", gap:"4px" }}>
-                    <label className="settings-label">Reward name</label>
-                    <input className="settings-input" type="text" placeholder="e.g. Stay up late"
+                    <input className="settings-input" type="text" placeholder="e.g. Reward name..."
                       maxLength={40} value={newRewardName} onChange={e => setNewRewardName(e.target.value)}
                       style={{ width:"100%" }} />
                   </div>
                   <div style={{ width:"70px", flexShrink:0, display:"flex", flexDirection:"column", gap:"4px" }}>
-                    <label className="settings-label">Pts</label>
-                    <input className="settings-input" type="number" placeholder="000" min="1"
+                    <input className="settings-input" type="number" placeholder="Pts" min="1"
                       value={newRewardPoints}
                       onChange={e => setNewRewardPoints(e.target.value.replace(/\D/g,"").slice(0,3))}
                       style={{ textAlign:"center", width:"70px" }} />
@@ -341,7 +339,7 @@ export default function SettingsModal({ onClose }) {
                       }}>Add ✦</button>
                   </div>
                 </div>
-                <div className="settings-rewards-toggle-row">
+                <div className="settings-rewards-toggle-row" style={{ justifyContent:"flex-start" }}>
                   <button className={`settings-toggle-btn${saveRewardToLib ? " on" : ""}`}
                     onClick={() => setSaveRewardToLib(p => !p)}>
                     <span className="settings-toggle-knob" />

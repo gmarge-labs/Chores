@@ -1863,3 +1863,29 @@
 .settings-section {
   align-items: center !important;
 }
+
+/* Conversion Rate — vertically centre content */
+.settings-rewards-left-tile {
+  justify-content: center !important;
+  text-align: center !important;
+}
+.settings-rewards-left-tile .settings-rate-row {
+  justify-content: center !important;
+}
+
+/* Library empty state — more polished */
+.settings-rewards-empty-compact {
+  padding: 18px !important;
+  font-size: 0.88rem !important;
+  opacity: 0.6 !important;
+}
+
+/* Save to library toggle — left aligned */
+.settings-rewards-toggle-row {
+  justify-content: flex-start !important;
+}
+
+/* Add button wider */
+.settings-rewards-input-row .settings-modal-save {
+  min-width: 80px !important;
+}

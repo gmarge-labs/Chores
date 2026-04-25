@@ -316,20 +316,21 @@ export default function SettingsModal({ onClose }) {
               {/* RIGHT — Rewards Store wider tile */}
               <div className="settings-section settings-section--compact settings-rewards-right-tile">
                 <h3 className="settings-section-title">🛍️ Rewards Store</h3>
-                <div className="settings-rewards-input-row">
-                  <div className="settings-field" style={{ flex: 1 }}>
+                <div style={{ display:"flex", flexDirection:"row", alignItems:"flex-end", gap:"10px", width:"100%" }}>
+                  <div style={{ flex:1, minWidth:0, display:"flex", flexDirection:"column", gap:"4px" }}>
                     <label className="settings-label">Reward name</label>
                     <input className="settings-input" type="text" placeholder="e.g. Stay up late"
-                      maxLength={40} value={newRewardName} onChange={e => setNewRewardName(e.target.value)} />
+                      maxLength={40} value={newRewardName} onChange={e => setNewRewardName(e.target.value)}
+                      style={{ width:"100%" }} />
                   </div>
-                  <div className="settings-field" style={{ width: "74px", flexShrink: 0 }}>
+                  <div style={{ width:"70px", flexShrink:0, display:"flex", flexDirection:"column", gap:"4px" }}>
                     <label className="settings-label">Pts</label>
                     <input className="settings-input" type="number" placeholder="000" min="1"
                       value={newRewardPoints}
                       onChange={e => setNewRewardPoints(e.target.value.replace(/\D/g,"").slice(0,3))}
-                      style={{ textAlign:"center" }} />
+                      style={{ textAlign:"center", width:"70px" }} />
                   </div>
-                  <div className="settings-field" style={{ flexShrink: 0, alignSelf:"flex-end" }}>
+                  <div style={{ flexShrink:0, alignSelf:"flex-end" }}>
                     <button className="settings-modal-save" style={{ padding:"9px 20px", whiteSpace:"nowrap" }}
                       onClick={() => {
                         if (!newRewardName.trim() || !newRewardPoints) return;

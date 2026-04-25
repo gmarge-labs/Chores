@@ -1738,3 +1738,128 @@
   color: rgb(47,36,25) !important;
   flex-shrink: 0 !important;
 }
+
+/* Fix reward name + pts overlap */
+.settings-rewards-right-tile .settings-rewards-input-row {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: flex-end !important;
+  gap: 10px !important;
+  width: 100% !important;
+}
+.settings-rewards-right-tile .settings-rewards-input-row .settings-field:first-child {
+  flex: 1 !important;
+  min-width: 0 !important;
+}
+.settings-rewards-right-tile .settings-rewards-input-row .settings-field:nth-child(2) {
+  width: 70px !important;
+  flex-shrink: 0 !important;
+  flex: none !important;
+}
+.settings-rewards-right-tile .settings-rewards-input-row .settings-field:nth-child(2) input {
+  width: 70px !important;
+  text-align: center !important;
+}
+
+/* Force rewards input row to be horizontal with correct widths */
+.settings-rewards-input-row {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: flex-end !important;
+  gap: 10px !important;
+  width: 100% !important;
+}
+.settings-rewards-input-row > .settings-field:first-child {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  width: auto !important;
+}
+.settings-rewards-input-row > .settings-field:first-child input {
+  width: 100% !important;
+}
+.settings-rewards-input-row > .settings-field:nth-child(2) {
+  flex: 0 0 70px !important;
+  width: 70px !important;
+  min-width: 70px !important;
+  max-width: 70px !important;
+}
+.settings-rewards-input-row > .settings-field:nth-child(2) input {
+  width: 70px !important;
+  min-width: 70px !important;
+  text-align: center !important;
+}
+.settings-rewards-input-row > .settings-field:nth-child(3) {
+  flex: 0 0 auto !important;
+  align-self: flex-end !important;
+}
+
+/* Edit Profile — tile fits content, no excess space */
+.settings-tab-content > div > .settings-section {
+  width: fit-content !important;
+  min-width: 0 !important;
+  align-self: center !important;
+}
+/* Reduce tile bottom padding */
+.settings-section {
+  padding: 16px 20px !important;
+}
+/* Tighter gaps inside section */
+.settings-section .settings-kid-chips {
+  gap: 8px !important;
+}
+.settings-section .settings-colour-swatches--full,
+.settings-section .settings-ep-action-row {
+  gap: 8px !important;
+}
+
+/* Edit Profile — tile fits content, no excess space */
+.settings-tab-content > div > .settings-section {
+  width: fit-content !important;
+  min-width: 0 !important;
+  align-self: center !important;
+}
+/* Reduce tile bottom padding */
+.settings-section {
+  padding: 16px 20px !important;
+}
+/* Tighter gaps inside section */
+.settings-section .settings-kid-chips {
+  gap: 8px !important;
+}
+.settings-section .settings-colour-swatches--full,
+.settings-section .settings-ep-action-row {
+  gap: 8px !important;
+}
+
+/* Edit Profile — tile exactly fits content */
+.settings-tab-content {
+  align-items: center !important;
+}
+.settings-tab-content > div > .settings-section,
+.settings-tab-content > .settings-section {
+  width: auto !important;
+  min-width: 0 !important;
+  align-self: unset !important;
+  display: inline-flex !important;
+  flex-direction: column !important;
+}
+
+/* Centre all content inside Kid Profiles tile */
+.settings-section .settings-kid-chips {
+  justify-content: center !important;
+}
+.settings-colour-swatches--full {
+  justify-content: center !important;
+}
+.settings-ep-action-row {
+  justify-content: center !important;
+}
+.settings-section-title {
+  text-align: center !important;
+  width: 100% !important;
+}
+
+/* Force section to centre its children */
+.settings-section {
+  align-items: center !important;
+}

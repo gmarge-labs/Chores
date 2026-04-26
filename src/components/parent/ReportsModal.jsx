@@ -27,6 +27,7 @@ export default function ReportsModal({ onClose }) {
   const kids = Object.entries(MOCK_DATA).map(([id,d]) => ({id,...d}));
   const kid = selectedKid ? MOCK_DATA[selectedKid] : null;
   const pd = kid ? kid[period] : null;
+  const net = pd ? pd.earned - pd.spent : 0;
 
   return (
     <div className="reports-overlay" onClick={e => { if(e.target===e.currentTarget) onClose(); }}>
@@ -57,27 +58,23 @@ export default function ReportsModal({ onClose }) {
                 <button key={k.id} className="reports-kid-card"
                   style={{"--kid-accent":k.accent,"--kid-light":k.accentLight}}
                   onClick={() => setSelectedKid(k.id)}>
-                  {/* Avatar + name */}
                   <div className="reports-kid-card-top">
                     <div className="reports-kid-avatar">{k.name[0]}</div>
-                    <div className="reports-kid-info">
-                      <span className="reports-kid-name">{k.name}</span>
-                      <span className="reports-kid-pts">⭐ {d.earned} pts earned</span>
-                    </div>
+                    <span className="reports-kid-name">{k.name}</span>
                     <span className="reports-kid-arrow">›</span>
                   </div>
-                  {/* Big hero pts number */}
-                  <div className="reports-hero-pts">{d.earned}</div>
-                  {/* Stats */}
+                  <div className="reports-hero-pts">
+                    <span className="reports-hero-num">{d.earned}</span>
+                    <span className="reports-hero-label">pts</span>
+                  </div>
                   <div className="reports-kid-stats">
                     <div className="reports-stat-pill reports-stat-pill--green">✅ {done}/{total} chores</div>
                     <div className="reports-stat-pill reports-stat-pill--red">🎁 {d.rewards.length} redeemed</div>
                   </div>
-                  {/* Progress */}
                   <div className="reports-progress-track">
                     <div className="reports-progress-fill" style={{width:`${pct}%`}} />
                   </div>
-                  <span className="reports-progress-label">{pct}% complete</span>
+                  <span className="reports-progress-label">{pct}% chores complete</span>
                 </button>
               );
             })}
@@ -87,7 +84,6 @@ export default function ReportsModal({ onClose }) {
         {/* Drill-down view */}
         {selectedKid && kid && pd && (
           <div className="reports-detail">
-            {/* Kid header */}
             <div className="reports-detail-hero" style={{"--kid-accent":kid.accent,"--kid-light":kid.accentLight}}>
               <button className="reports-back-btn" onClick={() => setSelectedKid(null)}>‹ Back</button>
               <div className="reports-kid-avatar reports-kid-avatar--lg">{kid.name[0]}</div>
@@ -98,36 +94,41 @@ export default function ReportsModal({ onClose }) {
                   <span className="reports-detail-stat--divider">·</span>
                   <span className="reports-detail-stat reports-detail-stat--red">−{pd.spent} spent</span>
                   <span className="reports-detail-stat--divider">·</span>
-                  <span className="reports-detail-stat reports-detail-stat--bold">={pd.earned - pd.spent} net</span>
+                  <span className="reports-detail-stat--net" style={{color: net >= 0 ? "rgb(30,120,60)" : "rgb(180,40,40)"}}>
+                    {net >= 0 ? `+${net}` : net} net
+                  </span>
                 </div>
               </div>
             </div>
 
-            {/* Two column tiles */}
             <div className="reports-detail-cols">
-              {/* Chores */}
               <div className="reports-detail-tile">
                 <h4 className="reports-tile-title">🧹 Chores</h4>
                 {pd.chores.map((c,i) => (
                   <div key={i} className={`reports-chore-row${c.done?" done":" pending"}`}>
                     <span className="reports-chore-badge">{c.done ? "✓" : "…"}</span>
                     <span className="reports-chore-name">{c.name}</span>
-                    <span className="reports-chore-pts">{c.done ? `+${c.pts}` : `+${c.pts}`} pts</span>
+                    <span className="reports-chore-pts">+{c.pts} pts</span>
                   </div>
                 ))}
               </div>
 
-              {/* Rewards */}
               <div className="reports-detail-tile">
                 <h4 className="reports-tile-title">🎁 Rewards Redeemed</h4>
                 {pd.rewards.length === 0
                   ? <div className="reports-empty"><span style={{fontSize:"2rem"}}>🎯</span><p>No rewards redeemed yet</p></div>
-                  : pd.rewards.map((r,i) => (
-                    <div key={i} className="reports-reward-row">
-                      <span className="reports-reward-name">{r.name}</span>
-                      <span className="reports-reward-cost">−{r.pts} pts</span>
+                  : <>
+                    {pd.rewards.map((r,i) => (
+                      <div key={i} className="reports-reward-row">
+                        <span className="reports-reward-name">{r.name}</span>
+                        <span className="reports-reward-cost">−{r.pts} pts</span>
+                      </div>
+                    ))}
+                    <div className="reports-reward-total">
+                      <span>Total spent</span>
+                      <span className="reports-reward-cost">−{pd.spent} pts</span>
                     </div>
-                  ))
+                  </>
                 }
               </div>
             </div>

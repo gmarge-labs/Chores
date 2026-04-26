@@ -33,13 +33,11 @@ export default function ReportsModal({ onClose }) {
     <div className="reports-overlay" onClick={e => { if(e.target===e.currentTarget) onClose(); }}>
       <div className="reports-modal">
 
-        {/* Header */}
         <div className="reports-header">
           <h2 className="reports-title">✨ Reports</h2>
           <button className="reports-close" onClick={onClose}>×</button>
         </div>
 
-        {/* Period switcher */}
         <div className="reports-period-bar">
           {PERIODS.map(p => (
             <button key={p.id} className={`reports-period-btn${period===p.id?" active":""}`} onClick={() => setPeriod(p.id)}>{p.label}</button>
@@ -69,7 +67,10 @@ export default function ReportsModal({ onClose }) {
                   </div>
                   <div className="reports-kid-stats">
                     <div className="reports-stat-pill reports-stat-pill--green">✅ {done}/{total} chores</div>
-                    <div className="reports-stat-pill reports-stat-pill--red">🎁 {d.rewards.length} redeemed</div>
+                    {d.rewards.length > 0
+                      ? <div className="reports-stat-pill reports-stat-pill--amber">🎁 {d.rewards.length} redeemed</div>
+                      : <div className="reports-stat-pill reports-stat-pill--neutral">🎁 0 redeemed</div>
+                    }
                   </div>
                   <div className="reports-progress-track">
                     <div className="reports-progress-fill" style={{width:`${pct}%`}} />
@@ -85,17 +86,18 @@ export default function ReportsModal({ onClose }) {
         {selectedKid && kid && pd && (
           <div className="reports-detail">
             <div className="reports-detail-hero" style={{"--kid-accent":kid.accent,"--kid-light":kid.accentLight}}>
+              <div className="reports-detail-hero-bg" />
               <button className="reports-back-btn" onClick={() => setSelectedKid(null)}>‹ Back</button>
               <div className="reports-kid-avatar reports-kid-avatar--lg">{kid.name[0]}</div>
               <div className="reports-detail-hero-info">
-                <span className="reports-kid-name" style={{fontSize:"1.15rem"}}>{kid.name}</span>
+                <span className="reports-kid-name" style={{fontSize:"1.2rem"}}>{kid.name}</span>
                 <div className="reports-detail-stats-row">
                   <span className="reports-detail-stat reports-detail-stat--green">+{pd.earned} earned</span>
                   <span className="reports-detail-stat--divider">·</span>
                   <span className="reports-detail-stat reports-detail-stat--red">−{pd.spent} spent</span>
                   <span className="reports-detail-stat--divider">·</span>
                   <span className="reports-detail-stat--net" style={{color: net >= 0 ? "rgb(30,120,60)" : "rgb(180,40,40)"}}>
-                    {net >= 0 ? `+${net}` : net} net
+                    {net >= 0 ? `+${net}` : net} net ✦
                   </span>
                 </div>
               </div>
@@ -108,7 +110,7 @@ export default function ReportsModal({ onClose }) {
                   <div key={i} className={`reports-chore-row${c.done?" done":" pending"}`}>
                     <span className="reports-chore-badge">{c.done ? "✓" : "…"}</span>
                     <span className="reports-chore-name">{c.name}</span>
-                    <span className="reports-chore-pts">+{c.pts} pts</span>
+                    <span className="reports-chore-pts">{c.done ? `+${c.pts}` : `${c.pts}`} pts</span>
                   </div>
                 ))}
               </div>
@@ -125,8 +127,8 @@ export default function ReportsModal({ onClose }) {
                       </div>
                     ))}
                     <div className="reports-reward-total">
-                      <span>Total spent</span>
-                      <span className="reports-reward-cost">−{pd.spent} pts</span>
+                      <span className="reports-reward-total-label">Total spent</span>
+                      <span className="reports-reward-cost reports-reward-cost--lg">−{pd.spent} pts</span>
                     </div>
                   </>
                 }

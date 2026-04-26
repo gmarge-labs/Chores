@@ -1,3 +1,4 @@
+import ReportsModal from './ReportsModal';
 import { useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import RainbowTitle from "../shared/RainbowTitle";
@@ -17,6 +18,7 @@ const MOCK_FAMILY = { id: "f1", familyName: "Bulamas" };
 export default function FamilyDashboard() {
   const { logout } = useAuth();
   const [showSettings, setShowSettings] = useState(false);
+  const [showReports, setShowReports] = useState(false);
 
   return (
     <div className="dashboard-page">
@@ -36,9 +38,10 @@ export default function FamilyDashboard() {
       </div>
 
       <div className="dashboard-actions">
-        <button className="action-btn action-btn--reports">Reports<span className="btn-bub"/><span className="btn-bub"/><span className="btn-bub"/><span className="btn-bub"/><span className="btn-bub"/><span className="btn-bub"/><span className="btn-bub"/><span className="btn-bub"/></button>
+        <button className="action-btn action-btn--reports" onClick={() => setShowReports(true)}>Reports<span className="btn-bub"/><span className="btn-bub"/><span className="btn-bub"/><span className="btn-bub"/><span className="btn-bub"/><span className="btn-bub"/><span className="btn-bub"/><span className="btn-bub"/></button>
         <button className="action-btn action-btn--settings" onClick={() => setShowSettings(true)}>Settings<span className="btn-bub"/><span className="btn-bub"/><span className="btn-bub"/><span className="btn-bub"/><span className="btn-bub"/><span className="btn-bub"/><span className="btn-bub"/><span className="btn-bub"/></button>
       </div>
+      {showReports && <ReportsModal onClose={() => setShowReports(false)} />}
       {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
       <p className="manage-sub">ChoreHeroes Pro ✦ Home Assistant included — <button className="manage-sub-link">Manage subscription</button></p>
     </div>

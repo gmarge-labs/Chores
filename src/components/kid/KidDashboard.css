@@ -177,3 +177,78 @@
   0%   { transform: translateX(0);    opacity: 1; }
   100% { transform: translateX(60%);  opacity: 0; }
 }
+
+/* ── Streak chip in kid header ── */
+.kid-streak-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 18px;
+  border-radius: 999px;
+  font-family: 'Baloo 2', cursive;
+  font-weight: 800;
+  font-size: 1rem;
+  color: #fff;
+  border: 1.5px solid rgba(255, 255, 255, 0.85);
+  box-shadow:
+    0 6px 18px rgba(255, 88, 36, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.55);
+  user-select: none;
+}
+
+.kid-streak-chip--active {
+  background: linear-gradient(135deg, #ff8a3d 0%, #ff5836 50%, #d63b2a 100%);
+  animation: streakPulse 2.4s ease-in-out infinite;
+}
+
+.kid-streak-chip--idle {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.35));
+  color: rgba(47, 36, 25, 0.7);
+  border-color: rgba(255, 255, 255, 0.7);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.kid-streak-flame {
+  font-size: 1.2rem;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.15));
+  animation: streakFlameFlicker 1.6s ease-in-out infinite;
+}
+
+.kid-streak-flame--dim {
+  filter: grayscale(0.6) opacity(0.6);
+  animation: none;
+}
+
+.kid-streak-num {
+  font-size: 1.25rem;
+  font-weight: 900;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
+}
+
+.kid-streak-label {
+  font-size: 0.92rem;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+}
+
+@keyframes streakPulse {
+  0%, 100% {
+    box-shadow:
+      0 6px 18px rgba(255, 88, 36, 0.35),
+      inset 0 1px 0 rgba(255, 255, 255, 0.55);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow:
+      0 8px 26px rgba(255, 88, 36, 0.55),
+      inset 0 1px 0 rgba(255, 255, 255, 0.75);
+    transform: scale(1.03);
+  }
+}
+
+@keyframes streakFlameFlicker {
+  0%, 100% { transform: rotate(-3deg) scale(1); }
+  25%      { transform: rotate(2deg)  scale(1.08); }
+  50%      { transform: rotate(-2deg) scale(1.02); }
+  75%      { transform: rotate(3deg)  scale(1.05); }
+}

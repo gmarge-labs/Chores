@@ -15,6 +15,7 @@ export default function KidDashboard() {
       id: "k1",
       name: "Simra",
       points: 149,
+      streak: 7,
       accentColour: "#f07a45",
       pointsPerDollarReward: 20,
       dollarRewardValue: 1,
@@ -31,6 +32,7 @@ export default function KidDashboard() {
       id: "k2",
       name: "Rayyan",
       points: 100,
+      streak: 3,
       accentColour: "#3f84db",
       pointsPerDollarReward: 20,
       dollarRewardValue: 1,
@@ -45,6 +47,7 @@ export default function KidDashboard() {
       id: "k3",
       name: "Jinan",
       points: 105,
+      streak: 1,
       accentColour: "#2f9f8f",
       pointsPerDollarReward: 20,
       dollarRewardValue: 1,
@@ -108,6 +111,18 @@ export default function KidDashboard() {
         <div className="kid-stat-pill kid-stat-pill--money">
           ${moneyValue}
         </div>
+        {kid.streak > 0 ? (
+          <div className="kid-streak-chip kid-streak-chip--active" aria-label={`${kid.streak} day streak`}>
+            <span className="kid-streak-flame" aria-hidden="true">🔥</span>
+            <span className="kid-streak-num">{kid.streak}</span>
+            <span className="kid-streak-label">day{kid.streak === 1 ? "" : "s"} in a row!</span>
+          </div>
+        ) : (
+          <div className="kid-streak-chip kid-streak-chip--idle" aria-label="No streak yet">
+            <span className="kid-streak-flame kid-streak-flame--dim" aria-hidden="true">🔥</span>
+            <span className="kid-streak-label">Start your streak today!</span>
+          </div>
+        )}
       </div>
 
       <div className="kid-columns">

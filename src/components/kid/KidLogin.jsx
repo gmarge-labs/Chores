@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
 import Background from "../shared/Background";
 import RainbowTitle from "../shared/RainbowTitle";
 import "./KidLogin.css";
@@ -12,6 +13,7 @@ const MOCK_KIDS = [
 
 export default function KidLogin() {
   const navigate = useNavigate();
+  const { setSession } = useAuth();
   const [selectedKid, setSelectedKid] = useState(null);
   const [pin, setPin] = useState("");
   const [error, setError] = useState("");
@@ -30,7 +32,8 @@ export default function KidLogin() {
     if (newPin.length === 4) {
       setTimeout(() => {
         if (newPin === selectedKid.pin) {
-          navigate(`/kid-detail/${selectedKid.id}`);
+          setSession({ role: "kid", kidId: selectedKid.id });
+          navigate("/kid");
         } else {
           setShake(true);
           setError("Wrong PIN, try again!");

@@ -24,9 +24,14 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (u) => {
       setUser(u || null);
+      // Only clear parent sessions when Firebase auth is gone.
+      // Kid sessions (PIN-based) live independently of Firebase auth.
       if (!u) {
-        setSessionState(null);
-        localStorage.removeItem("ch_session");
+        setSessionState(prev => {
+          if (prev && prev.role === "kid") return prev;
+          localStorage.removeItem("ch_session");
+          return null;
+        });
       }
     });
     return unsub;

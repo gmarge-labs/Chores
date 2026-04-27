@@ -10,6 +10,15 @@ import KidDashboard from "./components/kid/KidDashboard";
 import KidDetail from './components/parent/KidDetail';
 import KidLogin from './components/kid/KidLogin';
 
+function RoleGuard({ allow, children }) {
+  const { session } = useAuth();
+  if (!session) return <Navigate to="/" replace />;
+  if (!allow.includes(session.role)) {
+    return <Navigate to={session.role === "kid" ? "/kid" : "/family"} replace />;
+  }
+  return children;
+}
+
 function AppRoutes() {
   const { user, session, loading } = useAuth();
 
@@ -24,21 +33,10 @@ function AppRoutes() {
       <Route path="/" element={<Landing />} />
       <Route path="/create" element={<CreateAccount />} />
       <Route path="/login" element={<Login />} />
-      <Route
-        path="/family"
-        element={user && session?.role === "parent"
-          ? <FamilyDashboard />
-          : <Navigate to="/" replace />}
-      />
-      <Route
-        path="/kid"
-        element={user && session?.role === "kid"
-          ? <KidDashboard />
-          : <Navigate to="/" replace />}
-      />
-      <Route path="/kid" element={<KidDashboard />} />
+      <Route path="/family" element={<RoleGuard allow={["parent"]}><FamilyDashboard /></RoleGuard>} />
+      <Route path="/kid" element={<RoleGuard allow={["kid"]}><KidDashboard /></RoleGuard>} />
       <Route path="/kid-login" element={<KidLogin />} />
-      <Route path="/kid-detail/:id" element={<KidDetail />} />
+      <Route path="/kid-detail/:id" element={<RoleGuard allow={["parent"]}><KidDetail /></RoleGuard>} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

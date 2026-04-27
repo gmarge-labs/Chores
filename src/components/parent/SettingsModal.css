@@ -1890,3 +1890,17 @@
 .settings-rewards-input-row .settings-modal-save {
   min-width: 80px !important;
 }
+
+/* Edit Profile row — used for Reset PIN form & action button row */
+.settings-ep-row {
+  display: flex;
+  gap: 16px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+.settings-ep-action-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+}

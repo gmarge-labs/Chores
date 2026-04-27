@@ -43,7 +43,7 @@ export default function FamilyDashboard() {
       </div>
       {showReports && <ReportsModal onClose={() => setShowReports(false)} />}
       {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
-      <p className="manage-sub">ChoreHeroes Pro ✦ Home Assistant included — <button className="manage-sub-link">Manage subscription</button></p>
+      <p className="manage-sub">ChoreHeroes Pro ✦ Home Assistant included</p>
     </div>
   );
 }

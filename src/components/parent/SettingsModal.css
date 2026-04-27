@@ -1432,16 +1432,17 @@
 
 /* PIN overlay — floats over the tile */
 .settings-pin-overlay {
-  position: absolute;
+  position: fixed;
   inset: 0;
-  z-index: 20;
+  z-index: 100;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0,0,0,0.18);
-  backdrop-filter: blur(4px);
-  border-radius: 24px;
+  background: rgba(0,0,0,0.35);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   animation: card-in 0.2s ease both;
+  padding: 20px;
 }
 .settings-pin-overlay-card {
   background: rgba(255,255,255,0.82);

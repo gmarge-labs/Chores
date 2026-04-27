@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { createPortal } from "react-dom";
 import "./SettingsModal.css";
 
 const ACCENT_COLORS = [
@@ -182,7 +183,7 @@ export default function SettingsModal({ onClose }) {
                 {pinError && <p className="settings-error">{pinError}</p>}
               </div>
 
-              {showAddKid && (
+              {showAddKid && createPortal(
                 <div className="settings-pin-overlay"
                   onClick={e => { if (e.target === e.currentTarget) { setShowAddKid(false); setNewKidName(""); setNewKidPin(""); }}}>
                   <div className="settings-pin-overlay-card">
@@ -235,10 +236,11 @@ export default function SettingsModal({ onClose }) {
                       </button>
                     </div>
                   </div>
-                </div>
+                </div>,
+                document.body
               )}
 
-              {showDeleteConfirm && (
+              {showDeleteConfirm && createPortal(
                 <div className="settings-pin-overlay"
                   onClick={e => { if (e.target === e.currentTarget) setShowDeleteConfirm(false); }}>
                   <div className="settings-pin-overlay-card">
@@ -264,7 +266,8 @@ export default function SettingsModal({ onClose }) {
                       </button>
                     </div>
                   </div>
-                </div>
+                </div>,
+                document.body
               )}
             </>
           )}

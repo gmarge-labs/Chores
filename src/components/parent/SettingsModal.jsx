@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useLibraries } from "../../context/LibrariesContext";
 import { createPortal } from "react-dom";
 import "./SettingsModal.css";
 
@@ -58,7 +59,7 @@ export default function SettingsModal({ onClose }) {
   const [bonusPoints, setBonusPoints] = useState("");
   const [notifyKids, setNotifyKids] = useState(true);
   const [bonusAdded, setBonusAdded] = useState(false);
-  const [bonusLibrary, setBonusLibrary] = useState([]);
+  const { bonusLibrary, setBonusLibrary, rewardLibrary, setRewardLibrary } = useLibraries();
   const [showBonusLibrary, setShowBonusLibrary] = useState(false);
 
   // Rewards Store
@@ -70,7 +71,6 @@ export default function SettingsModal({ onClose }) {
   const [newRewardName, setNewRewardName] = useState("");
   const [newRewardPoints, setNewRewardPoints] = useState("");
   const [selectedRewardId, setSelectedRewardId] = useState(null);
-  const [rewardLibrary, setRewardLibrary] = useState([]);
   const [saveRewardToLib, setSaveRewardToLib] = useState(true);
   const [editingReward, setEditingReward] = useState(null);
   const [pointsPerDollar, setPointsPerDollar] = useState(20);

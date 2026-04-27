@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { LibrariesProvider } from "./context/LibrariesContext";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { FamilyProvider } from "./context/FamilyContext";
 import Landing from "./components/auth/Landing";
@@ -48,7 +49,9 @@ export default function App() {
     <BrowserRouter>
       <AuthProvider>
         <FamilyProvider>
-          <AppRoutes />
+          <LibrariesProvider>
+            <AppRoutes />
+          </LibrariesProvider>
         </FamilyProvider>
       </AuthProvider>
     </BrowserRouter>

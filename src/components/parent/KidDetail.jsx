@@ -33,7 +33,6 @@ export default function KidDetail() {
   const navigate = useNavigate();
   const [activePanel, setActivePanel] = useState("dashboard");
   const [showAddTask, setShowAddTask] = useState(false);
-  const [taskLibrary, setTaskLibrary] = useState([]);
   const [showSettings, setShowSettings] = useState(false);
   const [displayPoints, setDisplayPoints] = useState(0);
   const [celebrating, setCelebrating] = useState(false);
@@ -231,8 +230,6 @@ export default function KidDetail() {
           kid={kid}
           accent={accent}
           allKids={kids}
-          taskLibrary={taskLibrary}
-          setTaskLibrary={setTaskLibrary}
           onAdd={handleAddTask}
           onClose={() => setShowAddTask(false)}
         />

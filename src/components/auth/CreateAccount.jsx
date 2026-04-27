@@ -152,10 +152,16 @@ export default function CreateAccount() {
     } catch (e) {
       if (e.code === "auth/email-already-in-use") {
         setError("An account with this email already exists. Please log in instead.");
-        setStep(2);
+      } else if (e.code === "auth/weak-password") {
+        setError("That PIN is too weak. Please choose a stronger one.");
+      } else if (e.code === "auth/invalid-email") {
+        setError("That email address looks invalid.");
+      } else if (e.code === "auth/network-request-failed") {
+        setError("Network error. Please check your connection and try again.");
       } else {
         setError("Something went wrong. Please try again.");
       }
+      setTouched(true);
       console.error(e);
     } finally {
       setLoading(false);

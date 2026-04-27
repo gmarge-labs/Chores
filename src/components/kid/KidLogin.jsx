@@ -11,6 +11,22 @@ const MOCK_KIDS = [
   { id: "k3", name: "Jinan",  accentColour: "#2f9f8f", accentLight: "#4fc7b5", pin: "9012" },
 ];
 
+const HERO_RANKS = [
+  { key: "rookie",   name: "Rookie Hero",   emoji: "🌱", min:    0 },
+  { key: "rising",   name: "Rising Hero",   emoji: "⚡", min:  100 },
+  { key: "champion", name: "Champion Hero", emoji: "🔥", min:  250 },
+  { key: "legend",   name: "Legend Hero",   emoji: "🪐", min:  500 },
+  { key: "ultimate", name: "Ultimate Hero", emoji: "👑", min: 1000 },
+];
+
+const MOCK_KID_POINTS = { k1: 149, k2: 100, k3: 105 };
+
+function getRank(points) {
+  let current = HERO_RANKS[0];
+  for (const r of HERO_RANKS) if (points >= r.min) current = r;
+  return current;
+}
+
 export default function KidLogin() {
   const navigate = useNavigate();
   const { setSession } = useAuth();
@@ -65,6 +81,7 @@ export default function KidLogin() {
                 style={{ '--accent': kid.accentColour, '--accent-light': kid.accentLight }}
                 onClick={() => handleKidSelect(kid)}
               >
+                <span className="kid-rank-overlay" aria-hidden="true">{getRank(MOCK_KID_POINTS[kid.id] || 0).emoji}</span>
                 <span className="tile-bubbles" aria-hidden="true">
                   <span/><span/><span/><span/><span/>
                 </span>

@@ -1,5 +1,20 @@
 import { useState } from "react";
 import { useAuth } from "../../context/AuthContext";
+
+const HERO_RANKS = [
+  { key: "rookie",   name: "Rookie Hero",   emoji: "🌱", min:    0 },
+  { key: "rising",   name: "Rising Hero",   emoji: "⚡", min:  100 },
+  { key: "champion", name: "Champion Hero", emoji: "🔥", min:  250 },
+  { key: "legend",   name: "Legend Hero",   emoji: "🪐", min:  500 },
+  { key: "ultimate", name: "Ultimate Hero", emoji: "👑", min: 1000 },
+];
+
+function getRank(points) {
+  let current = HERO_RANKS[0];
+  for (const r of HERO_RANKS) if (points >= r.min) current = r;
+  return current;
+}
+
 // import { useFamily } from "../../context/FamilyContext"; // re-enable when Firestore is wired
 import { useNavigate } from "react-router-dom";
 import Button from "../shared/Button";
@@ -98,7 +113,10 @@ export default function KidDashboard() {
         <div className="kid-avatar" style={{ background: accentColor }}>
           {kid.name[0].toUpperCase()}
         </div>
-        <h1 className="kid-name">{kid.name}</h1>
+        <div className="kid-name-block">
+          <h1 className="kid-name">{kid.name}</h1>
+          <p className="kid-rank-title">{getRank(kid.points || 0).name}</p>
+        </div>
         <Button variant="ghost" size="sm" onClick={() => { logout(); navigate("/"); }}>
           Log out
         </Button>

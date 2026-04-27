@@ -5,14 +5,14 @@ const SCHEDULES = ["Daily", "Weekly", "One-time"];
 const TIMES = ["5:30 AM","6:00 AM","7:00 AM","8:00 AM","9:00 AM","10:00 AM","11:00 AM","12:00 PM","1:00 PM","2:00 PM","3:00 PM","4:00 PM","5:00 PM","6:00 PM","7:00 PM","8:00 PM","9:00 PM"];
 const POINTS = [1,2,3,5,10,15,20,25,50];
 
-export default function AddTaskModal({ kid, accent, allKids, onAdd, onClose }) {
+export default function AddTaskModal({ kid, accent, allKids, taskLibrary, setTaskLibrary, onAdd, onClose }) {
   const [title, setTitle] = useState("");
   const [schedule, setSchedule] = useState("Daily");
   const [time, setTime] = useState("8:00 AM");
   const [points, setPoints] = useState(5);
   const [error, setError] = useState("");
   const [customPoints, setCustomPoints] = useState("");
-  const [library, setLibrary] = useState([]);
+  // taskLibrary state is lifted to parent (KidDetail) via taskLibrary / setTaskLibrary props
   const [showLibrary, setShowLibrary] = useState(false);
   const [showSavePrompt, setShowSavePrompt] = useState(false);
   const [pendingTask, setPendingTask] = useState(null);
@@ -132,18 +132,18 @@ export default function AddTaskModal({ kid, accent, allKids, onAdd, onClose }) {
         )}
 
         {/* Library toggle */}
-        <div className="modal-library-row">
+        <div className="modal-taskLibrary-row">
           <button
             className={`modal-lib-toggle${showLibrary ? " active" : ""}`}
             onClick={() => setShowLibrary(p => !p)}
-          >☰ Task Library {library.length > 0 ? `(${library.length})` : ""}</button>
+          >☰ Task Library {taskLibrary.length > 0 ? `(${taskLibrary.length})` : ""}</button>
         </div>
 
         {/* Library list */}
         {showLibrary && (
-          <div className="modal-library">
-            {library.length === 0 && <p className="modal-lib-empty">No saved tasks yet. Save tasks to build your library.</p>}
-            {library.map((t, i) => (
+          <div className="modal-taskLibrary">
+            {taskLibrary.length === 0 && <p className="modal-lib-empty">No saved tasks yet. Save tasks to build your taskLibrary.</p>}
+            {taskLibrary.map((t, i) => (
               <button key={i} className="modal-lib-item" onClick={() => {
                 setTitle(t.title);
                 setSchedule(t.schedule);
@@ -167,10 +167,10 @@ export default function AddTaskModal({ kid, accent, allKids, onAdd, onClose }) {
       {/* Save prompt */}
         {showSavePrompt && (
           <div className="modal-save-prompt">
-            <p className="modal-save-question">💾 Save <strong>"{pendingTask?.title}"</strong> to your task library?</p>
+            <p className="modal-save-question">💾 Save <strong>"{pendingTask?.title}"</strong> to your task taskLibrary?</p>
             <div className="modal-save-actions">
               <button className="modal-save-yes" onClick={() => {
-                setLibrary(prev => {
+                setTaskLibrary(prev => {
                   const updated = [pendingTask, ...prev];
                   return updated.slice(0, 30);
                 });

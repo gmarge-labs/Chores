@@ -267,3 +267,94 @@
 .kid-name-block { flex: 1; display: flex; flex-direction: column; align-items: flex-start; gap: 0; }
 .kid-name-block .kid-name { margin: 0; flex: none; }
 .kid-name-block .kid-rank-title { margin: 0; }
+
+/* Pill tabs at the top of kid dashboard */
+.kid-tabs { display: flex; gap: 10px; margin: 18px 0 16px 0; }
+.kid-tab {
+  padding: 8px 22px;
+  border: none;
+  border-radius: 999px;
+  font-family: 'Baloo 2', cursive;
+  font-weight: 800;
+  font-size: 0.95rem;
+  background: rgba(255, 255, 255, 0.45);
+  color: rgba(47, 36, 25, 0.7);
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 1.5px solid rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(8px);
+}
+.kid-tab:hover { background: rgba(255, 255, 255, 0.6); }
+.kid-tab--active {
+  background: rgba(255, 255, 255, 0.85);
+  color: rgb(47, 36, 25);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+/* Rewards grid */
+.kid-rewards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
+  padding-bottom: 24px;
+}
+.reward-card {
+  background: rgba(255, 255, 255, 0.62);
+  backdrop-filter: blur(14px);
+  border: 1.5px solid rgba(255, 255, 255, 0.85);
+  border-radius: 22px;
+  padding: 20px 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.reward-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
+}
+.reward-card--affordable {
+  background: rgba(255, 245, 200, 0.85);
+  border-color: rgba(255, 210, 77, 0.95);
+  box-shadow: 0 8px 28px rgba(255, 180, 60, 0.32);
+}
+.reward-card__emoji { font-size: 2.4rem; line-height: 1; }
+.reward-card__name {
+  margin: 4px 0 0 0;
+  font-family: 'Baloo 2', cursive;
+  font-weight: 900;
+  font-size: 1.05rem;
+  color: rgb(47, 36, 25);
+}
+.reward-card__cost {
+  margin: 0;
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: rgba(47, 36, 25, 0.7);
+}
+.reward-card__bar {
+  width: 100%;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.55);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-top: 4px;
+}
+.reward-card__bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.4s ease;
+}
+.reward-card__remaining {
+  margin: 0;
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: rgba(47, 36, 25, 0.65);
+}
+.reward-card--affordable .reward-card__remaining {
+  color: #b8851e;
+  font-weight: 900;
+}

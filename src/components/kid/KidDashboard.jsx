@@ -15,6 +15,15 @@ function getRank(points) {
   return current;
 }
 
+// Mock rewards — will come from parent's Rewards Store via Firestore later.
+const MOCK_REWARDS = [
+  { id: "r1", name: "Stay up late",  emoji: "🌙", cost:  50 },
+  { id: "r2", name: "Movie night",   emoji: "🍿", cost:  75 },
+  { id: "r3", name: "Ice cream trip",emoji: "🍨", cost: 100 },
+  { id: "r4", name: "Pizza dinner",  emoji: "🍕", cost: 200 },
+  { id: "r5", name: "New video game",emoji: "🎮", cost: 500 },
+];
+
 // import { useFamily } from "../../context/FamilyContext"; // re-enable when Firestore is wired
 import { useNavigate } from "react-router-dom";
 import Button from "../shared/Button";
@@ -80,6 +89,7 @@ export default function KidDashboard() {
   const [due, setDue] = useState(kid?.due || []);
   const [awaiting, setAwaiting] = useState(kid?.awaiting || []);
   const [completed] = useState(kid?.completed || []);
+  const [view, setView] = useState("dashboard");
   const [celebrating, setCelebrating] = useState({}); // taskId -> true while animating
   const [leaving, setLeaving] = useState({}); // taskId -> true while sliding out
 
@@ -143,6 +153,43 @@ export default function KidDashboard() {
         )}
       </div>
 
+      <div className="kid-tabs" role="tablist">
+        <button
+          className={"kid-tab" + (view === "dashboard" ? " kid-tab--active" : "")}
+          role="tab"
+          aria-selected={view === "dashboard"}
+          onClick={() => setView("dashboard")}
+        >Dashboard</button>
+        <button
+          className={"kid-tab" + (view === "rewards" ? " kid-tab--active" : "")}
+          role="tab"
+          aria-selected={view === "rewards"}
+          onClick={() => setView("rewards")}
+        >Rewards</button>
+      </div>
+
+      {view === "rewards" ? (
+        <div className="kid-rewards-grid">
+          {MOCK_REWARDS.map(r => {
+            const progress = Math.min(100, Math.round((kid.points / r.cost) * 100));
+            const remaining = Math.max(0, r.cost - kid.points);
+            const affordable = remaining === 0;
+            return (
+              <div key={r.id} className={"reward-card" + (affordable ? " reward-card--affordable" : "")}>
+                <div className="reward-card__emoji" aria-hidden="true">{r.emoji}</div>
+                <h3 className="reward-card__name">{r.name}</h3>
+                <p className="reward-card__cost">⭐ {r.cost} points</p>
+                <div className="reward-card__bar" aria-hidden="true">
+                  <div className="reward-card__bar-fill" style={{ width: progress + "%", background: accentColor }}/>
+                </div>
+                <p className="reward-card__remaining">
+                  {affordable ? "✨ You can get this!" : remaining + " points to go"}
+                </p>
+              </div>
+            );
+          })}
+        </div>
+      ) : (
       <div className="kid-columns">
         <div className="kid-column">
           <h2 className="kid-column-title">Due</h2>
@@ -201,6 +248,7 @@ export default function KidDashboard() {
           ))}
         </div>
       </div>
+      )}
     </div>
   );
 }

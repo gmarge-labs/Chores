@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 // import { useFamily } from "../../context/FamilyContext"; // re-enable when Firestore is wired
 import { useNavigate } from "react-router-dom";
@@ -18,10 +19,10 @@ export default function KidDashboard() {
       pointsPerDollarReward: 20,
       dollarRewardValue: 1,
       due: [
-        { name: "Fajr Prayer", points: 5 },
-        { name: "Brush Teeth", points: 5 },
-        { name: "Eat Breakfast", points: 5 },
-        { name: "Clean your room", points: 5 },
+        { id: "t1", name: "Fajr Prayer", points: 5 },
+        { id: "t2", name: "Brush Teeth", points: 5 },
+        { id: "t3", name: "Eat Breakfast", points: 5 },
+        { id: "t4", name: "Clean your room", points: 5 },
       ],
       awaiting: [],
       completed: [],
@@ -34,8 +35,8 @@ export default function KidDashboard() {
       pointsPerDollarReward: 20,
       dollarRewardValue: 1,
       due: [
-        { name: "Make bed", points: 10 },
-        { name: "Homework", points: 30 },
+        { id: "t1", name: "Make bed", points: 10 },
+        { id: "t2", name: "Homework", points: 30 },
       ],
       awaiting: [],
       completed: [],
@@ -48,14 +49,36 @@ export default function KidDashboard() {
       pointsPerDollarReward: 20,
       dollarRewardValue: 1,
       due: [
-        { name: "Tidy room", points: 20 },
-        { name: "Help with dishes", points: 15 },
+        { id: "t1", name: "Tidy room", points: 20 },
+        { id: "t2", name: "Help with dishes", points: 15 },
       ],
       awaiting: [],
       completed: [],
     },
   };
   const kid = MOCK_KIDS[session?.kidId];
+
+  // Local task lists so kid can move tasks Due -> Awaiting on Done click.
+  const [due, setDue] = useState(kid?.due || []);
+  const [awaiting, setAwaiting] = useState(kid?.awaiting || []);
+  const [completed] = useState(kid?.completed || []);
+  const [celebrating, setCelebrating] = useState({}); // taskId -> true while animating
+  const [leaving, setLeaving] = useState({}); // taskId -> true while sliding out
+
+  const handleDone = (task) => {
+    if (celebrating[task.id] || leaving[task.id]) return;
+    setCelebrating(prev => ({ ...prev, [task.id]: true }));
+    // After sparkle animation, slide out, then move to awaiting.
+    setTimeout(() => {
+      setCelebrating(prev => { const n = { ...prev }; delete n[task.id]; return n; });
+      setLeaving(prev => ({ ...prev, [task.id]: true }));
+      setTimeout(() => {
+        setDue(prev => prev.filter(t => t.id !== task.id));
+        setAwaiting(prev => [...prev, task]);
+        setLeaving(prev => { const n = { ...prev }; delete n[task.id]; return n; });
+      }, 350);
+    }, 600);
+  };
 
   if (!kid) return (
     <div className="page-center">
@@ -90,22 +113,37 @@ export default function KidDashboard() {
       <div className="kid-columns">
         <div className="kid-column">
           <h2 className="kid-column-title">Due</h2>
-          {kid.due?.length === 0 && <p className="kid-empty">All done! 🎉</p>}
-          {kid.due?.map((task, i) => (
-            <div key={i} className="task-card">
+          {due.length === 0 && <p className="kid-empty">All done! 🎉</p>}
+          {due.map((task) => (
+            <div
+              key={task.id}
+              className={`task-card${leaving[task.id] ? " task-card--leaving" : ""}`}
+            >
               <div className="task-card__info">
                 <p className="task-card__name">{task.name}</p>
                 <p className="task-card__meta">{task.points} points</p>
               </div>
-              <Button variant="primary" size="sm">Done</Button>
+              <div className="task-card__done-wrap">
+                {celebrating[task.id] && (
+                  <span className="sparkle-burst" aria-hidden="true">
+                    <span className="sparkle sparkle--1">✦</span>
+                    <span className="sparkle sparkle--2">✦</span>
+                    <span className="sparkle sparkle--3">✦</span>
+                    <span className="sparkle sparkle--4">✦</span>
+                    <span className="sparkle sparkle--5">✦</span>
+                    <span className="sparkle sparkle--6">✦</span>
+                  </span>
+                )}
+                <Button variant="primary" size="sm" onClick={() => handleDone(task)}>Done</Button>
+              </div>
             </div>
           ))}
         </div>
 
         <div className="kid-column">
           <h2 className="kid-column-title">Awaiting approval</h2>
-          {kid.awaiting?.length === 0 && <p className="kid-empty">Nothing waiting</p>}
-          {kid.awaiting?.map((task, i) => (
+          {awaiting.length === 0 && <p className="kid-empty">Nothing waiting</p>}
+          {awaiting.map((task, i) => (
             <div key={i} className="task-card task-card--awaiting">
               <div className="task-card__info">
                 <p className="task-card__name">{task.name}</p>
@@ -118,8 +156,8 @@ export default function KidDashboard() {
 
         <div className="kid-column">
           <h2 className="kid-column-title">Completed</h2>
-          {kid.completed?.length === 0 && <p className="kid-empty">Nothing yet</p>}
-          {kid.completed?.map((task, i) => (
+          {completed.length === 0 && <p className="kid-empty">Nothing yet</p>}
+          {completed.map((task, i) => (
             <div key={i} className="task-card task-card--completed">
               <div className="task-card__info">
                 <p className="task-card__name">{task.name}</p>

@@ -125,3 +125,55 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ── Done celebration: sparkle burst around button + task slide-out ── */
+.task-card__done-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sparkle-burst {
+  position: absolute;
+  inset: 50% 50% auto auto;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.sparkle-burst .sparkle {
+  position: absolute;
+  top: 0;
+  left: 0;
+  font-size: 1.1rem;
+  color: #ffd24d;
+  text-shadow: 0 0 6px rgba(255, 210, 77, 0.85);
+  opacity: 0;
+  animation: sparkleFly 0.6s ease-out forwards;
+  will-change: transform, opacity;
+}
+
+.sparkle--1 { --tx:  38px; --ty: -28px; animation-delay: 0ms; }
+.sparkle--2 { --tx: -42px; --ty: -22px; animation-delay: 50ms; color: #ffeb6b; }
+.sparkle--3 { --tx:  44px; --ty:  20px; animation-delay: 100ms; color: #ff9d57; }
+.sparkle--4 { --tx: -36px; --ty:  30px; animation-delay: 70ms; color: #fff5b8; }
+.sparkle--5 { --tx:   2px; --ty: -42px; animation-delay: 30ms; }
+.sparkle--6 { --tx:  -8px; --ty:  44px; animation-delay: 130ms; color: #ffd24d; }
+
+@keyframes sparkleFly {
+  0%   { transform: translate(0, 0) scale(0.4) rotate(0deg);   opacity: 0; }
+  20%  { opacity: 1; }
+  100% { transform: translate(var(--tx), var(--ty)) scale(1.2) rotate(180deg); opacity: 0; }
+}
+
+.task-card--leaving {
+  animation: taskSlideOut 0.35s ease-in forwards;
+  pointer-events: none;
+}
+
+@keyframes taskSlideOut {
+  0%   { transform: translateX(0);    opacity: 1; }
+  100% { transform: translateX(60%);  opacity: 0; }
+}

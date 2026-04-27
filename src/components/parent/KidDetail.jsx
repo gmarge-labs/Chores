@@ -111,7 +111,13 @@ export default function KidDetail() {
             <button
               key={panel}
               className={`kid-nav-btn${activePanel === panel ? " active" : ""}`}
-              onClick={() => setActivePanel(panel)}
+              onClick={() => {
+                if (panel === "settings") {
+                  setShowSettings(true);
+                } else {
+                  setActivePanel(panel);
+                }
+              }}
             >
               {panel.charAt(0).toUpperCase() + panel.slice(1)}
             </button>

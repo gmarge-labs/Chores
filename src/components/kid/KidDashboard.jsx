@@ -1,15 +1,61 @@
 import { useAuth } from "../../context/AuthContext";
-import { useFamily } from "../../context/FamilyContext";
+// import { useFamily } from "../../context/FamilyContext"; // re-enable when Firestore is wired
 import { useNavigate } from "react-router-dom";
 import Button from "../shared/Button";
 import "./KidDashboard.css";
 
 export default function KidDashboard() {
   const { session, logout } = useAuth();
-  const { getKid } = useFamily();
   const navigate = useNavigate();
 
-  const kid = getKid(session?.kidId);
+  // Temporary mock data until Firestore is wired up for kid sessions.
+  const MOCK_KIDS = {
+    k1: {
+      id: "k1",
+      name: "Simra",
+      points: 149,
+      accentColour: "#f07a45",
+      pointsPerDollarReward: 20,
+      dollarRewardValue: 1,
+      due: [
+        { name: "Fajr Prayer", points: 5 },
+        { name: "Brush Teeth", points: 5 },
+        { name: "Eat Breakfast", points: 5 },
+        { name: "Clean your room", points: 5 },
+      ],
+      awaiting: [],
+      completed: [],
+    },
+    k2: {
+      id: "k2",
+      name: "Rayyan",
+      points: 100,
+      accentColour: "#3f84db",
+      pointsPerDollarReward: 20,
+      dollarRewardValue: 1,
+      due: [
+        { name: "Make bed", points: 10 },
+        { name: "Homework", points: 30 },
+      ],
+      awaiting: [],
+      completed: [],
+    },
+    k3: {
+      id: "k3",
+      name: "Jinan",
+      points: 105,
+      accentColour: "#2f9f8f",
+      pointsPerDollarReward: 20,
+      dollarRewardValue: 1,
+      due: [
+        { name: "Tidy room", points: 20 },
+        { name: "Help with dishes", points: 15 },
+      ],
+      awaiting: [],
+      completed: [],
+    },
+  };
+  const kid = MOCK_KIDS[session?.kidId];
 
   if (!kid) return (
     <div className="page-center">

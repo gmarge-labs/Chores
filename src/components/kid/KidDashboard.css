@@ -444,3 +444,15 @@
 .kid-center-stats-row { padding: 0 24px; }
 .kid-center-stats-row .kid-streak-chip { margin-left: 0 !important; margin-right: auto !important; }
 .kid-center-stats-row .kid-points-counter { margin-right: 0 !important; margin-left: auto !important; }
+
+.kid-center-stats-row { width: 100% !important; }
+
+.kid-center-stats-row { position: relative; }
+.kid-center-stats-row .kid-points-counter { position: absolute; left: 50%; transform: translateX(-50%); margin: 0 !important; top: 50%; transform: translate(-50%, -50%); }
+
+.kid-center-stats-row .kid-points-counter { font-size: 5rem !important; }
+.kid-center-stats-row .kid-points-digit { font-size: 5rem !important; }
+.kid-center-stats-row .kid-points-label { font-size: 2rem !important; }
+
+.kid-center-stats-row { min-height: 90px; align-items: center; }
+.kid-center-stats-row .kid-points-counter { top: 50%; transform: translate(-50%, -50%) !important; }

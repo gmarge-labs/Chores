@@ -106,9 +106,31 @@ export default function KidDashboard() {
       <Background />
 
       <header className="kid-detail-header">
-        <div className="kid-detail-name-pill">
-          <h1>{kid.name}</h1>
-          <p className="kid-rank-title-inside"><span className="kid-rank-emoji" aria-hidden="true">{rank.emoji}</span> {rank.name}</p>
+        <div className="kid-name-and-stripe">
+          <div className="kid-detail-name-pill">
+            <h1>
+              <span className="kid-name-rank-emoji" aria-hidden="true">{rank.emoji}</span>
+              {kid.name}
+            </h1>
+            <p className="kid-name-rank-title"><span className="kid-rank-shimmer">{rank.name}</span></p>
+          </div>
+          <div className="kid-identity-stripe">
+            
+            {kid.streak > 0 && (
+              <span className="kid-stripe-streak">{kid.streak}/7 days</span>
+            )}
+          </div>
+        </div>
+
+
+        <div className="kid-points-counter kid-points-counter--header">
+          {String(kid.points).split("").map((d, i) => (
+            <span key={i} className="kid-points-digit" style={{
+              animationDelay: `${i * 0.15}s`,
+              color: ["#ff6b6b","#ffd93d","#6bcb77","#4d96ff","#ff6bcb"][i % 5],
+            }}>{d}</span>
+          ))}
+          <span className="kid-points-label">pts</span>
         </div>
 
         <div className="kid-header-right">
@@ -119,28 +141,6 @@ export default function KidDashboard() {
           <button className="kid-logout-btn" onClick={() => { logout(); navigate("/"); }}>Log out</button>
         </div>
       </header>
-
-      <div className="kid-center-stats-row">
-        {kid.streak > 0 ? (
-          <div className="kid-streak-chip kid-streak-chip--active" aria-label={`${kid.streak} day streak`}>
-            <span className="kid-streak-num">{kid.streak}/7</span>
-            
-          </div>
-        ) : (
-          <div className="kid-streak-chip kid-streak-chip--idle">
-            <span className="kid-streak-label">Start your streak today!</span>
-          </div>
-        )}
-        <div className="kid-points-counter">
-          {String(kid.points).split("").map((d, i) => (
-            <span key={i} className="kid-points-digit" style={{
-              animationDelay: `${i * 0.15}s`,
-              color: ["#ff6b6b","#ffd93d","#6bcb77","#4d96ff","#ff6bcb"][i % 5],
-            }}>{d}</span>
-          ))}
-          <span className="kid-points-label">pts</span>
-        </div>
-      </div>
 
       <section className="kid-detail-card">
         <span className="panel-bubbles" aria-hidden="true"><span/><span/><span/></span>

@@ -31,6 +31,7 @@ const TABS = [
   { id: "profile",  emoji: "✏️",  label: "Edit Profile"  },
   { id: "bonus",    emoji: "🎁",  label: "Bonus Points"  },
   { id: "rewards",  emoji: "🛍️", label: "Rewards Store" },
+  { id: "quests",   emoji: "🎯",  label: "Family Quest"  },
   { id: "journey",  emoji: "🏆",  label: "Hero Journey"  },
 ];
 
@@ -60,7 +61,7 @@ export default function SettingsModal({ onClose }) {
   const [bonusPoints, setBonusPoints] = useState("");
   const [notifyKids, setNotifyKids] = useState(true);
   const [bonusAdded, setBonusAdded] = useState(false);
-  const { bonusLibrary, setBonusLibrary, rewardLibrary, setRewardLibrary } = useLibraries();
+  const { bonusLibrary, setBonusLibrary, rewardLibrary, setRewardLibrary, activeQuest, setActiveQuest, archiveActiveQuest } = useLibraries();
   const [showBonusLibrary, setShowBonusLibrary] = useState(false);
 
   // Rewards Store
@@ -72,6 +73,15 @@ export default function SettingsModal({ onClose }) {
   const [newRewardEmoji, setNewRewardEmoji] = useState("🎁");
   const [justAddedReward, setJustAddedReward] = useState(false);
   const [libraryOpen, setLibraryOpen] = useState(false);
+  const [questDraft, setQuestDraft] = useState({
+    title: activeQuest?.title || "",
+    emoji: activeQuest?.emoji || "🎯",
+    description: activeQuest?.description || "",
+    goal: activeQuest?.goal || 200,
+  });
+  const [questIconPickerOpen, setQuestIconPickerOpen] = useState(false);
+  const [questSaved, setQuestSaved] = useState(false);
+  const [questEditOpen, setQuestEditOpen] = useState(false);
 
   const [iconPickerOpen, setIconPickerOpen] = useState(false);
   const [newRewardName, setNewRewardName] = useState("");
@@ -520,6 +530,235 @@ export default function SettingsModal({ onClose }) {
           )}
 
           {/* ── Hero Journey ── */}
+          {/* ── Family Quest ── */}
+          {activeTab === "quests" && (
+            <div className="settings-quest-tab">
+              {activeQuest ? (
+                <>
+                  <div className="settings-section">
+                    <h3 className="settings-section-title">🎯 Active Quest</h3>
+                    {(() => {
+                      const total = activeQuest.contributions.reduce((s, c) => s + c.points, 0);
+                      const pct = Math.min(100, Math.round((total / activeQuest.goal) * 100));
+                      const complete = total >= activeQuest.goal;
+                      return (
+                        <div className="settings-quest-status">
+                          <div className="settings-quest-status-head">
+                            <span className="settings-quest-status-emoji">{activeQuest.emoji}</span>
+                            <div className="settings-quest-status-meta">
+                              <h4>{activeQuest.title}</h4>
+                              <p>{activeQuest.description}</p>
+                            </div>
+                          </div>
+                          <div className="settings-quest-progress">
+                            <div className="settings-quest-progress-bar">
+                              <div className="settings-quest-progress-fill" style={{ width: pct + "%" }} />
+                            </div>
+                            <p className="settings-quest-progress-text">
+                              {complete ? "🎉 Goal reached!" : `${total} / ${activeQuest.goal} points`}
+                            </p>
+                          </div>
+                          {activeQuest.contributions.length > 0 && (
+                            <div className="settings-quest-contribs">
+                              <h5>Recent contributions</h5>
+                              <ul>
+                                {activeQuest.contributions.slice(-5).reverse().map((c, i) => (
+                                  <li key={i}>
+                                    <strong>{c.kidId}</strong> donated <strong>{c.points} pts</strong>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                          {complete ? (
+                            <button className="settings-modal-save settings-quest-archive-btn" onClick={() => { archiveActiveQuest(); setQuestDraft({ title: "", emoji: "🎯", description: "", goal: 200 }); }}>
+                              ✓ Archive & Start New
+                            </button>
+                          ) : (
+                            <button className="settings-modal-save settings-quest-archive-btn" onClick={archiveActiveQuest}>
+                              End this quest
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })()}
+                  </div>
+                  {!questEditOpen && (
+                    <button
+                      className="settings-modal-save settings-quest-add-btn"
+                      onClick={() => setQuestEditOpen(true)}
+                    >+ Add New Quest</button>
+                  )}
+                  {questEditOpen && (
+                  <div className="settings-section">
+                    <div className="settings-quest-edit-head">
+                      <h3 className="settings-section-title">✏️ Edit Quest</h3>
+                      <button
+                        className="settings-quest-edit-close"
+                        onClick={() => setQuestEditOpen(false)}
+                        aria-label="Close edit"
+                      >✕</button>
+                    </div>
+                    <div className="settings-quest-form">
+                      <div className="settings-field">
+                        <label className="settings-label">Quest title</label>
+                        <input
+                          className="settings-input"
+                          type="text"
+                          placeholder="e.g. Pizza Friday"
+                          value={questDraft.title}
+                          onChange={e => setQuestDraft(d => ({ ...d, title: e.target.value }))}
+                          maxLength={40}
+                        />
+                      </div>
+                      <div className="settings-field" style={{ position: "relative" }}>
+                        <label className="settings-label">Pick an icon</label>
+                        <button
+                          type="button"
+                          className="settings-reward-icon-trigger"
+                          onClick={() => setQuestIconPickerOpen(o => !o)}
+                          aria-expanded={questIconPickerOpen}
+                        >
+                          <span className="settings-reward-icon-trigger-emoji">{questDraft.emoji}</span>
+                          <span className="settings-reward-icon-trigger-label">Choose icon</span>
+                          <span className={"settings-reward-icon-trigger-caret" + (questIconPickerOpen ? " open" : "")}>▾</span>
+                        </button>
+                        {questIconPickerOpen && (
+                          <div className="settings-reward-icon-panel">
+                            {REWARD_ICONS.map(ico => (
+                              <button
+                                key={ico}
+                                type="button"
+                                className={"settings-reward-icon-btn" + (questDraft.emoji === ico ? " active" : "")}
+                                onClick={() => { setQuestDraft(d => ({ ...d, emoji: ico })); setQuestIconPickerOpen(false); }}
+                                aria-label={`Pick ${ico}`}
+                              >{ico}</button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      <div className="settings-field">
+                        <label className="settings-label">Description</label>
+                        <input
+                          className="settings-input"
+                          type="text"
+                          placeholder="Family pizza night when we hit the goal!"
+                          value={questDraft.description}
+                          onChange={e => setQuestDraft(d => ({ ...d, description: e.target.value }))}
+                          maxLength={80}
+                        />
+                      </div>
+                      <div className="settings-field">
+                        <label className="settings-label">Goal (combined family points)</label>
+                        <input
+                          className="settings-input"
+                          type="number"
+                          min="10"
+                          value={questDraft.goal}
+                          onChange={e => setQuestDraft(d => ({ ...d, goal: Number(e.target.value) || "" }))}
+                          style={{ width: "120px" }}
+                        />
+                      </div>
+                      <div className="settings-quest-form-actions">
+                        <button
+                          className="settings-modal-cancel"
+                          onClick={() => {
+                            setQuestEditOpen(false);
+                            setQuestDraft({
+                              title: activeQuest?.title || "",
+                              emoji: activeQuest?.emoji || "🎯",
+                              description: activeQuest?.description || "",
+                              goal: activeQuest?.goal || 200,
+                            });
+                          }}
+                        >Cancel Edits</button>
+                        <button
+                          className="settings-modal-save"
+                          onClick={() => {
+                            if (!questDraft.title.trim() || !questDraft.goal) return;
+                            setActiveQuest(q => ({
+                              ...(q || { id: "q" + Date.now(), contributions: [], createdAt: Date.now() }),
+                              title: questDraft.title.trim(),
+                              emoji: questDraft.emoji,
+                              description: questDraft.description.trim(),
+                              goal: Number(questDraft.goal),
+                            }));
+                            setQuestSaved(true);
+                            setTimeout(() => { setQuestSaved(false); setQuestEditOpen(false); }, 1300);
+                          }}
+                        >Save Edits ✦</button>
+                        {questSaved && <span className="settings-quest-saved">✓ Saved!</span>}
+                      </div>
+                    </div>
+                  </div>
+                  )}
+                </>
+              ) : (
+                <div className="settings-section">
+                  <h3 className="settings-section-title">🎯 Start a Family Quest</h3>
+                                    <div className="settings-quest-form">
+                    <div className="settings-field">
+                      <label className="settings-label">Quest title</label>
+                      <input
+                        className="settings-input"
+                        type="text"
+                        placeholder="e.g. Pizza Friday"
+                        value={questDraft.title}
+                        onChange={e => setQuestDraft(d => ({ ...d, title: e.target.value }))}
+                        maxLength={40}
+                      />
+                    </div>
+                    <div className="settings-field">
+                      <label className="settings-label">Description</label>
+                      <input
+                        className="settings-input"
+                        type="text"
+                        placeholder="Family pizza night when we hit the goal!"
+                        value={questDraft.description}
+                        onChange={e => setQuestDraft(d => ({ ...d, description: e.target.value }))}
+                        maxLength={80}
+                      />
+                    </div>
+                    <div className="settings-field">
+                      <label className="settings-label">Goal (combined family points)</label>
+                      <input
+                        className="settings-input"
+                        type="number"
+                        min="10"
+                        value={questDraft.goal}
+                        onChange={e => setQuestDraft(d => ({ ...d, goal: Number(e.target.value) || "" }))}
+                        style={{ width: "120px" }}
+                      />
+                    </div>
+                    <div className="settings-quest-form-actions">
+                      <button
+                        className="settings-modal-cancel"
+                        onClick={() => setQuestDraft({ title: "", emoji: "🎯", description: "", goal: 200 })}
+                      >Cancel</button>
+                      <button
+                        className="settings-modal-save"
+                        onClick={() => {
+                          if (!questDraft.title.trim() || !questDraft.goal) return;
+                          setActiveQuest({
+                            id: "q" + Date.now(),
+                            title: questDraft.title.trim(),
+                            emoji: questDraft.emoji,
+                            description: questDraft.description.trim(),
+                            goal: Number(questDraft.goal),
+                            contributions: [],
+                            createdAt: Date.now(),
+                          });
+                          setQuestSaved(true);
+                          setTimeout(() => setQuestSaved(false), 1300);
+                        }}
+                      >Start Quest ✦</button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           {activeTab === "journey" && (
             <div className="settings-section settings-section--hero">
               <h3 className="settings-section-title">🏆 Hero Journey</h3>

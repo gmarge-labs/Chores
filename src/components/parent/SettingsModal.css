@@ -2695,3 +2695,223 @@ button.settings-modal-save {
   color: rgba(47, 36, 25, 0.55);
   max-width: 220px;
 }
+
+/* ── Family Quest tab ── */
+.settings-quest-tab { display: flex; flex-direction: column; gap: 16px; }
+.settings-quest-status-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+.settings-quest-status-emoji {
+  font-size: 2.6rem;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.15));
+}
+.settings-quest-status-meta h4 {
+  margin: 0;
+  font-family: 'Baloo 2', cursive;
+  font-weight: 900;
+  font-size: 1.15rem;
+  color: rgb(47, 36, 25);
+}
+.settings-quest-status-meta p {
+  margin: 2px 0 0 0;
+  font-size: 0.88rem;
+  color: rgba(47, 36, 25, 0.65);
+}
+.settings-quest-progress {
+  margin-bottom: 14px;
+}
+.settings-quest-progress-bar {
+  width: 100%;
+  height: 16px;
+  background: rgba(255, 255, 255, 0.55);
+  border: 1.5px solid rgba(255, 255, 255, 0.8);
+  border-radius: 999px;
+  overflow: hidden;
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+.settings-quest-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #ffd24d, #ff8a3d, #ff5836);
+  border-radius: 999px;
+  transition: width 0.6s ease;
+  box-shadow: 0 0 12px rgba(255, 138, 61, 0.55);
+}
+.settings-quest-progress-text {
+  margin: 6px 0 0 0;
+  font-family: 'Baloo 2', cursive;
+  font-weight: 800;
+  font-size: 0.95rem;
+  color: rgb(47, 36, 25);
+  text-align: center;
+}
+.settings-quest-contribs {
+  margin-top: 12px;
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.4);
+  border-radius: 12px;
+}
+.settings-quest-contribs h5 {
+  margin: 0 0 6px 0;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: rgba(47, 36, 25, 0.55);
+  font-weight: 800;
+}
+.settings-quest-contribs ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.settings-quest-contribs li {
+  font-size: 0.88rem;
+  padding: 3px 0;
+  color: rgba(47, 36, 25, 0.85);
+}
+.settings-quest-archive-btn {
+  margin-top: 14px;
+}
+.settings-quest-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.settings-quest-empty-hint {
+  margin: 6px 0 14px 0;
+  font-size: 0.92rem;
+  color: rgba(47, 36, 25, 0.7);
+  line-height: 1.4;
+}
+.settings-quest-saved {
+  display: inline-block;
+  margin-left: 12px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #4ade80, #22c55e);
+  color: #fff;
+  font-family: 'Baloo 2', cursive;
+  font-weight: 800;
+  font-size: 0.82rem;
+  animation: questSavedPop 0.3s ease-out;
+}
+@keyframes questSavedPop {
+  from { opacity: 0; transform: scale(0.8); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+/* Add New Quest button — sits below active quest tile */
+.settings-quest-add-btn {
+  display: block;
+  margin: 4px auto 0;
+  min-width: 200px;
+}
+
+/* Edit Quest section: title + close button row */
+.settings-quest-edit-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.settings-quest-edit-head .settings-section-title { margin: 0; }
+.settings-quest-edit-close {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.06);
+  color: rgba(47, 36, 25, 0.7);
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.settings-quest-edit-close:hover {
+  background: rgba(0, 0, 0, 0.12);
+  color: rgb(47, 36, 25);
+}
+
+/* Family Quest tab — center contents and match section width */
+.settings-quest-tab {
+  align-items: center !important;
+  width: 100% !important;
+}
+.settings-quest-tab .settings-section {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+.settings-quest-tab .settings-quest-status {
+  width: 100% !important;
+}
+.settings-quest-tab .settings-quest-add-btn {
+  margin: 4px auto 0 !important;
+  display: block !important;
+}
+.settings-quest-tab .settings-quest-form {
+  align-items: stretch !important;
+}
+.settings-quest-tab .settings-quest-form .settings-modal-save {
+  align-self: center !important;
+  margin-top: 4px !important;
+}
+
+/* Quest form action row: Cancel + Save side-by-side, right-aligned */
+.settings-quest-form-actions {
+  display: flex !important;
+  justify-content: flex-end !important;
+  gap: 10px !important;
+  margin-top: 8px !important;
+  align-items: center !important;
+}
+.settings-quest-form-actions .settings-modal-save {
+  margin: 0 !important;
+}
+
+/* Cancel button — glass pill, less prominent than Save */
+.settings-modal-cancel {
+  height: 48px !important;
+  min-height: 48px !important;
+  padding: 0 22px !important;
+  border-radius: 999px !important;
+  border: 2px solid rgba(255, 255, 255, 0.72) !important;
+  background: rgba(255, 255, 255, 0.5) !important;
+  color: rgba(47, 36, 25, 0.85) !important;
+  font-family: 'Baloo 2', cursive !important;
+  font-weight: 800 !important;
+  font-size: 0.95rem !important;
+  cursor: pointer !important;
+  transition: transform 0.12s, box-shadow 0.15s, background 0.15s !important;
+  box-shadow: 0 4px 12px rgba(63, 43, 24, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.55) !important;
+}
+.settings-modal-cancel:hover {
+  background: rgba(255, 255, 255, 0.75) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* Tighten spacing in empty quest state */
+.settings-quest-tab .settings-section .settings-section-title + .settings-quest-form {
+  margin-top: 4px !important;
+}
+
+/* Quest form action row — pin Cancel + Save side-by-side, right-aligned, both 48px */
+.settings-quest-tab .settings-quest-form-actions {
+  display: flex !important;
+  flex-direction: row !important;
+  justify-content: flex-end !important;
+  align-items: center !important;
+  gap: 10px !important;
+  margin-top: 10px !important;
+  width: 100% !important;
+}
+.settings-quest-tab .settings-quest-form-actions .settings-modal-cancel,
+.settings-quest-tab .settings-quest-form-actions .settings-modal-save {
+  height: 48px !important;
+  min-height: 48px !important;
+  flex: 0 0 auto !important;
+  align-self: center !important;
+  margin: 0 !important;
+  pointer-events: auto !important;
+  opacity: 1 !important;
+}

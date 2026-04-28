@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLibraries } from "../../context/LibrariesContext";
 import { useAuth } from "../../context/AuthContext";
 import { useNavigate } from "react-router-dom";
@@ -96,6 +96,13 @@ export default function KidDashboard() {
   const [donateAmount, setDonateAmount] = useState(0);
   const [justDonated, setJustDonated] = useState(null);
   const [questTileOpen, setQuestTileOpen] = useState(false);
+
+  // Show celebration whenever goal is reached and not yet dismissed for this quest
+  const [dismissedQuestId, setDismissedQuestId] = useState(null);
+  const goalReached = activeQuest
+    ? activeQuest.contributions.reduce((s, c) => s + c.points, 0) >= activeQuest.goal
+    : false;
+  const showGoalCelebration = goalReached && activeQuest && dismissedQuestId !== activeQuest.id;
 
   const handleDone = (task) => {
     if (celebrating[task.id] || leaving[task.id]) return;
@@ -354,7 +361,7 @@ export default function KidDashboard() {
                   setClaimedRewards(prev => [...prev, confirmReward.id]);
                   setJustClaimed(confirmReward);
                   setConfirmReward(null);
-                  setTimeout(() => setJustClaimed(null), 2200);
+                  // Auto-dismiss removed — kid taps to close the fullscreen celebration
                 }}
               >Yes, claim it!</button>
             </div>
@@ -363,10 +370,36 @@ export default function KidDashboard() {
       )}
 
       {justClaimed && (
-        <div className="kid-claim-celebration" role="status" aria-live="polite">
-          <div className="kid-claim-celebration-art" aria-hidden="true">{justClaimed.emoji}</div>
-          <p className="kid-claim-celebration-text">You got <strong>{justClaimed.name}</strong>!</p>
-          <p className="kid-claim-celebration-sub">Show this to your parent ✨</p>
+        <div className="quest-goal-celebration" role="status" aria-live="polite" onClick={() => setJustClaimed(null)}>
+          <div className="quest-goal-confetti" aria-hidden="true">
+            {Array.from({ length: 60 }).map((_, i) => {
+              const colors = ["#ff6b6b","#ffd93d","#6bcb77","#4d96ff","#c84cff","#ff8a3d"];
+              const color = colors[i % colors.length];
+              const left = Math.random() * 100;
+              const delay = Math.random() * 0.8;
+              const duration = 2.4 + Math.random() * 1.6;
+              const rotate = Math.random() * 360;
+              return (
+                <span
+                  key={i}
+                  className="quest-confetti-piece"
+                  style={{
+                    background: color,
+                    left: `${left}%`,
+                    animationDelay: `${delay}s`,
+                    animationDuration: `${duration}s`,
+                    transform: `rotate(${rotate}deg)`,
+                  }}
+                />
+              );
+            })}
+          </div>
+          <div className="quest-goal-content">
+            <div className="quest-goal-emoji">{justClaimed.emoji}</div>
+            <h1 className="quest-goal-title">YOU GOT IT!</h1>
+            <p className="quest-goal-subtitle">{justClaimed.name}</p>
+            <p className="quest-goal-desc">Show this to your parent ✨</p>
+          </div>
         </div>
       )}
 
@@ -417,6 +450,40 @@ export default function KidDashboard() {
           <div className="kid-donate-celebration-art" aria-hidden="true">{justDonated.emoji}</div>
           <p className="kid-donate-celebration-text">+{justDonated.amount} family points!</p>
           <p className="kid-donate-celebration-sub">Thanks for helping the team ✨</p>
+        </div>
+      )}
+
+      {showGoalCelebration && (
+        <div className="quest-goal-celebration" role="status" aria-live="polite" onClick={() => setDismissedQuestId(activeQuest.id)}>
+          <div className="quest-goal-confetti" aria-hidden="true">
+            {Array.from({ length: 60 }).map((_, i) => {
+              const colors = ["#ff6b6b","#ffd93d","#6bcb77","#4d96ff","#c84cff","#ff8a3d"];
+              const color = colors[i % colors.length];
+              const left = Math.random() * 100;
+              const delay = Math.random() * 0.8;
+              const duration = 2.4 + Math.random() * 1.6;
+              const rotate = Math.random() * 360;
+              return (
+                <span
+                  key={i}
+                  className="quest-confetti-piece"
+                  style={{
+                    background: color,
+                    left: `${left}%`,
+                    animationDelay: `${delay}s`,
+                    animationDuration: `${duration}s`,
+                    transform: `rotate(${rotate}deg)`,
+                  }}
+                />
+              );
+            })}
+          </div>
+          <div className="quest-goal-content">
+            <div className="quest-goal-emoji">{activeQuest.emoji}</div>
+            <h1 className="quest-goal-title">GOAL REACHED!</h1>
+            <p className="quest-goal-subtitle">{activeQuest.title}</p>
+            <p className="quest-goal-desc">The whole family did it together ✨</p>
+          </div>
         </div>
       )}
     </div>

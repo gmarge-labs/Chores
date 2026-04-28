@@ -1064,3 +1064,98 @@
   font-size: 1.05rem;
   color: rgba(255, 255, 255, 0.9);
 }
+
+/* ── Goal-reached fullscreen celebration ── */
+.quest-goal-celebration {
+  position: fixed !important;
+  inset: 0 !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100001 !important;
+  pointer-events: auto;
+  cursor: pointer;
+  background: radial-gradient(circle at center, rgba(255, 200, 80, 0.4), rgba(31, 22, 12, 0.85));
+  backdrop-filter: blur(8px);
+  animation: questGoalFade 5s ease-out forwards;
+}
+@keyframes questGoalFade {
+  0%   { opacity: 0; }
+  4%   { opacity: 1; }
+  90%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+.quest-goal-confetti {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+.quest-confetti-piece {
+  position: absolute;
+  top: -20px;
+  width: 12px;
+  height: 18px;
+  border-radius: 2px;
+  animation-name: confettiFall;
+  animation-timing-function: ease-out;
+  animation-iteration-count: 1;
+  animation-fill-mode: forwards;
+}
+@keyframes confettiFall {
+  0%   { transform: translateY(-30px) rotate(0deg);   opacity: 1; }
+  100% { transform: translateY(110vh) rotate(720deg); opacity: 0.6; }
+}
+.quest-goal-content {
+  position: relative;
+  text-align: center;
+  z-index: 2;
+  animation: questGoalPop 0.7s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes questGoalPop {
+  0%   { opacity: 0; transform: scale(0.4); }
+  100% { opacity: 1; transform: scale(1); }
+}
+.quest-goal-emoji {
+  font-size: 9rem;
+  filter: drop-shadow(0 12px 28px rgba(0, 0, 0, 0.4));
+  animation: questGoalEmojiSpin 1.2s ease-out;
+}
+@keyframes questGoalEmojiSpin {
+  0%   { transform: scale(0.3) rotate(-180deg); }
+  60%  { transform: scale(1.2) rotate(20deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+.quest-goal-title {
+  margin: 12px 0 6px 0;
+  font-family: 'Baloo 2', cursive;
+  font-weight: 900;
+  font-size: 3.2rem;
+  letter-spacing: 1px;
+  background: linear-gradient(90deg, #ffd24d, #ff8a3d, #ff5836, #c84cff, #4dc8ff, #ffd24d);
+  background-size: 300% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 4px 20px rgba(255, 215, 0, 0.6);
+  animation: questGoalShimmer 3s linear infinite;
+}
+@keyframes questGoalShimmer {
+  0%   { background-position: 0% 50%; }
+  100% { background-position: 300% 50%; }
+}
+.quest-goal-subtitle {
+  margin: 0 0 14px 0;
+  font-family: 'Baloo 2', cursive;
+  font-weight: 800;
+  font-size: 1.6rem;
+  color: #fff;
+  text-shadow: 0 4px 12px rgba(0, 0, 0, 0.55);
+}
+.quest-goal-desc {
+  margin: 0;
+  font-family: 'Baloo 2', cursive;
+  font-weight: 600;
+  font-size: 1.1rem;
+  color: rgba(255, 255, 255, 0.92);
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.55);
+}

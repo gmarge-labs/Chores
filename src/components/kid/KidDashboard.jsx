@@ -85,6 +85,10 @@ export default function KidDashboard() {
   const [awaiting, setAwaiting] = useState(kid.awaiting || []);
   const [completed] = useState(kid.completed || []);
   const [celebrating, setCelebrating] = useState({});
+  const [currentPoints, setCurrentPoints] = useState(kid.points);
+  const [claimedRewards, setClaimedRewards] = useState([]);
+  const [confirmReward, setConfirmReward] = useState(null);
+  const [justClaimed, setJustClaimed] = useState(null);
   const [leaving, setLeaving] = useState({});
 
   const handleDone = (task) => {
@@ -124,7 +128,7 @@ export default function KidDashboard() {
 
 
         <div className="kid-points-counter kid-points-counter--header">
-          {String(kid.points).split("").map((d, i) => (
+          {String(currentPoints).split("").map((d, i) => (
             <span key={i} className="kid-points-digit" style={{
               animationDelay: `${i * 0.15}s`,
               color: ["#ff6b6b","#ffd93d","#6bcb77","#4d96ff","#ff6bcb"][i % 5],
@@ -160,7 +164,13 @@ export default function KidDashboard() {
                 <span className="lane-shimmer" aria-hidden="true"/>
                 <h3>Due</h3>
                 <div className="task-stack">
-                  {due.length === 0 && <p className="empty-msg">All done! 🎉</p>}
+                  {due.length === 0 && (
+                    <div className="kid-empty kid-empty--due">
+                      <div className="kid-empty-art" aria-hidden="true">🎯</div>
+                      <p className="kid-empty-title">All caught up!</p>
+                      <p className="kid-empty-sub">Come back tomorrow for more</p>
+                    </div>
+                  )}
                   {due.map(task => (
                     <article key={task.id} className={"task-card" + (leaving[task.id] ? " task-card--leaving" : "")}>
                       <span className="task-card__emoji" aria-hidden="true">{task.emoji || "📝"}</span>
@@ -191,7 +201,13 @@ export default function KidDashboard() {
                 <span className="tile-bubbles" aria-hidden="true"><span/><span/><span/><span/><span/></span>
                 <h3>Awaiting approval</h3>
                 <div className="task-stack">
-                  {awaiting.length === 0 && <p className="empty-msg">⏳ Nothing waiting yet</p>}
+                  {awaiting.length === 0 && (
+                    <div className="kid-empty kid-empty--awaiting">
+                      <div className="kid-empty-art" aria-hidden="true">⏳</div>
+                      <p className="kid-empty-title">Nothing waiting</p>
+                      <p className="kid-empty-sub">Tap a "Done" to send for approval</p>
+                    </div>
+                  )}
                   {awaiting.map(task => (
                     <article key={task.id} className="task-card task-card--awaiting">
                       <span className="task-card__emoji" aria-hidden="true">{task.emoji || "📝"}</span>
@@ -209,7 +225,13 @@ export default function KidDashboard() {
                 <span className="tile-bubbles" aria-hidden="true"><span/><span/><span/><span/><span/></span>
                 <h3>Completed</h3>
                 <div className="task-stack">
-                  {completed.length === 0 && <p className="empty-msg">🌟 Nothing completed yet</p>}
+                  {completed.length === 0 && (
+                    <div className="kid-empty kid-empty--completed">
+                      <div className="kid-empty-art" aria-hidden="true">🌟</div>
+                      <p className="kid-empty-title">Your wins live here</p>
+                      <p className="kid-empty-sub">Complete a task to start your streak</p>
+                    </div>
+                  )}
                   {completed.map(task => (
                     <article key={task.id} className="task-card task-card--completed">
                       <span className="task-card__emoji" aria-hidden="true">{task.emoji || "📝"}</span>
@@ -231,8 +253,8 @@ export default function KidDashboard() {
             </div>
             <div className="kid-rewards-grid">
               {MOCK_REWARDS.map(r => {
-                const progress = Math.min(100, Math.round((kid.points / r.cost) * 100));
-                const remaining = Math.max(0, r.cost - kid.points);
+                const progress = Math.min(100, Math.round((currentPoints / r.cost) * 100));
+                const remaining = Math.max(0, r.cost - currentPoints);
                 const affordable = remaining === 0;
                 return (
                   <div key={r.id} className={"reward-card" + (affordable ? " reward-card--affordable" : "")}>
@@ -243,8 +265,18 @@ export default function KidDashboard() {
                       <div className="reward-card__bar-fill" style={{ width: progress + "%", background: accent.deep }}/>
                     </div>
                     <p className="reward-card__remaining">
-                      {affordable ? "✨ You can get this!" : remaining + " points to go"}
+                      {claimedRewards.includes(r.id)
+                        ? "✓ Claimed!"
+                        : affordable ? "✨ You can get this!" : remaining + " points to go"}
                     </p>
+                    {claimedRewards.includes(r.id) ? (
+                      <div className="reward-card__claimed-badge" aria-hidden="true">🏆</div>
+                    ) : affordable ? (
+                      <button
+                        className="reward-card__claim-btn"
+                        onClick={() => setConfirmReward(r)}
+                      >Claim</button>
+                    ) : null}
                   </div>
                 );
               })}
@@ -252,6 +284,37 @@ export default function KidDashboard() {
           </>
         )}
       </section>
+
+      {confirmReward && (
+        <div className="kid-claim-overlay" onClick={() => setConfirmReward(null)}>
+          <div className="kid-claim-dialog" onClick={e => e.stopPropagation()}>
+            <div className="kid-claim-emoji" aria-hidden="true">{confirmReward.emoji}</div>
+            <h3 className="kid-claim-title">Claim {confirmReward.name}?</h3>
+            <p className="kid-claim-cost">This will use <strong>{confirmReward.cost} points</strong></p>
+            <div className="kid-claim-actions">
+              <button className="kid-claim-cancel" onClick={() => setConfirmReward(null)}>Not yet</button>
+              <button
+                className="kid-claim-confirm"
+                onClick={() => {
+                  setCurrentPoints(p => p - confirmReward.cost);
+                  setClaimedRewards(prev => [...prev, confirmReward.id]);
+                  setJustClaimed(confirmReward);
+                  setConfirmReward(null);
+                  setTimeout(() => setJustClaimed(null), 2200);
+                }}
+              >Yes, claim it!</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {justClaimed && (
+        <div className="kid-claim-celebration" role="status" aria-live="polite">
+          <div className="kid-claim-celebration-art" aria-hidden="true">{justClaimed.emoji}</div>
+          <p className="kid-claim-celebration-text">You got <strong>{justClaimed.name}</strong>!</p>
+          <p className="kid-claim-celebration-sub">Show this to your parent ✨</p>
+        </div>
+      )}
     </div>
   );
 }

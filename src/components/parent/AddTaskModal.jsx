@@ -189,7 +189,11 @@ export default function AddTaskModal({ kid, accent, allKids, onAdd, onClose }) {
         {/* Library list */}
         {showLibrary && (
           <div className="modal-taskLibrary">
-            {taskLibrary.length === 0 && <p className="modal-lib-empty">No saved tasks yet. Save tasks to build your taskLibrary.</p>}
+            {taskLibrary.length === 0 && <div className="modal-lib-empty-art">
+              <div className="modal-lib-empty-emoji">📋</div>
+              <p className="modal-lib-empty-title">No saved tasks yet</p>
+              <p className="modal-lib-empty-sub">Toggle "Save to library" before adding</p>
+            </div>}
             {taskLibrary.map((t, i) => (
               <button key={i} className="modal-lib-item" onClick={() => {
                 setTitle(t.title);

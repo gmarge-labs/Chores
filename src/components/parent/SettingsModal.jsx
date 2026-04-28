@@ -485,8 +485,10 @@ export default function SettingsModal({ onClose }) {
                     >💾 Save to library {saveRewardToLib ? "✓" : ""}</button>
                   </div>
                   {libraryOpen && (rewardLibrary.length === 0 ? (
-                    <div className="settings-rewards-empty-compact">
-                      <span>🛍️ No saved rewards yet</span>
+                    <div className="settings-lib-empty-art">
+                      <div className="settings-lib-empty-emoji">🎁</div>
+                      <p className="settings-lib-empty-title">No saved rewards yet</p>
+                      <p className="settings-lib-empty-sub">Add a reward with "Save to library" on</p>
                     </div>
                   ) : (
                     <div className="settings-rewards-lib-list settings-rewards-lib-list--compact">

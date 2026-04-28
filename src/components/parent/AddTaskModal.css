@@ -751,3 +751,46 @@
   padding-right: 0 !important;
   gap: 10px !important;
 }
+
+/* Polished library empty states */
+.settings-lib-empty-art,
+.modal-lib-empty-art {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 22px 14px;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.4);
+  border: 1.5px dashed rgba(47, 36, 25, 0.18);
+  border-radius: 14px;
+}
+.settings-lib-empty-emoji,
+.modal-lib-empty-emoji {
+  font-size: 2.2rem;
+  margin-bottom: 4px;
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.12));
+  animation: libEmptyBob 2.6s ease-in-out infinite;
+}
+@keyframes libEmptyBob {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-3px); }
+}
+.settings-lib-empty-title,
+.modal-lib-empty-title {
+  margin: 0;
+  font-family: 'Baloo 2', cursive;
+  font-weight: 900;
+  font-size: 0.98rem;
+  color: rgb(47, 36, 25);
+}
+.settings-lib-empty-sub,
+.modal-lib-empty-sub {
+  margin: 0;
+  font-family: 'Baloo 2', cursive;
+  font-weight: 600;
+  font-size: 0.82rem;
+  color: rgba(47, 36, 25, 0.55);
+  max-width: 220px;
+}

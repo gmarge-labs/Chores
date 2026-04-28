@@ -603,3 +603,185 @@
   border-radius: 999px;
 }
 .kid-detail-page .task-stack::-webkit-scrollbar-track { background: transparent; }
+
+/* ── Claim button on reward cards ── */
+.reward-card__claim-btn {
+  margin-top: 6px;
+  padding: 8px 22px;
+  border: 2px solid rgba(255, 255, 255, 0.85);
+  border-radius: 999px;
+  background: linear-gradient(145deg, #ffd24d, #ff8a3d);
+  color: #5a3318;
+  font-family: 'Baloo 2', cursive;
+  font-weight: 900;
+  font-size: 0.95rem;
+  cursor: pointer;
+  box-shadow: 0 6px 16px rgba(255, 138, 61, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  transition: transform 0.12s, box-shadow 0.15s, filter 0.15s;
+  animation: claimPulse 1.6s ease-in-out infinite;
+}
+@keyframes claimPulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 6px 16px rgba(255, 138, 61, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.6); }
+  50%      { transform: scale(1.04); box-shadow: 0 8px 22px rgba(255, 138, 61, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.7); }
+}
+.reward-card__claim-btn:hover {
+  transform: translateY(-2px) scale(1.05);
+  filter: brightness(1.08);
+}
+.reward-card__claim-btn:active { transform: translateY(0); }
+.reward-card__claimed-badge {
+  font-size: 2rem;
+  margin-top: 6px;
+  filter: drop-shadow(0 4px 8px rgba(255, 215, 0, 0.6));
+  animation: claimedBob 2s ease-in-out infinite;
+}
+@keyframes claimedBob {
+  0%, 100% { transform: translateY(0) rotate(-4deg); }
+  50%      { transform: translateY(-3px) rotate(4deg); }
+}
+
+/* ── Confirmation dialog ── */
+.kid-claim-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(31, 22, 12, 0.55);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  animation: claimOverlayFade 0.22s ease-out;
+}
+@keyframes claimOverlayFade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.kid-claim-dialog {
+  background: linear-gradient(145deg, #fff, #fff5e8);
+  border: 2px solid rgba(255, 255, 255, 0.95);
+  border-radius: 26px;
+  padding: 32px 36px 24px;
+  min-width: 320px;
+  max-width: 380px;
+  text-align: center;
+  box-shadow: 0 24px 60px rgba(31, 22, 12, 0.32);
+  animation: claimDialogPop 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes claimDialogPop {
+  0%   { opacity: 0; transform: scale(0.85) translateY(10px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+.kid-claim-emoji {
+  font-size: 3.4rem;
+  filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.15));
+  animation: claimEmojiSpin 1.4s ease-in-out;
+}
+@keyframes claimEmojiSpin {
+  0%   { transform: rotate(-12deg) scale(0.7); opacity: 0; }
+  60%  { transform: rotate(8deg) scale(1.12); opacity: 1; }
+  100% { transform: rotate(0deg) scale(1); opacity: 1; }
+}
+.kid-claim-title {
+  margin: 12px 0 6px 0;
+  font-family: 'Baloo 2', cursive;
+  font-weight: 900;
+  font-size: 1.4rem;
+  color: rgb(47, 36, 25);
+}
+.kid-claim-cost {
+  margin: 0 0 22px 0;
+  font-size: 0.95rem;
+  color: rgba(47, 36, 25, 0.7);
+}
+.kid-claim-cost strong { color: #ff5836; }
+.kid-claim-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+.kid-claim-cancel,
+.kid-claim-confirm {
+  padding: 10px 22px;
+  border-radius: 999px;
+  font-family: 'Baloo 2', cursive;
+  font-weight: 900;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: transform 0.12s, box-shadow 0.15s;
+}
+.kid-claim-cancel {
+  border: 2px solid rgba(0, 0, 0, 0.12);
+  background: rgba(255, 255, 255, 0.7);
+  color: rgba(47, 36, 25, 0.8);
+}
+.kid-claim-cancel:hover {
+  background: #fff;
+  transform: translateY(-1px);
+}
+.kid-claim-confirm {
+  border: 2px solid rgba(255, 255, 255, 0.85);
+  background: linear-gradient(145deg, #ffd24d, #ff8a3d);
+  color: #5a3318;
+  box-shadow: 0 6px 16px rgba(255, 138, 61, 0.4);
+}
+.kid-claim-confirm:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 22px rgba(255, 138, 61, 0.5);
+}
+
+/* ── Big celebration toast after claim ── */
+.kid-claim-celebration {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 10000;
+  animation: claimCelebrationFade 2.2s ease-out forwards;
+}
+@keyframes claimCelebrationFade {
+  0%   { opacity: 0; }
+  10%  { opacity: 1; }
+  85%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+.kid-claim-celebration-art {
+  font-size: 7rem;
+  filter: drop-shadow(0 10px 24px rgba(0, 0, 0, 0.3));
+  animation: claimCelebrationBurst 0.7s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes claimCelebrationBurst {
+  0%   { transform: scale(0.3) rotate(-30deg); }
+  60%  { transform: scale(1.25) rotate(15deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+.kid-claim-celebration-text {
+  margin: 16px 0 4px 0;
+  font-family: 'Baloo 2', cursive;
+  font-weight: 900;
+  font-size: 2rem;
+  color: #fff;
+  text-shadow: 0 4px 12px rgba(0, 0, 0, 0.55), 0 0 24px rgba(255, 215, 0, 0.6);
+}
+.kid-claim-celebration-text strong {
+  background: linear-gradient(90deg, #ffd24d, #ff8a3d, #c84cff, #4dc8ff, #ffd24d);
+  background-size: 300% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: claimCelebrationShimmer 2.2s linear;
+}
+@keyframes claimCelebrationShimmer {
+  0%   { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
+}
+.kid-claim-celebration-sub {
+  margin: 0;
+  font-family: 'Baloo 2', cursive;
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: rgba(255, 255, 255, 0.9);
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+}

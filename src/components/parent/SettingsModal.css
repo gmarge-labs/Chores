@@ -2942,3 +2942,48 @@ button.settings-modal-save {
   font-size: 0.85rem;
   color: rgba(47, 36, 25, 0.7);
 }
+
+/* ── Settings landing page (stacked tiles) ── */
+.settings-landing {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 4px 0;
+}
+.settings-landing-tile {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 16px 20px;
+  border: 2px solid rgba(255, 255, 255, 0.7);
+  border-radius: 18px;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.65), rgba(255, 255, 255, 0.4));
+  backdrop-filter: blur(8px);
+  font-family: 'Baloo 2', cursive;
+  font-weight: 800;
+  color: rgb(47, 36, 25);
+  cursor: pointer;
+  text-align: left;
+  transition: transform 0.12s, box-shadow 0.18s, background 0.15s;
+  box-shadow: 0 4px 14px rgba(63, 43, 24, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+.settings-landing-tile:hover {
+  transform: translateY(-2px);
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.6));
+  box-shadow: 0 10px 24px rgba(63, 43, 24, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.65);
+}
+.settings-landing-tile:active { transform: translateY(0); }
+.settings-landing-tile-emoji {
+  font-size: 1.6rem;
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.12));
+}
+.settings-landing-tile-label {
+  flex: 1;
+  font-size: 1.05rem;
+}
+.settings-landing-tile-caret {
+  font-size: 1.4rem;
+  font-weight: 900;
+  color: rgba(47, 36, 25, 0.4);
+}

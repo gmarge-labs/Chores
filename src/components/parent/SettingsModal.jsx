@@ -36,7 +36,7 @@ const TABS = [
 ];
 
 export default function SettingsModal({ onClose }) {
-  const [activeTab, setActiveTab] = useState("profile");
+  const [activeTab, setActiveTab] = useState("landing");
   const [kids, setKids] = useState(MOCK_KIDS);
   const [saved, setSaved] = useState(false);
 
@@ -131,7 +131,8 @@ export default function SettingsModal({ onClose }) {
           <h2 className="settings-modal-title">Settings</h2>
           <button className="settings-modal-close" onClick={onClose}>✕</button>
         </div>
-        <div className="settings-tab-bar">
+        {activeTab !== "landing" && (
+          <div className="settings-tab-bar">
           {TABS.map(t => (
             <button key={t.id} className={`settings-tab-btn${activeTab === t.id ? " active" : ""}`}
               onClick={() => setActiveTab(t.id)}>
@@ -139,9 +140,26 @@ export default function SettingsModal({ onClose }) {
             </button>
           ))}
         </div>
-        <div className="settings-tab-content" key={activeTab}>
+        )}
+                <div className="settings-tab-content" key={activeTab}>
 
           {/* ── Edit Profile ── */}
+          {activeTab === "landing" && (
+            <div className="settings-landing">
+              {TABS.map(t => (
+                <button
+                  key={t.id}
+                  className="settings-landing-tile"
+                  onClick={() => setActiveTab(t.id)}
+                >
+                  <span className="settings-landing-tile-emoji">{t.emoji}</span>
+                  <span className="settings-landing-tile-label">{t.label}</span>
+                  <span className="settings-landing-tile-caret">›</span>
+                </button>
+              ))}
+            </div>
+          )}
+
           {activeTab === "profile" && (
             <>
               <div className="settings-section">
@@ -799,7 +817,7 @@ export default function SettingsModal({ onClose }) {
 
         <div className="settings-modal-footer"
           style={{ "--tab-accent": ACCENT_COLORS.find(c=>c.deep===kidColour)?.deep||"#f07a45", "--tab-light": ACCENT_COLORS.find(c=>c.deep===kidColour)?.light||"#ff9d57" }}>
-          <button className="settings-modal-cancel" onClick={onClose}>Cancel</button>
+          <button className="settings-modal-cancel" onClick={() => setActiveTab("landing")}>Cancel</button>
           <button className="settings-modal-save"
             onClick={() => { setSaved(true); setTimeout(() => setSaved(false), 2000); onClose(); }}>
             Save changes

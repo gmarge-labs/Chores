@@ -2915,3 +2915,30 @@ button.settings-modal-save {
   pointer-events: auto !important;
   opacity: 1 !important;
 }
+
+/* Kid contribution chips in Family Quest tab */
+.settings-quest-contribs-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+.settings-quest-kid-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1.5px solid;
+  border-radius: 999px;
+  font-family: 'Baloo 2', cursive;
+}
+.settings-quest-kid-name {
+  font-weight: 900;
+  font-size: 0.92rem;
+}
+.settings-quest-kid-pts {
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: rgba(47, 36, 25, 0.7);
+}

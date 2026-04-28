@@ -558,18 +558,29 @@ export default function SettingsModal({ onClose }) {
                               {complete ? "🎉 Goal reached!" : `${total} / ${activeQuest.goal} points`}
                             </p>
                           </div>
-                          {activeQuest.contributions.length > 0 && (
-                            <div className="settings-quest-contribs">
-                              <h5>Recent contributions</h5>
-                              <ul>
-                                {activeQuest.contributions.slice(-5).reverse().map((c, i) => (
-                                  <li key={i}>
-                                    <strong>{c.kidId}</strong> donated <strong>{c.points} pts</strong>
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
+                          {activeQuest.contributions.length > 0 && (() => {
+                            const byKid = {};
+                            activeQuest.contributions.forEach(c => {
+                              byKid[c.kidId] = (byKid[c.kidId] || 0) + c.points;
+                            });
+                            const breakdown = kids
+                              .map(k => ({ name: k.name, accent: k.accentColour, points: byKid[k.id] || 0 }))
+                              .filter(k => k.points > 0)
+                              .sort((a, b) => b.points - a.points);
+                            return (
+                              <div className="settings-quest-contribs">
+                                <h5>Kid contributions</h5>
+                                <div className="settings-quest-contribs-list">
+                                  {breakdown.map(k => (
+                                    <div key={k.name} className="settings-quest-kid-chip" style={{ borderColor: k.accent }}>
+                                      <span className="settings-quest-kid-name" style={{ color: k.accent }}>{k.name}</span>
+                                      <span className="settings-quest-kid-pts">{k.points} pts</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            );
+                          })()}
                           {complete ? (
                             <button className="settings-modal-save settings-quest-archive-btn" onClick={() => { archiveActiveQuest(); setQuestDraft({ title: "", emoji: "🎯", description: "", goal: 200 }); }}>
                               ✓ Archive & Start New

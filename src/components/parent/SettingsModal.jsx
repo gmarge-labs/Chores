@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useLibraries } from "../../context/LibrariesContext";
 import { createPortal } from "react-dom";
 import "./SettingsModal.css";
+import { REWARD_ICONS } from "../shared/icons";
 
 const ACCENT_COLORS = [
   { name: "Orange", light: "#ff9d57", deep: "#f07a45" },
@@ -68,6 +69,8 @@ export default function SettingsModal({ onClose }) {
     { id: "r2", name: "Playdate",           points: 100 },
     { id: "r3", name: "Screen time bonus",  points: 30  },
   ]);
+  const [newRewardEmoji, setNewRewardEmoji] = useState("🎁");
+  const [iconPickerOpen, setIconPickerOpen] = useState(false);
   const [newRewardName, setNewRewardName] = useState("");
   const [newRewardPoints, setNewRewardPoints] = useState("");
   const [selectedRewardId, setSelectedRewardId] = useState(null);
@@ -380,7 +383,34 @@ export default function SettingsModal({ onClose }) {
               </div>
               <div className="settings-section settings-section--compact settings-rewards-right-tile">
                 <h3 className="settings-section-title">🛍️ Rewards Store</h3>
-                <div style={{ display:"flex", flexDirection:"row", alignItems:"flex-end", gap:"10px", width:"100%" }}>
+                <div style={{ display:"flex", flexDirection:"column", gap:"10px", width:"100%" }}>
+                  <div style={{ display:"flex", flexDirection:"column", gap:"4px", position:"relative" }}>
+                    <label className="settings-label">Pick an icon</label>
+                    <button
+                      type="button"
+                      className="settings-reward-icon-trigger"
+                      onClick={() => setIconPickerOpen(o => !o)}
+                      aria-expanded={iconPickerOpen}
+                    >
+                      <span className="settings-reward-icon-trigger-emoji">{newRewardEmoji}</span>
+                      <span className="settings-reward-icon-trigger-label">Choose icon</span>
+                      <span className={"settings-reward-icon-trigger-caret" + (iconPickerOpen ? " open" : "")}>▾</span>
+                    </button>
+                    {iconPickerOpen && (
+                      <div className="settings-reward-icon-panel">
+                        {REWARD_ICONS.map(ico => (
+                          <button
+                            key={ico}
+                            type="button"
+                            className={"settings-reward-icon-btn" + (newRewardEmoji === ico ? " active" : "")}
+                            onClick={() => { setNewRewardEmoji(ico); setIconPickerOpen(false); }}
+                            aria-label={`Pick ${ico}`}
+                          >{ico}</button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <div style={{ display:"flex", flexDirection:"row", alignItems:"flex-end", gap:"10px", width:"100%" }}>
                   <div style={{ flex:1, minWidth:0, display:"flex", flexDirection:"column", gap:"4px" }}>
                     <label className="settings-label">Reward name</label>
                     <input className="settings-input" type="text" placeholder="e.g. Reward name..."
@@ -398,12 +428,13 @@ export default function SettingsModal({ onClose }) {
                     <button className="settings-modal-save" style={{ padding:"9px 20px", whiteSpace:"nowrap" }}
                       onClick={() => {
                         if (!newRewardName.trim() || !newRewardPoints) return;
-                        const r = { id: "r"+Date.now(), name: newRewardName.trim(), points: Number(newRewardPoints) };
+                        const r = { id: "r"+Date.now(), emoji: newRewardEmoji, name: newRewardName.trim(), points: Number(newRewardPoints) };
                         setRewards(prev => [...prev, r]);
                         if (saveRewardToLib) setRewardLibrary(prev => [r, ...prev].slice(0,30));
-                        setNewRewardName(""); setNewRewardPoints("");
+                        setNewRewardName(""); setNewRewardPoints(""); setNewRewardEmoji("🎁");
                       }}>Add ✦</button>
                   </div>
+                </div>
                 </div>
                 <div className="settings-rewards-toggle-row" style={{ justifyContent:"flex-start" }}>
                   <button className={`settings-toggle-btn${saveRewardToLib ? " on" : ""}`}
@@ -427,6 +458,7 @@ export default function SettingsModal({ onClose }) {
                         <div key={r.id}
                           className={`settings-rewards-lib-item${selectedRewardId === r.id ? " active" : ""}`}
                           onClick={() => { setSelectedRewardId(r.id === selectedRewardId ? null : r.id); setEditingReward(null); }}>
+                          <span className="settings-reward-detail-icon" aria-hidden="true">{r.emoji || "🎁"}</span>
                           <span className="settings-reward-detail-name">{r.name}</span>
                           <span className="settings-reward-detail-pts">⭐ {r.points}</span>
                           <div className="settings-reward-lib-actions" onClick={e => e.stopPropagation()}>

@@ -578,3 +578,28 @@
   0%, 100% { opacity: 0; transform: scale(0.6) rotate(0deg); }
   50%      { opacity: 1; transform: scale(1.1) rotate(180deg); }
 }
+
+/* Task icon on kid's task cards */
+.task-card__emoji {
+  font-size: 1.6rem;
+  margin-right: 10px;
+  flex-shrink: 0;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.15));
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+}
+
+/* ── Allow task list inside card to scroll independently ── */
+.kid-detail-page .kid-detail-card { overflow: visible !important; }
+.kid-detail-page .task-lane { max-height: calc(100vh - 220px); display: flex; flex-direction: column; }
+.kid-detail-page .task-stack { overflow-y: auto; flex: 1; min-height: 0; padding-right: 4px; }
+
+/* Slim, themed scrollbar */
+.kid-detail-page .task-stack::-webkit-scrollbar { width: 6px; }
+.kid-detail-page .task-stack::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.55);
+  border-radius: 999px;
+}
+.kid-detail-page .task-stack::-webkit-scrollbar-track { background: transparent; }

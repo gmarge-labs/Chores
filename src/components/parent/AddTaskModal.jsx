@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useLibraries } from "../../context/LibrariesContext";
 import "./AddTaskModal.css";
+import { REWARD_ICONS } from "../shared/icons";
 
 const SCHEDULES = ["Daily", "Weekly", "One-time"];
 const TIMES = ["5:30 AM","6:00 AM","7:00 AM","8:00 AM","9:00 AM","10:00 AM","11:00 AM","12:00 PM","1:00 PM","2:00 PM","3:00 PM","4:00 PM","5:00 PM","6:00 PM","7:00 PM","8:00 PM","9:00 PM"];
@@ -12,6 +13,8 @@ export default function AddTaskModal({ kid, accent, allKids, onAdd, onClose }) {
   const [schedule, setSchedule] = useState("Daily");
   const [time, setTime] = useState("8:00 AM");
   const [points, setPoints] = useState(5);
+  const [newTaskEmoji, setNewTaskEmoji] = useState("📝");
+  const [iconPickerOpen, setIconPickerOpen] = useState(false);
   const [error, setError] = useState("");
   const [customPoints, setCustomPoints] = useState("");
   // taskLibrary state is lifted to parent (KidDetail) via taskLibrary / setTaskLibrary props
@@ -30,9 +33,9 @@ export default function AddTaskModal({ kid, accent, allKids, onAdd, onClose }) {
     if (!title.trim()) { setError("Please enter a task name"); return; }
     if (assignedKids.length === 0) { setError("Please select at least one kid"); return; }
     const finalPoints = customPoints !== "" ? parseInt(customPoints) || points : points;
-    const task = { id: "t" + Date.now(), title: title.trim(), meta: `${schedule} • ${time}`, points: finalPoints };
+    const task = { id: "t" + Date.now(), emoji: newTaskEmoji, title: title.trim(), meta: `${schedule} • ${time}`, points: finalPoints };
     onAdd(task, assignedKids);
-    setPendingTask({ title: title.trim(), schedule, time, points: finalPoints });
+    setPendingTask({ emoji: newTaskEmoji, title: title.trim(), schedule, time, points: finalPoints });
     setShowSavePrompt(true);
   };
 
@@ -64,6 +67,34 @@ export default function AddTaskModal({ kid, accent, allKids, onAdd, onClose }) {
             maxLength={60}
           />
           {error && <p className="modal-error">{error}</p>}
+        </div>
+
+        {/* Task icon */}
+        <div className="modal-field" style={{ position: "relative" }}>
+          <label className="modal-label">Pick an icon</label>
+          <button
+            type="button"
+            className="settings-reward-icon-trigger"
+            onClick={() => setIconPickerOpen(o => !o)}
+            aria-expanded={iconPickerOpen}
+          >
+            <span className="settings-reward-icon-trigger-emoji">{newTaskEmoji}</span>
+            <span className="settings-reward-icon-trigger-label">Choose icon</span>
+            <span className={"settings-reward-icon-trigger-caret" + (iconPickerOpen ? " open" : "")}>▾</span>
+          </button>
+          {iconPickerOpen && (
+            <div className="settings-reward-icon-panel">
+              {REWARD_ICONS.map(ico => (
+                <button
+                  key={ico}
+                  type="button"
+                  className={"settings-reward-icon-btn" + (newTaskEmoji === ico ? " active" : "")}
+                  onClick={() => { setNewTaskEmoji(ico); setIconPickerOpen(false); }}
+                  aria-label={`Pick ${ico}`}
+                >{ico}</button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Schedule */}

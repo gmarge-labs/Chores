@@ -30,10 +30,10 @@ const MOCK_KIDS = {
     id: "k1", name: "Simra", points: 149, streak: 7,
     pointsPerDollarReward: 20, dollarRewardValue: 1,
     due: [
-      { id: "t1", title: "Fajr Prayer",     meta: "Daily • 5:30 AM",  points: 5 },
-      { id: "t2", title: "Brush Teeth",     meta: "Daily • 8:00 AM",  points: 5 },
-      { id: "t3", title: "Eat Breakfast",   meta: "Daily • 9:00 AM",  points: 5 },
-      { id: "t4", title: "Clean your room", meta: "Daily • 10:00 AM", points: 5 },
+      { id: "t1", emoji: "🙏", title: "Fajr Prayer",     meta: "Daily • 5:30 AM",  points: 5 },
+      { id: "t2", emoji: "🪥", title: "Brush Teeth",     meta: "Daily • 8:00 AM",  points: 5 },
+      { id: "t3", emoji: "🥣", title: "Eat Breakfast",   meta: "Daily • 9:00 AM",  points: 5 },
+      { id: "t4", emoji: "🧹", title: "Clean your room", meta: "Daily • 10:00 AM", points: 5 },
     ],
     awaiting: [], completed: [],
   },
@@ -41,8 +41,8 @@ const MOCK_KIDS = {
     id: "k2", name: "Rayyan", points: 100, streak: 3,
     pointsPerDollarReward: 20, dollarRewardValue: 1,
     due: [
-      { id: "t1", title: "Make bed", meta: "Daily • 7:00 AM", points: 10 },
-      { id: "t2", title: "Homework", meta: "Daily • 5:00 PM", points: 30 },
+      { id: "t1", emoji: "🛏️", title: "Make bed", meta: "Daily • 7:00 AM", points: 10 },
+      { id: "t2", emoji: "📚", title: "Homework", meta: "Daily • 5:00 PM", points: 30 },
     ],
     awaiting: [], completed: [],
   },
@@ -50,8 +50,8 @@ const MOCK_KIDS = {
     id: "k3", name: "Jinan", points: 105, streak: 1,
     pointsPerDollarReward: 20, dollarRewardValue: 1,
     due: [
-      { id: "t1", title: "Tidy room",       meta: "Daily • 8:00 AM", points: 20 },
-      { id: "t2", title: "Help with dishes",meta: "Daily • 6:00 PM", points: 15 },
+      { id: "t1", emoji: "🧹", title: "Tidy room",       meta: "Daily • 8:00 AM", points: 20 },
+      { id: "t2", emoji: "🍽️", title: "Help with dishes",meta: "Daily • 6:00 PM", points: 15 },
     ],
     awaiting: [], completed: [],
   },
@@ -163,7 +163,8 @@ export default function KidDashboard() {
                   {due.length === 0 && <p className="empty-msg">All done! 🎉</p>}
                   {due.map(task => (
                     <article key={task.id} className={"task-card" + (leaving[task.id] ? " task-card--leaving" : "")}>
-                      <div className="task-card__info">
+                      <span className="task-card__emoji" aria-hidden="true">{task.emoji || "📝"}</span>
+                        <div className="task-card__info">
                         <p className="task-card__name">{task.title}</p>
                         <p className="task-card__meta">{task.meta}</p>
                         <p className="task-card__points">{task.points} points</p>
@@ -193,7 +194,8 @@ export default function KidDashboard() {
                   {awaiting.length === 0 && <p className="empty-msg">⏳ Nothing waiting yet</p>}
                   {awaiting.map(task => (
                     <article key={task.id} className="task-card task-card--awaiting">
-                      <div className="task-card__info">
+                      <span className="task-card__emoji" aria-hidden="true">{task.emoji || "📝"}</span>
+                        <div className="task-card__info">
                         <p className="task-card__name">{task.title}</p>
                         <p className="task-card__meta">{task.meta}</p>
                       </div>
@@ -210,7 +212,8 @@ export default function KidDashboard() {
                   {completed.length === 0 && <p className="empty-msg">🌟 Nothing completed yet</p>}
                   {completed.map(task => (
                     <article key={task.id} className="task-card task-card--completed">
-                      <div className="task-card__info">
+                      <span className="task-card__emoji" aria-hidden="true">{task.emoji || "📝"}</span>
+                        <div className="task-card__info">
                         <p className="task-card__name">{task.title}</p>
                         <p className="task-card__meta">+{task.points} points</p>
                       </div>

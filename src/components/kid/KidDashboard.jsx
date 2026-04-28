@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useLibraries } from "../../context/LibrariesContext";
 import { useAuth } from "../../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import Background from "../shared/Background";
@@ -90,6 +91,11 @@ export default function KidDashboard() {
   const [confirmReward, setConfirmReward] = useState(null);
   const [justClaimed, setJustClaimed] = useState(null);
   const [leaving, setLeaving] = useState({});
+  const { activeQuest, contributeToQuest } = useLibraries();
+  const [donateOpen, setDonateOpen] = useState(false);
+  const [donateAmount, setDonateAmount] = useState(0);
+  const [justDonated, setJustDonated] = useState(null);
+  const [questTileOpen, setQuestTileOpen] = useState(false);
 
   const handleDone = (task) => {
     if (celebrating[task.id] || leaving[task.id]) return;
@@ -251,7 +257,54 @@ export default function KidDashboard() {
             <div className="kid-detail-card-head">
               <h2>Rewards</h2>
             </div>
-            <div className="kid-rewards-grid">
+            <>
+              {activeQuest && (() => {
+                const total = activeQuest.contributions.reduce((s, c) => s + c.points, 0);
+                const pct = Math.min(100, Math.round((total / activeQuest.goal) * 100));
+                const goalReached = total >= activeQuest.goal;
+                return (
+                  <div className={"kid-quest-tile" + (questTileOpen ? " open" : "")}>
+                    <button
+                      className="kid-quest-tile-head"
+                      onClick={() => setQuestTileOpen(o => !o)}
+                      aria-expanded={questTileOpen}
+                    >
+                      <span className="kid-quest-tile-emoji">{activeQuest.emoji}</span>
+                      <div className="kid-quest-tile-meta">
+                        <h3 className="kid-quest-tile-title">Family Quest: {activeQuest.title}</h3>
+                        <p className="kid-quest-tile-progress-mini">
+                          {goalReached ? "Goal reached! ✨" : `${total} / ${activeQuest.goal} family points`}
+                        </p>
+                      </div>
+                      <span className={"kid-quest-tile-caret" + (questTileOpen ? " open" : "")}>▾</span>
+                    </button>
+                    {questTileOpen && (
+                      <div className="kid-quest-tile-body">
+                        <div className="kid-quest-banner-progress">
+                          <div className="kid-quest-banner-progress-bar">
+                            <div className="kid-quest-banner-progress-fill" style={{ width: pct + "%" }} />
+                          </div>
+                          <p className="kid-quest-banner-progress-text">{pct}% complete</p>
+                        </div>
+                        <div className="kid-quest-tile-actions">
+                          <button
+                            type="button"
+                            className="kid-quest-donate-btn"
+                            onClick={() => {
+                              setDonateAmount(Math.min(10, currentPoints));
+                              setDonateOpen(true);
+                            }}
+                            disabled={currentPoints <= 0 || goalReached}
+                          >
+                            {goalReached ? "🎉 Goal reached!" : "Donate points ✦"}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+              <div className="kid-rewards-grid">
               {MOCK_REWARDS.map(r => {
                 const progress = Math.min(100, Math.round((currentPoints / r.cost) * 100));
                 const remaining = Math.max(0, r.cost - currentPoints);
@@ -281,6 +334,7 @@ export default function KidDashboard() {
                 );
               })}
             </div>
+            </>
           </>
         )}
       </section>
@@ -313,6 +367,56 @@ export default function KidDashboard() {
           <div className="kid-claim-celebration-art" aria-hidden="true">{justClaimed.emoji}</div>
           <p className="kid-claim-celebration-text">You got <strong>{justClaimed.name}</strong>!</p>
           <p className="kid-claim-celebration-sub">Show this to your parent ✨</p>
+        </div>
+      )}
+
+      {donateOpen && activeQuest && (
+        <div className="kid-donate-overlay" onClick={() => setDonateOpen(false)}>
+          <div className="kid-donate-dialog" onClick={e => e.stopPropagation()}>
+            <div className="kid-donate-emoji" aria-hidden="true">{activeQuest.emoji}</div>
+            <h3 className="kid-donate-title">Donate to {activeQuest.title}?</h3>
+            <p className="kid-donate-balance">You have <strong>{currentPoints} pts</strong></p>
+            <div className="kid-donate-amount-display">
+              <span className="kid-donate-amount-num">{donateAmount}</span>
+              <span className="kid-donate-amount-label">pts</span>
+            </div>
+            <input
+              type="range"
+              min="0"
+              max={currentPoints}
+              value={donateAmount}
+              onChange={e => setDonateAmount(Number(e.target.value))}
+              className="kid-donate-slider"
+            />
+            <div className="kid-donate-quick">
+              <button onClick={() => setDonateAmount(Math.min(5, currentPoints))}>5</button>
+              <button onClick={() => setDonateAmount(Math.min(10, currentPoints))}>10</button>
+              <button onClick={() => setDonateAmount(Math.min(25, currentPoints))}>25</button>
+              <button onClick={() => setDonateAmount(currentPoints)}>Max</button>
+            </div>
+            <div className="kid-donate-actions">
+              <button className="kid-donate-cancel" onClick={() => setDonateOpen(false)}>Cancel</button>
+              <button
+                className="kid-donate-confirm"
+                disabled={donateAmount <= 0}
+                onClick={() => {
+                  setCurrentPoints(p => p - donateAmount);
+                  contributeToQuest(kid.id, donateAmount);
+                  setJustDonated({ amount: donateAmount, emoji: activeQuest.emoji, title: activeQuest.title });
+                  setDonateOpen(false);
+                  setTimeout(() => setJustDonated(null), 2200);
+                }}
+              >Donate {donateAmount} pts ✦</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {justDonated && (
+        <div className="kid-donate-celebration" role="status" aria-live="polite">
+          <div className="kid-donate-celebration-art" aria-hidden="true">{justDonated.emoji}</div>
+          <p className="kid-donate-celebration-text">+{justDonated.amount} family points!</p>
+          <p className="kid-donate-celebration-sub">Thanks for helping the team ✨</p>
         </div>
       )}
     </div>

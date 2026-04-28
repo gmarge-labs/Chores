@@ -358,3 +358,89 @@
   color: #b8851e;
   font-weight: 900;
 }
+
+/* ── Hero rank title INSIDE the name pill ── */
+.kid-detail-name-pill .kid-rank-title-inside {
+  margin: 0;
+  font-family: 'Baloo 2', cursive;
+  font-size: 1rem;
+  font-weight: 900;
+  color: rgba(255, 255, 255, 0.95);
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  text-align: center;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
+  margin-top: -2px;
+  padding-bottom: 4px;
+}
+.kid-detail-name-pill h1 {
+  padding-bottom: 4px !important;
+}
+
+/* ── Logout button (parent-button style) ── */
+.kid-logout-btn {
+  margin-left: auto;
+  padding: 10px 22px;
+  border: 2px solid rgba(255, 255, 255, 0.72);
+  border-radius: 999px;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.25));
+  color: rgb(47, 36, 25);
+  font-family: 'Baloo 2', cursive;
+  font-weight: 800;
+  font-size: 0.95rem;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  box-shadow: rgba(63, 43, 24, 0.12) 0px 8px 18px, rgba(255, 255, 255, 0.6) 0px 2px 0px inset;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.kid-logout-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: rgba(63, 43, 24, 0.18) 0px 12px 22px, rgba(255, 255, 255, 0.75) 0px 2px 0px inset;
+}
+.kid-logout-btn:active { transform: translateY(0); }
+
+/* ── Centered stats row between header and card ── */
+.kid-center-stats-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  margin: 8px auto 4px;
+  flex-wrap: wrap;
+}
+.kid-center-stats-row .kid-points-counter {
+  margin-left: 0;
+}
+
+/* ── Done button (mirrors parent's task-card__done) ── */
+.task-card__done {
+  padding: 10px 24px;
+  border: 2px solid rgba(255, 255, 255, 0.72);
+  border-radius: 999px;
+  background: linear-gradient(145deg, var(--accent-light, #ff9d57), var(--accent, #f07a45));
+  color: rgb(255, 247, 233);
+  font-family: 'Baloo 2', cursive;
+  font-weight: 900;
+  font-size: 0.95rem;
+  cursor: pointer;
+  box-shadow: rgba(63, 43, 24, 0.18) 0px 6px 14px, rgba(255, 255, 255, 0.6) 0px 2px 0px inset;
+  transition: transform 0.15s, box-shadow 0.15s;
+  white-space: nowrap;
+}
+.task-card__done:hover {
+  transform: translateY(-1px);
+  box-shadow: rgba(63, 43, 24, 0.24) 0px 10px 20px, rgba(255, 255, 255, 0.75) 0px 2px 0px inset;
+}
+.task-card__done:active { transform: translateY(0); }
+
+.kid-header-right { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+.kid-header-right .kid-logout-btn { margin-left: 0; }
+
+.kid-rank-emoji { font-size: 1.6rem; margin-right: 4px; filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.18)); }
+
+.kid-center-stats-row { justify-content: space-between !important; }
+.kid-center-stats-row .kid-streak-chip { margin-right: auto; }
+
+.kid-center-stats-row { padding: 0 24px; }
+.kid-center-stats-row .kid-streak-chip { margin-left: 0 !important; margin-right: auto !important; }
+.kid-center-stats-row .kid-points-counter { margin-right: 0 !important; margin-left: auto !important; }

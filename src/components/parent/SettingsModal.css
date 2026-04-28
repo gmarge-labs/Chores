@@ -64,7 +64,7 @@
 }
 .settings-modal-title {
   font-family: 'Baloo 2', cursive;
-  font-size: 2.4rem;
+  font-size: 1.5rem;
   font-weight: 900;
   color: rgb(47,36,25);
   margin: 0;
@@ -1990,4 +1990,665 @@
   border: 1.5px solid rgba(255, 255, 255, 0.95);
   border-radius: 14px;
   box-shadow: 0 14px 36px rgba(63, 43, 24, 0.22);
+}
+
+/* Toast on successful reward add (mirrors AddTaskModal style) */
+.modal-toast {
+  position: absolute;
+  top: 70px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 22px;
+  background: linear-gradient(135deg, #4ade80, #22c55e);
+  color: #fff;
+  border-radius: 999px;
+  font-family: 'Baloo 2', cursive;
+  font-weight: 800;
+  font-size: 1rem;
+  box-shadow: 0 8px 24px rgba(34, 197, 94, 0.45);
+  border: 2px solid rgba(255, 255, 255, 0.85);
+  z-index: 100;
+  animation: toastPop 0.35s ease-out;
+}
+.modal-toast-emoji {
+  font-size: 1.2rem;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2));
+}
+@keyframes toastPop {
+  0%   { opacity: 0; transform: translate(-50%, 14px) scale(0.85); }
+  60%  { opacity: 1; transform: translate(-50%, -3px) scale(1.05); }
+  100% { opacity: 1; transform: translate(-50%, 0)   scale(1); }
+}
+
+/* Library dropdown trigger button */
+.settings-reward-lib-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border: 1.5px solid rgba(255, 255, 255, 0.8);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(8px);
+  font-family: 'Baloo 2', cursive;
+  font-weight: 800;
+  font-size: 0.92rem;
+  color: rgb(47, 36, 25);
+  cursor: pointer;
+  transition: background 0.15s, transform 0.12s;
+  width: fit-content;
+  margin-bottom: 8px;
+}
+.settings-reward-lib-toggle:hover {
+  background: rgba(255, 255, 255, 0.75);
+  transform: translateY(-1px);
+}
+.settings-reward-lib-toggle.active {
+  background: linear-gradient(135deg, #ff8a3d, #ff5836);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 4px 12px rgba(255, 88, 36, 0.32);
+}
+.settings-reward-lib-caret {
+  font-size: 0.85rem;
+  opacity: 0.85;
+}
+
+/* Pill row: library + save-to-lib next to each other */
+.settings-reward-pill-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+/* Save-to-library pill (matches AddTaskModal style) */
+.modal-save-pill {
+  padding: 8px 16px;
+  border-radius: 999px;
+  border: 1.5px solid rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.5);
+  font-family: 'Baloo 2', cursive;
+  font-weight: 800;
+  font-size: 0.92rem;
+  color: rgb(47, 36, 25);
+  cursor: pointer;
+  transition: background 0.15s, transform 0.12s, box-shadow 0.15s;
+  white-space: nowrap;
+}
+.modal-save-pill:hover {
+  background: rgba(255, 255, 255, 0.75);
+  transform: translateY(-1px);
+}
+.modal-save-pill.active {
+  background: linear-gradient(135deg, #ff8a3d, #ff5836);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 4px 12px rgba(255, 88, 36, 0.32);
+}
+
+/* ── Conversion Rate tile: rainbow display ── */
+.settings-rate-row--rainbow {
+  flex-direction: column !important;
+  align-items: center !important;
+  gap: 12px !important;
+  flex-wrap: nowrap !important;
+}
+.settings-rate-display {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  font-family: 'Baloo 2', cursive;
+  font-weight: 900;
+}
+.settings-rate-display .settings-rate-pts-label {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: rgba(47, 36, 25, 0.65);
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+.settings-rate-rainbow-num {
+  display: inline-flex;
+  gap: 1px;
+  align-items: baseline;
+}
+.settings-rate-digit {
+  font-size: 1.5rem;
+  font-weight: 900;
+  text-shadow:
+    0 0 4px rgba(255, 255, 255, 0.95),
+    0 0 12px currentColor,
+    0 1px 3px rgba(0, 0, 0, 0.18);
+  animation: rateDigitPulse 2.6s ease-in-out infinite;
+  display: inline-block;
+}
+.settings-rate-digit:nth-child(2) { animation-delay: 0.3s; }
+.settings-rate-digit:nth-child(3) { animation-delay: 0.6s; }
+.settings-rate-display .settings-rate-equals {
+  font-size: 1.6rem;
+  font-weight: 900;
+  color: rgba(47, 36, 25, 0.45);
+  margin: 0 4px;
+}
+.settings-rate-display .settings-rate-dollar-bold {
+  font-size: 1.4rem;
+  font-weight: 900;
+  background: linear-gradient(135deg, #6bcb77, #2faa50);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  filter: drop-shadow(0 0 6px rgba(107, 203, 119, 0.5));
+}
+
+@keyframes rateDigitPulse {
+  0%, 100% { transform: translateY(0); filter: brightness(1); }
+  50%      { transform: translateY(-1px); filter: brightness(1.15); }
+}
+
+/* Small edit row below rainbow display */
+.settings-rate-edit-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.45);
+  border: 1.5px solid rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(6px);
+}
+.settings-rate-edit-input {
+  width: 44px !important;
+  text-align: center !important;
+  padding: 4px !important;
+  font-size: 0.85rem !important;
+  border: none !important;
+  background: transparent !important;
+}
+.settings-rate-edit-sep {
+  font-weight: 800;
+  color: rgba(47, 36, 25, 0.5);
+}
+
+/* Spinning coin between Pts and $ */
+.settings-rate-coin {
+  font-size: 1.1rem;
+  display: inline-block;
+  animation: coinSpin 2s linear infinite;
+  filter: drop-shadow(0 2px 4px rgba(255, 200, 60, 0.5));
+  margin: 0 2px;
+}
+@keyframes coinSpin {
+  0%   { transform: rotateY(0deg); }
+  100% { transform: rotateY(360deg); }
+}
+
+/* Animated arrow */
+.settings-rate-arrow {
+  font-size: 1rem;
+  font-weight: 900;
+  color: rgba(47, 36, 25, 0.55);
+  margin: 0 2px;
+  animation: arrowSlide 1.6s ease-in-out infinite;
+  display: inline-block;
+}
+@keyframes arrowSlide {
+  0%, 100% { transform: translateX(0);   opacity: 0.55; }
+  50%      { transform: translateX(3px); opacity: 1; }
+}
+
+/* Tap-to-edit hover hint on rainbow numbers */
+.settings-rate-display .settings-rate-rainbow-num {
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 8px;
+  transition: background 0.15s;
+}
+.settings-rate-display .settings-rate-rainbow-num:hover {
+  background: rgba(255, 255, 255, 0.45);
+}
+
+/* Inline edit input (replaces rainbow when tapped) */
+.settings-rate-inline-input {
+  width: 70px;
+  padding: 4px 6px;
+  font-family: 'Baloo 2', cursive;
+  font-size: 1.6rem;
+  font-weight: 900;
+  text-align: center;
+  border: 2px solid #ff8a3d;
+  border-radius: 10px;
+  background: #fff;
+  color: rgb(47, 36, 25);
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(255, 138, 61, 0.2);
+}
+
+/* Force conversion rate display to fit inside narrow tile */
+.settings-rewards-left-tile .settings-rate-display {
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px !important;
+  max-width: 100%;
+}
+.settings-rewards-left-tile .settings-rate-display > * {
+  flex-shrink: 0;
+}
+.settings-rewards-left-tile {
+  overflow: hidden;
+}
+
+/* ── Conversion Rate clean button ── */
+.settings-rate-btn {
+  display: inline-flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 6px;
+  padding: 14px 18px;
+  border: 1.5px solid rgba(255, 255, 255, 0.85);
+  border-radius: 18px;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.65), rgba(255, 255, 255, 0.35));
+  backdrop-filter: blur(10px);
+  font-family: 'Baloo 2', cursive;
+  font-weight: 900;
+  cursor: pointer;
+  width: 100%;
+  transition: transform 0.15s, box-shadow 0.15s, background 0.15s;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+.settings-rate-btn:hover {
+  transform: translateY(-2px);
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.55));
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+.settings-rate-btn-num {
+  font-size: 1.7rem;
+  background: linear-gradient(135deg, #ff8a3d, #ff5836);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 1px 2px rgba(255, 88, 36, 0.35));
+}
+.settings-rate-btn-num--green {
+  background: linear-gradient(135deg, #6bcb77, #2faa50);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 1px 2px rgba(107, 203, 119, 0.35));
+}
+.settings-rate-btn-pts {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: rgba(47, 36, 25, 0.65);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+.settings-rate-btn-equal {
+  font-size: 1.2rem;
+  color: rgba(47, 36, 25, 0.5);
+  margin: 0 4px;
+  animation: rateEqualPulse 2s ease-in-out infinite;
+}
+.settings-rate-btn-dollar {
+  font-size: 1.4rem;
+  font-weight: 900;
+  color: #2faa50;
+}
+@keyframes rateEqualPulse {
+  0%, 100% { opacity: 0.5; }
+  50%      { opacity: 1; }
+}
+
+/* ── Editor overlay ── */
+.settings-rate-editor-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(31, 22, 12, 0.55);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  animation: rateOverlayFade 0.2s ease-out;
+}
+@keyframes rateOverlayFade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.settings-rate-editor {
+  position: relative;
+  background: linear-gradient(145deg, #fff, #fff5e8);
+  border: 2px solid rgba(255, 255, 255, 0.95);
+  border-radius: 24px;
+  padding: 32px 36px 24px;
+  min-width: 340px;
+  box-shadow: 0 24px 60px rgba(31, 22, 12, 0.32);
+  animation: rateEditorPop 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes rateEditorPop {
+  0%   { opacity: 0; transform: scale(0.85) translateY(10px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+.settings-rate-editor-close {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  border: none;
+  background: rgba(0, 0, 0, 0.06);
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  font-size: 0.9rem;
+  cursor: pointer;
+  color: rgba(47, 36, 25, 0.7);
+  transition: background 0.15s;
+}
+.settings-rate-editor-close:hover { background: rgba(0, 0, 0, 0.12); }
+.settings-rate-editor-title {
+  margin: 0 0 4px 0;
+  font-family: 'Baloo 2', cursive;
+  font-size: 1.3rem;
+  font-weight: 900;
+  color: rgb(47, 36, 25);
+  text-align: center;
+}
+.settings-rate-editor-hint {
+  margin: 0 0 18px 0;
+  font-size: 0.85rem;
+  color: rgba(47, 36, 25, 0.6);
+  text-align: center;
+}
+.settings-rate-editor-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 22px;
+}
+.settings-rate-editor-input {
+  width: 70px;
+  padding: 10px;
+  font-family: 'Baloo 2', cursive;
+  font-size: 1.6rem;
+  font-weight: 900;
+  text-align: center;
+  border: 2px solid rgba(255, 138, 61, 0.5);
+  border-radius: 12px;
+  background: #fff;
+  color: rgb(47, 36, 25);
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.settings-rate-editor-input:focus {
+  border-color: #ff8a3d;
+  box-shadow: 0 0 0 4px rgba(255, 138, 61, 0.2);
+}
+.settings-rate-editor-label {
+  font-family: 'Baloo 2', cursive;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: rgba(47, 36, 25, 0.7);
+}
+.settings-rate-editor-equals {
+  font-size: 1.4rem;
+  font-weight: 900;
+  color: rgba(47, 36, 25, 0.6);
+  margin: 0 6px;
+}
+.settings-rate-editor-dollar {
+  font-size: 1.6rem;
+  font-weight: 900;
+  color: #2faa50;
+}
+.settings-rate-editor-done {
+  display: block;
+  margin: 0 auto;
+  padding: 10px 28px;
+  border: 2px solid rgba(255, 255, 255, 0.85);
+  border-radius: 999px;
+  background: linear-gradient(145deg, #ff9d57, #f07a45);
+  color: #fff;
+  font-family: 'Baloo 2', cursive;
+  font-weight: 900;
+  font-size: 1rem;
+  cursor: pointer;
+  box-shadow: 0 6px 16px rgba(240, 122, 69, 0.4);
+  transition: transform 0.12s, box-shadow 0.15s;
+}
+.settings-rate-editor-done:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 22px rgba(240, 122, 69, 0.5);
+}
+
+/* Whole tile becomes the clickable rate button */
+.settings-rate-tile-clickable {
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.18s, background 0.15s;
+  user-select: none;
+}
+.settings-rate-tile-clickable:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 32px rgba(31, 22, 12, 0.14);
+}
+.settings-rate-tile-clickable:active {
+  transform: translateY(0);
+}
+.settings-rate-display-inline {
+  display: inline-flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  font-family: 'Baloo 2', cursive;
+  font-weight: 900;
+}
+
+/* Force editor overlay to viewport, not parent tile */
+.settings-rate-editor-overlay {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  z-index: 99999 !important;
+}
+
+/* Rewards-store tile head: title left, conversion-rate button right */
+.settings-rewards-tile-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+.settings-rewards-tile-head .settings-section-title { margin: 0; }
+
+/* Small corner button that opens the conversion-rate editor */
+.settings-rate-corner-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border: 1.5px solid rgba(255, 255, 255, 0.85);
+  border-radius: 999px;
+  background: linear-gradient(145deg, #ffd97a, #ffa84d);
+  color: #5a3318;
+  font-family: 'Baloo 2', cursive;
+  font-weight: 800;
+  font-size: 0.82rem;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(255, 168, 77, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  transition: transform 0.12s, box-shadow 0.15s;
+}
+.settings-rate-corner-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(255, 168, 77, 0.4);
+}
+.settings-rate-corner-btn:active { transform: translateY(0); }
+
+/* Right tile takes full width now that left tile is gone */
+.settings-rewards-two-col .settings-rewards-right-tile {
+  flex: 1 1 100% !important;
+  width: 100% !important;
+}
+
+.settings-rewards-two-col {
+  display: block !important;
+  width: 100% !important;
+  grid-template-columns: none !important;
+}
+.settings-rewards-right-tile {
+  flex: 1 1 100% !important;
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+/* Force right tile to fill parent — beats inline-flex from earlier rule */
+div.settings-rewards-two-col > div.settings-rewards-right-tile.settings-section {
+  display: block !important;
+  width: 100% !important;
+  max-width: none !important;
+  flex: none !important;
+}
+
+/* Make all settings tiles fill the available width consistently */
+.settings-modal .settings-section,
+.settings-modal .settings-bonus-right-tile {
+  display: block !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  flex: none !important;
+  box-sizing: border-box !important;
+}
+
+/* Bonus tile must also be block-level full-width */
+div.settings-section.settings-bonus-right-tile {
+  display: block !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  flex: none !important;
+}
+
+/* Bonus tab parent must also fill width */
+.settings-bonus-single {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+/* Edit Profile tab — give contents more breathing room */
+.settings-modal .settings-section .settings-kid-chips,
+.settings-modal .settings-section .settings-colour-swatches,
+.settings-modal .settings-section .settings-ep-action-row {
+  gap: 16px !important;
+  margin-bottom: 14px !important;
+  flex-wrap: wrap !important;
+}
+.settings-modal .settings-section .settings-kid-chips { padding: 6px 0 !important; }
+.settings-modal .settings-section .settings-colour-swatches { padding: 6px 0 !important; }
+.settings-modal .settings-section .settings-ep-action-row {
+  padding-top: 6px !important;
+  border-top: 1px solid rgba(0,0,0,0.06);
+  margin-top: 4px !important;
+}
+.settings-modal .settings-section .settings-section-title {
+  margin-bottom: 14px !important;
+}
+
+/* ── Unified button styling across all settings pages ── */
+.settings-modal button:not(.settings-tab):not(.modal-close-btn):not(.settings-rate-editor-close):not(.settings-reward-icon-btn):not(.settings-tab-btn):not(.settings-toggle-btn):not(.settings-reward-edit-btn):not(.settings-reward-del-btn):not(.settings-kid-chip-btn):not(.settings-colour-swatch-lg) {
+  height: 48px !important;
+  min-height: 48px !important;
+  padding: 0 22px !important;
+  border-radius: 999px !important;
+  border: 2px solid rgba(255, 255, 255, 0.72) !important;
+  background: linear-gradient(145deg, #C9A882, #A67C52) !important;
+  color: #fff7e9 !important;
+  font-family: 'Baloo 2', cursive !important;
+  font-weight: 800 !important;
+  font-size: 0.95rem !important;
+  cursor: pointer !important;
+  white-space: nowrap !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  box-shadow: 0 6px 16px rgba(63, 43, 24, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.55) !important;
+  transition: transform 0.12s, box-shadow 0.15s, filter 0.15s !important;
+}
+.settings-modal button:not(.settings-tab):not(.modal-close-btn):not(.settings-rate-editor-close):not(.settings-reward-icon-btn):not(.settings-tab-btn):not(.settings-toggle-btn):not(.settings-reward-edit-btn):not(.settings-reward-del-btn):not(.settings-kid-chip-btn):not(.settings-colour-swatch-lg):hover {
+  transform: translateY(-1px) !important;
+  box-shadow: 0 10px 22px rgba(63, 43, 24, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.7) !important;
+  filter: brightness(1.06) !important;
+}
+.settings-modal button:not(.settings-tab):not(.modal-close-btn):not(.settings-rate-editor-close):not(.settings-reward-icon-btn):not(.settings-tab-btn):not(.settings-toggle-btn):not(.settings-reward-edit-btn):not(.settings-reward-del-btn):not(.settings-kid-chip-btn):not(.settings-colour-swatch-lg):active {
+  transform: translateY(0) !important;
+}
+
+/* Active/selected state keeps caramel but slightly brighter */
+.settings-modal button.active:not(.settings-tab):not(.settings-toggle-btn):not(.settings-colour-swatch-lg):not(.settings-kid-chip-btn) {
+  background: linear-gradient(145deg, #D9B894, #B68C62) !important;
+  box-shadow: 0 8px 20px rgba(63, 43, 24, 0.26), inset 0 1px 0 rgba(255, 255, 255, 0.7) !important;
+}
+
+/* Prevent flex containers from squishing unified-style buttons below 48px */
+.settings-modal button.settings-lib-toggle-btn,
+.settings-modal button.settings-modal-save {
+  flex-shrink: 0 !important;
+  min-height: 48px !important;
+  align-self: stretch !important;
+}
+.settings-modal button.settings-lib-toggle-btn:not(:disabled),
+.settings-modal button.settings-modal-save:not(:disabled) {
+  height: 48px !important;
+}
+
+/* Force any parent of a unified-style button to have at least 48px row height */
+.settings-modal div:has(> button.settings-lib-toggle-btn),
+.settings-modal div:has(> button.settings-modal-save) {
+  min-height: 48px !important;
+  align-items: stretch !important;
+}
+.settings-modal button.settings-lib-toggle-btn,
+.settings-modal button.settings-modal-save {
+  height: 48px !important;
+  min-height: 48px !important;
+  box-sizing: border-box !important;
+  flex: 0 0 auto !important;
+}
+
+/* Strongest possible override for unified buttons in any flex parent */
+.settings-modal button.settings-lib-toggle-btn,
+.settings-modal button.settings-modal-save,
+button.settings-lib-toggle-btn,
+button.settings-modal-save {
+  align-self: stretch !important;
+  height: 48px !important;
+  min-height: 48px !important;
+  max-height: 48px !important;
+  box-sizing: border-box !important;
+}
+
+/* Add breathing room above the bonus footer (Library + Add buttons) */
+.settings-bonus-footer {
+  margin-top: 18px !important;
+  padding-top: 14px !important;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+/* Same for rewards: ensure the input row has space below it */
+.settings-rewards-right-tile .settings-rewards-input-row {
+  margin-bottom: 14px !important;
+}
+.settings-rewards-right-tile .settings-reward-pill-row {
+  margin-top: 18px !important;
+  padding-top: 14px !important;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
 }

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useLibraries } from "../../context/LibrariesContext";
 import "./AddTaskModal.css";
-import { REWARD_ICONS } from "../shared/icons";
+import { TASK_ICONS } from "../shared/icons";
 
 const SCHEDULES = ["Daily", "Weekly", "One-time"];
 const TIMES = ["5:30 AM","6:00 AM","7:00 AM","8:00 AM","9:00 AM","10:00 AM","11:00 AM","12:00 PM","1:00 PM","2:00 PM","3:00 PM","4:00 PM","5:00 PM","6:00 PM","7:00 PM","8:00 PM","9:00 PM"];
@@ -92,7 +92,7 @@ export default function AddTaskModal({ kid, accent, allKids, onAdd, onClose }) {
           </button>
           {iconPickerOpen && (
             <div className="settings-reward-icon-panel">
-              {REWARD_ICONS.map(ico => (
+              {TASK_ICONS.map(ico => (
                 <button
                   key={ico}
                   type="button"

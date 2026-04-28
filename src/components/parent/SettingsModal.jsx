@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useLibraries } from "../../context/LibrariesContext";
 import { createPortal } from "react-dom";
 import "./SettingsModal.css";
@@ -70,6 +70,9 @@ export default function SettingsModal({ onClose }) {
     { id: "r3", name: "Screen time bonus",  points: 30  },
   ]);
   const [newRewardEmoji, setNewRewardEmoji] = useState("🎁");
+  const [justAddedReward, setJustAddedReward] = useState(false);
+  const [libraryOpen, setLibraryOpen] = useState(false);
+
   const [iconPickerOpen, setIconPickerOpen] = useState(false);
   const [newRewardName, setNewRewardName] = useState("");
   const [newRewardPoints, setNewRewardPoints] = useState("");
@@ -78,6 +81,28 @@ export default function SettingsModal({ onClose }) {
   const [editingReward, setEditingReward] = useState(null);
   const [pointsPerDollar, setPointsPerDollar] = useState(20);
   const [dollarValue, setDollarValue] = useState(1);
+
+  const [ratePtsEditing, setRatePtsEditing] = useState(false);
+  const [rateDollarEditing, setRateDollarEditing] = useState(false);
+  const [animPts, setAnimPts] = useState(pointsPerDollar);
+  const [animDollar, setAnimDollar] = useState(dollarValue);
+  const [rateEditorOpen, setRateEditorOpen] = useState(false);
+
+  useEffect(() => {
+    const target = pointsPerDollar || 0;
+    if (animPts === target) return;
+    const step = target > animPts ? 1 : -1;
+    const t = setTimeout(() => setAnimPts(animPts + step), 25);
+    return () => clearTimeout(t);
+  }, [pointsPerDollar, animPts]);
+
+  useEffect(() => {
+    const target = dollarValue || 0;
+    if (animDollar === target) return;
+    const step = target > animDollar ? 1 : -1;
+    const t = setTimeout(() => setAnimDollar(animDollar + step), 50);
+    return () => clearTimeout(t);
+  }, [dollarValue, animDollar]);
 
   // Hero Journey
   const [heroThresholds, setHeroThresholds] = useState({
@@ -367,22 +392,22 @@ export default function SettingsModal({ onClose }) {
           {/* ── Rewards Store ── */}
           {activeTab === "rewards" && (
             <div className="settings-rewards-two-col">
-              <div className="settings-section settings-section--compact settings-rewards-left-tile">
-                <h3 className="settings-section-title">💵 Conversion Rate</h3>
-                <div className="settings-rate-row" style={{ justifyContent:"center" }}>
-                  <span className="settings-rate-pts-label">Pts</span>
-                  <input className="settings-input" type="number" min="1"
-                    value={pointsPerDollar} onChange={e => setPointsPerDollar(Number(e.target.value) || "")}
-                    style={{ width:"60px", textAlign:"center" }} />
-                  <span className="settings-rate-equals">=</span>
-                  <span className="settings-rate-dollar-bold">$</span>
-                  <input className="settings-input" type="number" min="1"
-                    value={dollarValue} onChange={e => setDollarValue(Number(e.target.value) || "")}
-                    style={{ width:"60px", textAlign:"center" }} />
+                            <div className="settings-section settings-section--compact settings-rewards-right-tile">
+                {justAddedReward && (
+                  <div className="modal-toast" role="status">
+                    <span className="modal-toast-emoji">✦</span>
+                    <span className="modal-toast-text">Reward added!</span>
+                  </div>
+                )}
+                <div className="settings-rewards-tile-head">
+                  <h3 className="settings-section-title">🛍️ Rewards Store</h3>
+                  <button
+                    type="button"
+                    className="settings-rate-corner-btn"
+                    onClick={() => setRateEditorOpen(true)}
+                    title="Set conversion rate"
+                  >💵 Conversion Rate</button>
                 </div>
-              </div>
-              <div className="settings-section settings-section--compact settings-rewards-right-tile">
-                <h3 className="settings-section-title">🛍️ Rewards Store</h3>
                 <div style={{ display:"flex", flexDirection:"column", gap:"10px", width:"100%" }}>
                   <div style={{ display:"flex", flexDirection:"column", gap:"4px", position:"relative" }}>
                     <label className="settings-label">Pick an icon</label>
@@ -430,25 +455,36 @@ export default function SettingsModal({ onClose }) {
                         if (!newRewardName.trim() || !newRewardPoints) return;
                         const r = { id: "r"+Date.now(), emoji: newRewardEmoji, name: newRewardName.trim(), points: Number(newRewardPoints) };
                         setRewards(prev => [...prev, r]);
-                        if (saveRewardToLib) setRewardLibrary(prev => [r, ...prev].slice(0,30));
+                        if (saveRewardToLib) {
+                          setRewardLibrary(prev => {
+                            const exists = prev.some(x => x.name.trim().toLowerCase() === r.name.toLowerCase());
+                            if (exists) return prev;
+                            return [r, ...prev].slice(0, 30);
+                          });
+                        }
                         setNewRewardName(""); setNewRewardPoints(""); setNewRewardEmoji("🎁");
+                        setJustAddedReward(true);
+                        setTimeout(() => setJustAddedReward(false), 1100);
                       }}>Add ✦</button>
                   </div>
                 </div>
                 </div>
-                <div className="settings-rewards-toggle-row" style={{ justifyContent:"flex-start" }}>
-                  <button className={`settings-toggle-btn${saveRewardToLib ? " on" : ""}`}
-                    onClick={() => setSaveRewardToLib(p => !p)}>
-                    <span className="settings-toggle-knob" />
-                  </button>
-                  <span className="settings-toggle-label" style={{ fontSize:"0.82rem" }}>
-                    {saveRewardToLib ? "Save to library" : "Don't save"}
-                  </span>
-                </div>
-                <div className="settings-rewards-divider" />
+
                 <div className="settings-field">
-                  <label className="settings-label">📚 Library {rewardLibrary.length > 0 ? `(${rewardLibrary.length})` : ""}</label>
-                  {rewardLibrary.length === 0 ? (
+                  <div className="settings-reward-pill-row">
+                    <button
+                      type="button"
+                      className={"settings-reward-lib-toggle" + (libraryOpen ? " active" : "")}
+                      onClick={() => setLibraryOpen(p => !p)}
+                    >📚 Library {rewardLibrary.length > 0 ? `(${rewardLibrary.length})` : ""} <span className="settings-reward-lib-caret">{libraryOpen ? "▾" : "▸"}</span></button>
+                    <button
+                      type="button"
+                      className={"modal-save-pill" + (saveRewardToLib ? " active" : "")}
+                      onClick={() => setSaveRewardToLib(p => !p)}
+                      aria-pressed={saveRewardToLib}
+                    >💾 Save to library {saveRewardToLib ? "✓" : ""}</button>
+                  </div>
+                  {libraryOpen && (rewardLibrary.length === 0 ? (
                     <div className="settings-rewards-empty-compact">
                       <span>🛍️ No saved rewards yet</span>
                     </div>
@@ -457,7 +493,13 @@ export default function SettingsModal({ onClose }) {
                       {rewardLibrary.map(r => (
                         <div key={r.id}
                           className={`settings-rewards-lib-item${selectedRewardId === r.id ? " active" : ""}`}
-                          onClick={() => { setSelectedRewardId(r.id === selectedRewardId ? null : r.id); setEditingReward(null); }}>
+                          onClick={() => {
+                            setSelectedRewardId(r.id === selectedRewardId ? null : r.id);
+                            setEditingReward(null);
+                            setNewRewardName(r.name);
+                            setNewRewardPoints(String(r.points));
+                            setNewRewardEmoji(r.emoji || "🎁");
+                          }}>
                           <span className="settings-reward-detail-icon" aria-hidden="true">{r.emoji || "🎁"}</span>
                           <span className="settings-reward-detail-name">{r.name}</span>
                           <span className="settings-reward-detail-pts">⭐ {r.points}</span>
@@ -469,7 +511,7 @@ export default function SettingsModal({ onClose }) {
                         </div>
                       ))}
                     </div>
-                  )}
+                  ))}
                 </div>
               </div>
             </div>
@@ -511,6 +553,38 @@ export default function SettingsModal({ onClose }) {
             Save changes
           </button>
         </div>
+      {rateEditorOpen && createPortal(
+        <div className="settings-rate-editor-overlay" onClick={() => setRateEditorOpen(false)}>
+          <div className="settings-rate-editor" onClick={e => e.stopPropagation()}>
+            <button className="settings-rate-editor-close" onClick={() => setRateEditorOpen(false)}>✕</button>
+            <h4 className="settings-rate-editor-title">💵 Set Conversion Rate</h4>
+            <p className="settings-rate-editor-hint">How many points equal one dollar?</p>
+            <div className="settings-rate-editor-row">
+              <input
+                className="settings-rate-editor-input"
+                type="number"
+                min="1"
+                value={pointsPerDollar}
+                onChange={e => setPointsPerDollar(Number(e.target.value) || "")}
+                autoFocus
+              />
+              <span className="settings-rate-editor-label">points</span>
+              <span className="settings-rate-editor-equals">=</span>
+              <span className="settings-rate-editor-dollar">$</span>
+              <input
+                className="settings-rate-editor-input"
+                type="number"
+                min="1"
+                value={dollarValue}
+                onChange={e => setDollarValue(Number(e.target.value) || "")}
+              />
+            </div>
+            <button className="settings-rate-editor-done" onClick={() => setRateEditorOpen(false)}>Done ✦</button>
+          </div>
+        </div>,
+        document.body
+      )}
+
       </div>
     </div>
   );

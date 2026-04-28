@@ -19,8 +19,8 @@ export default function AddTaskModal({ kid, accent, allKids, onAdd, onClose }) {
   const [customPoints, setCustomPoints] = useState("");
   // taskLibrary state is lifted to parent (KidDetail) via taskLibrary / setTaskLibrary props
   const [showLibrary, setShowLibrary] = useState(false);
-  const [showSavePrompt, setShowSavePrompt] = useState(false);
-  const [pendingTask, setPendingTask] = useState(null);
+  const [saveToLib, setSaveToLib] = useState(true);
+  const [justAdded, setJustAdded] = useState(false);
   const [assignedKids, setAssignedKids] = useState([kid.id]);
 
   const toggleKid = (id) => {
@@ -35,8 +35,16 @@ export default function AddTaskModal({ kid, accent, allKids, onAdd, onClose }) {
     const finalPoints = customPoints !== "" ? parseInt(customPoints) || points : points;
     const task = { id: "t" + Date.now(), emoji: newTaskEmoji, title: title.trim(), meta: `${schedule} • ${time}`, points: finalPoints };
     onAdd(task, assignedKids);
-    setPendingTask({ emoji: newTaskEmoji, title: title.trim(), schedule, time, points: finalPoints });
-    setShowSavePrompt(true);
+    if (saveToLib) {
+      const libTask = { emoji: newTaskEmoji, title: title.trim(), schedule, time, points: finalPoints };
+      setTaskLibrary(prev => {
+        const exists = prev.some(t => t.title.trim().toLowerCase() === libTask.title.toLowerCase());
+        if (exists) return prev;
+        return [libTask, ...prev].slice(0, 30);
+      });
+    }
+    setJustAdded(true);
+    setTimeout(() => { setJustAdded(false); onClose(); }, 1100);
   };
 
   return (
@@ -164,12 +172,18 @@ export default function AddTaskModal({ kid, accent, allKids, onAdd, onClose }) {
           </div>
         )}
 
-        {/* Library toggle */}
+        {/* Library toggle + Save-to-library pill */}
         <div className="modal-taskLibrary-row">
           <button
             className={`modal-lib-toggle${showLibrary ? " active" : ""}`}
             onClick={() => setShowLibrary(p => !p)}
           >☰ Task Library {taskLibrary.length > 0 ? `(${taskLibrary.length})` : ""}</button>
+          <button
+            type="button"
+            className={`modal-save-pill${saveToLib ? " active" : ""}`}
+            onClick={() => setSaveToLib(p => !p)}
+            aria-pressed={saveToLib}
+          >💾 Save to library {saveToLib ? "✓" : ""}</button>
         </div>
 
         {/* Library list */}
@@ -197,23 +211,13 @@ export default function AddTaskModal({ kid, accent, allKids, onAdd, onClose }) {
           <button className="modal-cancel-btn" onClick={onClose}>Cancel</button>
           <button className="modal-submit-btn" onClick={handleSubmit}>Add Task ✦</button>
         </div>
-      {/* Save prompt */}
-        {showSavePrompt && (
-          <div className="modal-save-prompt">
-            <p className="modal-save-question">💾 Save <strong>"{pendingTask?.title}"</strong> to your task taskLibrary?</p>
-            <div className="modal-save-actions">
-              <button className="modal-save-yes" onClick={() => {
-                setTaskLibrary(prev => {
-                  const updated = [pendingTask, ...prev];
-                  return updated.slice(0, 30);
-                });
-                setShowSavePrompt(false);
-                onClose();
-              }}>Yes, save it</button>
-              <button className="modal-save-no" onClick={() => { setShowSavePrompt(false); onClose(); }}>No thanks</button>
-            </div>
-          </div>
-        )}
+
+      {justAdded && (
+        <div className="modal-toast" role="status">
+          <span className="modal-toast-emoji">✦</span>
+          <span className="modal-toast-text">Task added!</span>
+        </div>
+      )}
       </div>
     </div>
   );

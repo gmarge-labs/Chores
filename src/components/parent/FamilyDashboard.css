@@ -144,12 +144,6 @@
   50%       { transform: translate3d(26px,-34px,0) scale(1.16); opacity: 0.68; }
 }
 
-
-
-
-  50%       { background-position: 18% 55%, 76% 38%, 60% 62%; }
-}
-
 /* Water bubbles on action buttons */
 .action-btn::after {
   content: "";
@@ -213,13 +207,6 @@
   0%,100% { transform: translate(0,0) scale(1); opacity:0.9; }
   33%  { transform: translate(-16px,10px) scale(1.07); opacity:1; }
   66%  { transform: translate(12px,18px) scale(0.93); opacity:0.85; }
-}
-  33%  { transform: translate(-16px,10px); }
-  66%  { transform: translate(12px,18px); }
-}
-  50%       { transform: translateY(-10px) scale(1.12); opacity: 1; }
-}
-  50%       { transform: translateY(-8px) scale(1.1); opacity: 1; }
 }
 
 /* Water bubbles on main background */
@@ -469,4 +456,61 @@
 .family-quest-tile-complete-btn:hover {
   transform: translateY(-2px) scale(1.04);
   box-shadow: 0 12px 28px rgba(34, 197, 94, 0.55);
+}
+
+/* ============ RESPONSIVE ============ */
+/* Tablet & small laptop */
+@media (max-width: 1024px) {
+  .dashboard-page { padding: 16px 14px !important; }
+  .kid-grid { gap: 14px !important; }
+  .dashboard-actions { gap: 10px !important; }
+}
+
+/* Tablet portrait */
+@media (max-width: 768px) {
+  .dashboard-page { padding: 14px 10px !important; }
+  .kid-grid {
+    flex-wrap: wrap !important;
+    gap: 12px !important;
+  }
+  .kid-grid > * {
+    flex: 1 1 calc(50% - 6px) !important;
+    min-width: 0 !important;
+  }
+  .dashboard-header {
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+  }
+  .dashboard-family-name {
+    font-size: 1.5rem !important;
+  }
+  .dashboard-actions {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 8px !important;
+  }
+  .action-btn {
+    width: 100% !important;
+    text-align: center !important;
+  }
+}
+
+/* Phone */
+@media (max-width: 480px) {
+  .dashboard-page { padding: 10px 8px !important; }
+  .kid-grid {
+    flex-direction: column !important;
+    gap: 10px !important;
+  }
+  .kid-grid > * {
+    flex: none !important;
+    width: 100% !important;
+  }
+  .dashboard-family-name {
+    font-size: 1.3rem !important;
+  }
+  .manage-sub {
+    font-size: 0.78rem !important;
+    padding: 0 8px !important;
+  }
 }

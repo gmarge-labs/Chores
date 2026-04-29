@@ -2987,3 +2987,96 @@ button.settings-modal-save {
   font-weight: 900;
   color: rgba(47, 36, 25, 0.4);
 }
+
+/* ============ RESPONSIVE ============ */
+@media (max-width: 1024px) {
+  .settings-modal {
+    width: 92vw !important;
+    max-width: 760px !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .settings-modal {
+    width: 96vw !important;
+    max-width: none !important;
+    max-height: 92vh !important;
+  }
+  .settings-tab-bar {
+    flex-wrap: wrap !important;
+    gap: 4px !important;
+  }
+  .settings-tab-btn {
+    flex: 1 1 calc(33% - 4px) !important;
+    font-size: 0.78rem !important;
+    padding: 6px 10px !important;
+  }
+  /* All section tiles single column on tablet+phone */
+  .settings-section,
+  .settings-bonus-right-tile,
+  .settings-rewards-right-tile {
+    padding: 14px 14px !important;
+  }
+  /* Conversion rate editor — narrower */
+  .settings-rate-editor {
+    min-width: 0 !important;
+    max-width: 92vw !important;
+    width: 92vw !important;
+    padding: 26px 22px 20px !important;
+  }
+  .settings-rate-editor-input {
+    width: 60px !important;
+    font-size: 1.4rem !important;
+  }
+  .settings-rate-editor-equals {
+    font-size: 1.2rem !important;
+  }
+  /* Family Quest tab progress chips can wrap */
+  .settings-quest-status-emoji {
+    font-size: 2.2rem !important;
+  }
+  .settings-quest-status-meta h4 {
+    font-size: 1.05rem !important;
+  }
+  /* Landing tiles a bit smaller */
+  .settings-landing-tile {
+    padding: 14px 16px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .settings-modal {
+    width: 100vw !important;
+    height: 100vh !important;
+    max-height: 100vh !important;
+    border-radius: 0 !important;
+  }
+  .settings-tab-btn {
+    flex: 1 1 calc(50% - 4px) !important;
+    font-size: 0.74rem !important;
+  }
+  .settings-modal-title {
+    font-size: 1.1rem !important;
+  }
+  .settings-rate-editor-row {
+    flex-wrap: wrap !important;
+    justify-content: center !important;
+  }
+  /* Form action rows stack on small phones */
+  .settings-quest-form-actions {
+    flex-direction: column-reverse !important;
+    align-items: stretch !important;
+  }
+  .settings-quest-form-actions .settings-modal-cancel,
+  .settings-quest-form-actions .settings-modal-save {
+    width: 100% !important;
+  }
+  /* Footer cancel + save stack */
+  .settings-modal-footer {
+    flex-direction: column-reverse !important;
+    gap: 8px !important;
+  }
+  .settings-modal-footer button {
+    width: 100% !important;
+  }
+}

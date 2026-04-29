@@ -770,3 +770,46 @@
   animation: pill-float 3.6s ease-in-out 0.6s infinite;
 }
 .add-task-btn:hover { transform: translateY(-2px) scale(1.02); }
+
+/* ============ RESPONSIVE ============ */
+@media (max-width: 1024px) {
+  .kid-detail-page { padding: 14px 12px !important; }
+  .task-columns { gap: 12px !important; }
+}
+
+@media (max-width: 768px) {
+  .kid-detail-page { padding: 12px 8px !important; }
+  .task-columns {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+  .task-lane { padding: 14px 12px !important; }
+  .kid-detail-card-head {
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+  }
+  .kid-detail-card-head h2 {
+    font-size: 1.4rem !important;
+  }
+  .kid-rewards-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .kid-detail-page { padding: 8px 6px !important; }
+  .kid-rewards-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .kid-detail-card { padding: 14px 10px !important; }
+  .kid-nav-row {
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+  }
+  .kid-nav-btn {
+    flex: 1 1 30% !important;
+    font-size: 0.85rem !important;
+    padding: 8px 12px !important;
+  }
+}

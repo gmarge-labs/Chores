@@ -287,9 +287,6 @@
   0%,100% { transform:translateY(0); }
   50%      { transform:translateY(-6px); }
 }
-
-  50%      { transform:translateY(-8px) scale(1.08); }
-}
 @keyframes star-drift {
   0%,100% { transform:translateY(0) rotate(0deg) scale(1); opacity:.78; }
   45%      { transform:translateY(-12px) rotate(12deg) scale(1.22); opacity:1; }
@@ -305,9 +302,6 @@
   50%       { opacity: 1;   transform: translateX(120%) scaleX(1); }
 }
 
-  45%  { opacity:0.7; }
-  100% { opacity:0; transform:scale(1.12); }
-}
 
 @keyframes card-drift {
   0%, 100% { transform: translateY(0px) rotate(0deg); }
@@ -315,65 +309,10 @@
 }
 
 
-  25%  { transform: translate(20px, -18px); }
-  50%  { transform: translate(30px, 10px); }
-  75%  { transform: translate(10px, 22px); }
-  100% { transform: translate(0px, 0px); }
-}
-  75%  { transform: translate(20px, 45px); }
-  100% { transform: translate(0px, 0px); }
-}
-  50%  { transform: translate(60px, -40px); }
-  100% { transform: translate(0px, 0px); }
-}
 
-  25%  { transform: translate(-18px, 15px); }
-  50%  { transform: translate(-28px, -12px); }
-  75%  { transform: translate(-10px, -22px); }
-  100% { transform: translate(0px, 0px); }
-}
-  75%  { transform: translate(-15px, -45px); }
-  100% { transform: translate(0px, 0px); }
-}
-  50%  { transform: translate(-55px, 50px); }
-  100% { transform: translate(0px, 0px); }
-}
 
-  25%  { transform: translate(-15px, -20px); }
-  50%  { transform: translate(18px, -25px); }
-  75%  { transform: translate(25px, -8px); }
-  100% { transform: translate(0px, 0px); }
-}
-  75%  { transform: translate(50px, -15px); }
-  100% { transform: translate(0px, 0px); }
-}
-  50%  { transform: translate(-60px, -45px); }
-  100% { transform: translate(0px, 0px); }
-}
 
-  25%  { transform: translate(22px, 14px); }
-  50%  { transform: translate(12px, -20px); }
-  75%  { transform: translate(-18px, -12px); }
-  100% { transform: translate(0px, 0px); }
-}
-  75%  { transform: translate(-30px, -20px); }
-  100% { transform: translate(0px, 0px); }
-}
-  50%  { transform: translate(55px, -50px); }
-  100% { transform: translate(0px, 0px); }
-}
 
-  25%  { transform: translate(-20px, -14px); }
-  50%  { transform: translate(-10px, 20px); }
-  75%  { transform: translate(18px, 16px); }
-  100% { transform: translate(0px, 0px); }
-}
-  75%  { transform: translate(35px, 30px); }
-  100% { transform: translate(0px, 0px); }
-}
-  50%  { transform: translate(-50px, 40px); }
-  100% { transform: translate(0px, 0px); }
-}
 
 @keyframes aura-spin {
   100% { transform: rotate(360deg); }
@@ -400,20 +339,6 @@
 .score-pill, .dollar-pill {
   --glow: var(--accent, #f07a45);
   --glow-light: var(--accent-light, #ff9d57);
-}
-
-
-  50% {
-    box-shadow:
-      rgba(255,100,80,0.7) -14px 14px 36px,
-      rgba(80,150,255,0.7) 14px -14px 36px,
-      rgba(180,80,255,0.6) -14px -14px 32px,
-      rgba(80,220,180,0.6) 14px 14px 32px,
-      rgba(255,255,255,0.45) 0px 0px 0px 16px,
-      rgba(255,255,255,0.95) 0px 4px 0px inset,
-      rgba(255,180,80,0.4) 0px 0px 50px;
-  }
-}
 }
 
 

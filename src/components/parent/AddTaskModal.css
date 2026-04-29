@@ -794,3 +794,34 @@
   color: rgba(47, 36, 25, 0.55);
   max-width: 220px;
 }
+
+/* ============ RESPONSIVE ============ */
+@media (max-width: 768px) {
+  .modal-overlay .modal {
+    width: 96vw !important;
+    max-width: none !important;
+    max-height: 92vh !important;
+    padding: 18px 16px !important;
+  }
+  .modal-actions {
+    flex-direction: column-reverse !important;
+    gap: 8px !important;
+  }
+  .modal-actions button {
+    width: 100% !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .modal-overlay .modal {
+    width: 100vw !important;
+    height: 100vh !important;
+    max-height: 100vh !important;
+    border-radius: 0 !important;
+    padding: 16px 12px !important;
+  }
+  .modal-input,
+  .modal-textarea {
+    font-size: 16px !important;  /* prevents iOS zoom on focus */
+  }
+}

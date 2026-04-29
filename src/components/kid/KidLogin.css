@@ -336,3 +336,19 @@
 .kid-avatar-tile {
   position: relative;
 }
+
+/* ============ RESPONSIVE ============ */
+@media (max-width: 768px) {
+  .kid-login-grid {
+    gap: 12px !important;
+  }
+  .kid-login-tile {
+    padding: 16px 14px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .kid-login-grid {
+    grid-template-columns: 1fr !important;
+  }
+}

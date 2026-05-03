@@ -1,6 +1,7 @@
 import ReportsModal from './ReportsModal';
 import { useState } from "react";
 import { useAuth } from "../../context/AuthContext";
+import { useFamily } from "../../context/FamilyContext";
 import RainbowTitle from "../shared/RainbowTitle";
 import Button from "../shared/Button";
 import KidCard from "./KidCard";
@@ -16,6 +17,7 @@ const MOCK_KIDS = [
 const MOCK_FAMILY = { id: "f1", familyName: "Bulamas" };
 
 export default function FamilyDashboard() {
+  const { family, kids } = useFamily();
   const { logout } = useAuth();
   const [showSettings, setShowSettings] = useState(false);
   const [showReports, setShowReports] = useState(false);
@@ -25,15 +27,15 @@ export default function FamilyDashboard() {
       <Background />
       <div className="dashboard-header">
         <div className="dashboard-title-area">
-          <p className="dashboard-family-name">{MOCK_FAMILY.familyName} Family</p>
+          <p className="dashboard-family-name">{(family?.familyName || "Your")} Family</p>
           <RainbowTitle size="md" />
         </div>
         <Button variant="ghost" size="sm" onClick={logout}>Log out</Button>
       </div>
 
       <div className="kid-grid">
-        {MOCK_KIDS.map(kid => (
-          <KidCard key={kid.id} kid={kid} familyId={MOCK_FAMILY.id} />
+        {kids.map(kid => (
+          <KidCard key={kid.id} kid={kid} familyId={family?.id} />
         ))}
       </div>
 

@@ -514,3 +514,20 @@
     padding: 0 8px !important;
   }
 }
+
+/* === Phone polish 2 === */
+@media (max-width: 480px) {
+  .dashboard-header {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+  .dashboard-title-area {
+    text-align: center !important;
+    margin-bottom: 6px !important;
+  }
+  .dashboard-family-name {
+    font-size: 1.05rem !important;
+    white-space: normal !important;
+    word-break: break-word !important;
+  }
+}

@@ -405,3 +405,20 @@
       color-mix(in srgb, var(--glow) 40%, transparent) 0px 0px 50px;
   }
 }
+
+/* ============ RESPONSIVE ============ */
+@media (max-width: 768px) {
+  .kid-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-height: 360px !important;
+    padding: 22px !important;
+  }
+}
+@media (max-width: 480px) {
+  .kid-card {
+    min-height: 320px !important;
+    padding: 18px !important;
+    border-radius: 26px !important;
+  }
+}

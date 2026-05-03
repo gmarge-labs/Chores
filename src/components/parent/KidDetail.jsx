@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useFamily } from "../../context/FamilyContext";
 import { useNavigate, useParams } from "react-router-dom";
 import "./KidDetail.css";
 import AddTaskModal from "./AddTaskModal";
@@ -36,7 +37,31 @@ export default function KidDetail() {
   const [showSettings, setShowSettings] = useState(false);
   const [displayPoints, setDisplayPoints] = useState(0);
   const [celebrating, setCelebrating] = useState(false);
-  const [kids, setKids] = useState(MOCK_KIDS);
+  const { kids: realKids, family, updateKid } = useFamily();
+  // Use REAL kids from FamilyContext when available, fall back to mock for dev/testing
+  const [taskState, setTaskStateRaw] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("ch_task_state_v1")) || {}; }
+    catch { return {}; }
+  });
+  const setTaskState = (updater) => {
+    setTaskStateRaw(prev => {
+      const next = typeof updater === "function" ? updater(prev) : updater;
+      try { localStorage.setItem("ch_task_state_v1", JSON.stringify(next)); } catch {}
+      return next;
+    });
+  };
+  const sourceKids = (realKids && realKids.length > 0) ? realKids : MOCK_KIDS;
+  const kids = sourceKids.map(k => {
+    const seedTasks = MOCK_KIDS.find(m => m.id === k.id) || { due: [], awaiting: [], completed: [] };
+    const tasks = taskState[k.id] || { due: seedTasks.due || [], awaiting: seedTasks.awaiting || [], completed: seedTasks.completed || [] };
+    return { ...k, ...tasks };
+  });
+  const setKids = (updater) => {
+    const next = typeof updater === "function" ? updater(kids) : updater;
+    const taskUpdates = { ...taskState };
+    next.forEach(k => { taskUpdates[k.id] = { due: k.due, awaiting: k.awaiting, completed: k.completed }; });
+    setTaskState(taskUpdates);
+  };
 
   const kid = kids.find(k => k.id === id) || kids[0];
   const accent = ACCENT_COLORS.find(c => c.deep === kid.accentColour) || ACCENT_COLORS[0];
@@ -82,6 +107,16 @@ export default function KidDetail() {
         [to]: [...k[to], task],
       };
     }));
+    // Persist new points to FamilyContext + Firestore
+    if (family?.id && kid?.id) {
+      const task = (kid[from] || []).find(t => t.id === taskId);
+      const pointsDelta = 
+        (to === "completed" && from === "awaiting") ? (task?.points || 0) :
+        (to === "due" && from === "completed") ? -(task?.points || 0) : 0;
+      if (pointsDelta !== 0) {
+        updateKid(family.id, kid.id, { points: (kid.points || 0) + pointsDelta });
+      }
+    }
   };
 
   return (

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useFamily } from "../../context/FamilyContext";
 import { useLibraries } from "../../context/LibrariesContext";
 import { createPortal } from "react-dom";
 import "./SettingsModal.css";
@@ -37,12 +38,18 @@ const TABS = [
 
 export default function SettingsModal({ onClose }) {
   const [activeTab, setActiveTab] = useState("landing");
-  const [kids, setKids] = useState(MOCK_KIDS);
+  const { kids: realKids, family, updateKid } = useFamily();
+  const sourceKids = (realKids && realKids.length > 0) ? realKids : MOCK_KIDS;
+  const [kids, setKids] = useState(sourceKids);
+  // Sync kids state when FamilyContext updates (color changes, new kids, etc.)
+  useEffect(() => {
+    if (realKids && realKids.length > 0) setKids(realKids);
+  }, [realKids]);
   const [saved, setSaved] = useState(false);
 
   // Edit Profile
-  const [selectedKidId, setSelectedKidId] = useState(MOCK_KIDS[0].id);
-  const [kidColour, setKidColour] = useState(MOCK_KIDS[0].accentColour);
+  const [selectedKidId, setSelectedKidId] = useState(sourceKids[0]?.id);
+  const [kidColour, setKidColour] = useState(sourceKids[0]?.accentColour);
   const [pin, setPin] = useState("");
   const [confirmPin, setConfirmPin] = useState("");
   const [pinError, setPinError] = useState("");
@@ -190,7 +197,12 @@ export default function SettingsModal({ onClose }) {
                       className={`settings-colour-swatch-lg${kidColour === c.deep ? " active" : ""}`}
                       style={{ background: `linear-gradient(145deg, ${c.light}, ${c.deep})` }}
                       title={c.name}
-                      onClick={() => setKidColour(c.deep)} />
+                      onClick={() => {
+                        setKidColour(c.deep);
+                        if (family?.id && selectedKidId) {
+                          updateKid(family.id, selectedKidId, { accentColour: c.deep });
+                        }
+                      }} />
                   ))}
                 </div>
                 {!showPinForm ? (

@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useFamily } from "../../context/FamilyContext";
 import "./ReportsModal.css";
 
 const MOCK_DATA = {
@@ -24,8 +25,24 @@ const PERIODS = [{id:"today",label:"Today"},{id:"week",label:"This Week"},{id:"m
 export default function ReportsModal({ onClose }) {
   const [period, setPeriod] = useState("week");
   const [selectedKid, setSelectedKid] = useState(null);
-  const kids = Object.entries(MOCK_DATA).map(([id,d]) => ({id,...d}));
-  const kid = selectedKid ? MOCK_DATA[selectedKid] : null;
+  const { kids: realKids } = useFamily();
+  // Use real kids' name + colour, fall back to mock data for the per-period stats
+  const kids = (realKids && realKids.length > 0)
+    ? realKids.map(rk => {
+        // Pick any mock data block as a stat fallback (use first mock entry)
+        const fallbackStats = MOCK_DATA[Object.keys(MOCK_DATA)[0]] || {};
+        return {
+          id: rk.id,
+          name: rk.name,
+          accent: rk.accentColour || "#f07a45",
+          accentLight: rk.accentLight || "#ff9d57",
+          today: fallbackStats.today,
+          week: fallbackStats.week,
+          month: fallbackStats.month,
+        };
+      })
+    : Object.entries(MOCK_DATA).map(([id,d]) => ({id,...d}));
+  const kid = selectedKid ? kids.find(k => k.id === selectedKid) : null;
   const pd = kid ? kid[period] : null;
   const net = pd ? pd.earned - pd.spent : 0;
 

@@ -813,3 +813,31 @@
     padding: 8px 12px !important;
   }
 }
+
+/* === Phone polish 2 === */
+@media (max-width: 480px) {
+  .kid-detail-header {
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+  }
+  .back-to-family,
+  .kid-detail-back {
+    order: -1 !important;
+    width: 100% !important;
+    text-align: center !important;
+    margin-bottom: 4px !important;
+  }
+  .task-columns {
+    grid-template-columns: 1fr !important;
+    flex-direction: column !important;
+  }
+  .task-column,
+  .task-lane {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+  .kid-detail-card {
+    padding: 12px 10px !important;
+    overflow: hidden !important;
+  }
+}

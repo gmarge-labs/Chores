@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ChoreHeroes — Family Task Tracker</title>
+    <meta name="description" content="Turn chores into a family adventure. Kids earn points, parents stay sane." />
+
+    <link rel="icon" type="image/svg+xml" href="/icons/icon.svg" />
+    <link rel="apple-touch-icon" href="/icons/icon.svg" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="theme-color" content="#4fc7b5" />
+
+    <!-- iOS PWA -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="ChoreHeroes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+
+    <!-- OG / social preview -->
+    <meta property="og:title" content="ChoreHeroes" />
+    <meta property="og:description" content="Turn chores into a family adventure. Kids earn points, parents stay sane." />
+    <meta property="og:image" content="/icons/og-preview.png" />
+    <meta property="og:url" content="https://choreheroes.app" />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <!-- One-time cleanup: GitHub Pages previously served a vanilla-JS app that
+         registered a service worker at /sw.js. On the first v2 visit per device
+         we unregister any existing SW and reload so the new shell takes over
+         cleanly. Flag prevents re-running. -->
+    <script>
+      (function () {
+        if (!("serviceWorker" in navigator)) return;
+        if (localStorage.getItem("ch_sw_migrated_v2")) return;
+        navigator.serviceWorker.getRegistrations().then(function (regs) {
+          if (!regs.length) {
+            localStorage.setItem("ch_sw_migrated_v2", "1");
+            return;
+          }
+          Promise.all(regs.map(function (r) { return r.unregister(); })).then(function () {
+            localStorage.setItem("ch_sw_migrated_v2", "1");
+            location.reload();
+          });
+        });
+      }());
+    </script>
+
+    <!-- SPA on GitHub Pages: 404.html re-encodes any path into a query string
+         and bounces here. This decoder restores the real URL before React
+         Router boots, so deep links like /family or /kid keep working. -->
+    <script>
+      (function (l) {
+        if (l.search[1] === "/") {
+          var decoded = l.search.slice(1).split("&").map(function (s) {
+            return s.replace(/~and~/g, "&");
+          }).join("?");
+          window.history.replaceState(null, null,
+            l.pathname.slice(0, -1) + decoded + l.hash
+          );
+        }
+      }(window.location));
+    </script>
+    <script type="module" crossorigin src="/assets/index-DxW2zo2V.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/rolldown-runtime-jpDsebLB.js">
+    <link rel="modulepreload" crossorigin href="/assets/react-9ZhtcPJ6.js">
+    <link rel="modulepreload" crossorigin href="/assets/firebase-A_jv2Z6Q.js">
+    <link rel="modulepreload" crossorigin href="/assets/config-larpSeiw.js">
+    <link rel="modulepreload" crossorigin href="/assets/FamilyContext-mFq2oKuw.js">
+    <link rel="stylesheet" crossorigin href="/assets/index-iQkcG71I.css">
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>

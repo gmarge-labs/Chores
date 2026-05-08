@@ -1,0 +1,1 @@
+import{n as e,t}from"./firebase-aiD0ihKP.js";import{n}from"./config-4zXc9u33.js";var r=e(t(),`setParentClaims`);async function i(e){if(e&&n.currentUser)try{await r({familyId:e}),await n.currentUser.getIdToken(!0)}catch(e){console.warn(`[claims] setParentClaims failed:`,e.code||``,e.message)}}export{i as ensureParentClaims};

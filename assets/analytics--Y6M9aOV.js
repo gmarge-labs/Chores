@@ -1,0 +1,1 @@
+import{a as e}from"./firebase-aiD0ihKP.js";import{t}from"./config-4zXc9u33.js";function n(n,r){try{if(!t)return;e(t,n,r||{})}catch(e){console.warn(`[analytics] event failed:`,n,e?.message)}}export{n as t};

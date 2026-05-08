@@ -1,1 +1,0 @@
-import{n as e,t}from"./firebase-A_jv2Z6Q.js";import{t as n}from"./config-larpSeiw.js";var r=e(t(),`setParentClaims`);async function i(e){if(e&&n.currentUser)try{await r({familyId:e}),await n.currentUser.getIdToken(!0)}catch(e){console.warn(`[claims] setParentClaims failed:`,e.code||``,e.message)}}export{i as ensureParentClaims};

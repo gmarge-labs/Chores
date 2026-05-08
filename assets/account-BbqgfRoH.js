@@ -1,0 +1,1 @@
+import{n as e,t}from"./firebase-OzYTojQj.js";var n=e(t(),`deleteFamily`);async function r(e){if(!e)throw Error(`familyId required`);await n({familyId:e})}export{r as deleteFamily};
